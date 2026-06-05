@@ -22,7 +22,7 @@ export const useIdentity = defineStore('identity', () => {
     const data = await res.json();
     me.value = data.user_id;
     users.value = data.users;
-    const saved = parseInt(localStorage.getItem(VIEW_KEY), 10);
+    const saved = parseInt(localStorage.getItem(VIEW_KEY) || '', 10);
     viewing.value = (saved === 1 || saved === 2) ? saved : (me.value || 1);
     if (!me.value) {
       // 用户从未选过身份，默认设为 1 号

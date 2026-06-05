@@ -53,7 +53,7 @@ export async function resolveTmdb(tmdb, { title, year, type }) {
   // 要求候选有年份：无年份基本是 TMDB stub / LLM 软幻觉模糊命中的垃圾条目，推荐里不要。
   const cands = (data?.results || []).filter(r => r.tmdb_id && (r.tmdb_type === 'movie' || r.tmdb_type === 'tv') && r.year);
   if (!cands.length) return null;
-  let best = null, bestScore = 0;
+  let best: any = null, bestScore = 0;
   for (const c of cands) {
     const s = scoreCandidate(c, { title, year, type });
     if (s > bestScore) { bestScore = s; best = c; }

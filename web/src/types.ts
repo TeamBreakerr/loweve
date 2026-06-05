@@ -12,14 +12,14 @@ export interface Work {
   genres?: string | null;
   runtime?: number | null;
   overview?: string | null;
-  primary_poster_url?: string | null;
+  primary_poster_url?: string;
   primary_rating?: number | null;
   rating_source: RatingSource;
   douban_id?: string | null;
   douban_url?: string | null;
   bangumi_id?: number | null;
-  all_marks?: Mark[];
-  sessions?: Session[];
+  all_marks: Mark[];
+  sessions: Session[];
   plan?: PlanItem | null;
   my_mark?: Mark | null;
 }
@@ -32,7 +32,7 @@ export interface Mark {
   rating?: number | null;
   comment?: string | null;
   marked_at?: number;
-  work?: Work;
+  work: Work;
 }
 
 export interface Session {
@@ -44,7 +44,7 @@ export interface Session {
   review_a?: string | null;
   review_b?: string | null;
   joint_note?: string | null;
-  work?: Work;
+  work: Work;
 }
 
 export interface PlanItem {
@@ -54,7 +54,7 @@ export interface PlanItem {
   note?: string | null;
   priority?: number;
   added_by?: number;
-  work?: Work;
+  work: Work;
 }
 
 export interface Reco {
@@ -65,7 +65,7 @@ export interface Reco {
   title: string;
   year?: number | null;
   is_anime?: number;
-  poster_url?: string | null;
+  poster_url?: string;
   rating_source: RatingSource;
   primary_rating?: number | null;
   douban_id?: string | null;

@@ -40,7 +40,7 @@ function yearScore(tmdbYear, candYear) {
 }
 
 export function matchAnime(tmdb, candidates) {
-  let best = null, bestTotal = 0, bestName = 0;
+  let best: any = null, bestTotal = 0, bestName = 0;
   for (const c of candidates || []) {
     const nScore = nameScore(tmdb, c);
     const yScore = yearScore(tmdb.year, c.year);

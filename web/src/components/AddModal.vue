@@ -22,10 +22,10 @@ const TARGETS = [
 
 // —— Step 1 搜索 ——
 const query = ref('');
-const candidates = ref([]);
+const candidates = ref<any[]>([]);
 const searching = ref(false);
 const searchError = ref('');
-let searchTimer = null;
+let searchTimer: any = null;
 
 watch(query, (q) => {
   clearTimeout(searchTimer);
@@ -46,15 +46,15 @@ watch(query, (q) => {
 });
 
 // —— Step 2 选作品 ——
-const selected = ref(null);
+const selected = ref<any>(null);
 
 // —— Step 3 选目标列表 ——
 const target = ref(props.initialTarget);
 
 // —— Step 4 详情 ——
-const rating = ref(null);
+const rating = ref<number | null>(null);
 const comment = ref('');
-const watchedAt = ref(null);     // 默认空：有时忘了哪天看的
+const watchedAt = ref<number | null>(null);     // 默认空：有时忘了哪天看的
 const jointNote = ref('');
 const planNote = ref('');
 const planPriority = ref(0);

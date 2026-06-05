@@ -33,12 +33,12 @@ const groups = computed(() => {
 const fmtMonthDay = (n) => fmtWatchedShort(n);
 
 // —— 自绘滚动条 ——
-const scroller = ref(null);
+const scroller = ref<HTMLElement | null>(null);
 const barShow = ref(false);
 const thumbW = ref(20);   // %
 const thumbL = ref(0);    // %
 function updateBar() {
-  const el = scroller.value;
+  const el = scroller.value!;
   if (!el) return;
   const { scrollWidth, clientWidth, scrollLeft } = el;
   if (scrollWidth <= clientWidth + 2) { barShow.value = false; return; }
@@ -48,14 +48,14 @@ function updateBar() {
 }
 // 自动隐藏：滚动/悬停/拖动时显示，空闲淡出（无溢出 barShow=false 直接不渲染）
 const active = ref(false);
-let hideTimer = null;
+let hideTimer: any = null;
 function showBar() { clearTimeout(hideTimer); active.value = true; }
 function scheduleHide(delay = 900) { clearTimeout(hideTimer); hideTimer = setTimeout(() => { if (!drag) active.value = false; }, delay); }
 function onScroll() { updateBar(); showBar(); scheduleHide(); }
 
-let drag = null;
+let drag: any = null;
 function onDown(e) {
-  const el = scroller.value;
+  const el = scroller.value!;
   drag = { x: e.clientX, scroll: el.scrollLeft, trackW: el.clientWidth };
   showBar();
   e.target.setPointerCapture?.(e.pointerId);
@@ -63,7 +63,7 @@ function onDown(e) {
 }
 function onMove(e) {
   if (!drag) return;
-  const el = scroller.value;
+  const el = scroller.value!;
   const travel = drag.trackW * (1 - thumbW.value / 100) || 1;
   el.scrollLeft = drag.scroll + ((e.clientX - drag.x) / travel) * (el.scrollWidth - el.clientWidth);
 }

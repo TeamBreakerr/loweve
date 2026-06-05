@@ -22,10 +22,10 @@ const marks = useMarks();
 const sessions = useSessions();
 const plan = usePlan();
 
-const rating = ref(null);
+const rating = ref<number | null>(null);
 const text = ref('');         // mark.comment / session.review(我那侧) / plan.note
 const jointNote = ref('');    // session.joint_note
-const watchedAt = ref(null);
+const watchedAt = ref<number | null>(null);
 const status = ref('');       // mark: watched|wish ; plan: pending|watching|done|dropped
 const priority = ref(0);
 const saving = ref(false);

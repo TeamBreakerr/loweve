@@ -2,9 +2,10 @@
 // 看完日期：一个输入框，填多少算多少——2024 / 2024-06 / 2024-06-02 都行。
 // v-model 是 YYYYMMDD 整数，月/日未知为 00；空 → null。下方实时回显识别到的精度。
 import { ref, watch, computed } from 'vue';
+import type { PropType } from 'vue';
 import { fmtWatched, decodeWatched } from '../utils/watchedDate';
 
-const props = defineProps({ modelValue: { type: Number, default: null } });
+const props = defineProps({ modelValue: { type: Number as PropType<number | null>, default: null } });
 const emit = defineEmits(['update:modelValue']);
 
 // 宽松解析：年 [分隔 月 [分隔 日]]，分隔符 - / . 或 年/月。月日越界则忽略/夹紧。

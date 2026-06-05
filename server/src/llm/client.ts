@@ -3,7 +3,7 @@ const DEFAULT_TIMEOUT_MS = 60000;
 
 export class LlmError extends Error {
   code: string; status: number; body: any;
-  constructor(code, status = 0, body = null) {
+  constructor(code, status = 0, body: any = null) {
     super(code);
     this.code = code;
     this.status = status;

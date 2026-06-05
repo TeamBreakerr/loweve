@@ -16,7 +16,7 @@ const sessions = useSessions();
 const modalOpen = ref(false);
 
 const editOpen = ref(false);
-const editRecord = ref(null);
+const editRecord = ref<any>(null);
 function openEdit(s) { editRecord.value = s; editOpen.value = true; }
 
 onMounted(() => sessions.load());

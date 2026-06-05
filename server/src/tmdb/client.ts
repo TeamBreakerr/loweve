@@ -44,7 +44,7 @@ export function expandPersonCredits(credits, personName) {
     popularity: c.popularity || 0,
     via,
   });
-  const films = [];
+  const films: any[] = [];
   for (const c of (credits.crew || [])) {
     if (c.job === 'Director' && (c.media_type === 'movie' || c.media_type === 'tv')) {
       films.push(map(c, `导演 ${personName}`));
@@ -55,7 +55,7 @@ export function expandPersonCredits(credits, personName) {
     .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
     .slice(0, 8);
   for (const c of cast) films.push(map(c, `主演 ${personName}`));
-  const seen = new Set();
+  const seen = new Set<string>();
   return films
     .filter(f => { const k = f.tmdb_type + ':' + f.tmdb_id; if (seen.has(k)) return false; seen.add(k); return true; })
     .sort((a, b) => b.popularity - a.popularity)
@@ -64,8 +64,8 @@ export function expandPersonCredits(credits, personName) {
 
 // 多个结果列表合并去重（按 tmdb_type:tmdb_id），保序，去掉内部 popularity 字段
 export function mergeDedupe(...lists) {
-  const seen = new Set();
-  const out = [];
+  const seen = new Set<string>();
+  const out: any[] = [];
   for (const list of lists) {
     for (const r of (list || [])) {
       const k = r.tmdb_type + ':' + r.tmdb_id;
@@ -75,7 +75,7 @@ export function mergeDedupe(...lists) {
   return out;
 }
 
-export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch, retryDelays = DEFAULT_RETRY_DELAYS }: { token?: string; key?: string; resolve?: () => any; fetch?: any; retryDelays?: number[] } = {}) {
+export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch, retryDelays = DEFAULT_RETRY_DELAYS }: { token?: string | null; key?: string | null; resolve?: () => any; fetch?: any; retryDelays?: number[] } = {}) {
   // 静态值或 resolve()（运行时从 DB 读，设置页改完即时生效）
   const getCfg = resolve || (() => ({ token, key }));
 
@@ -135,7 +135,7 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
         ...(tv.results || []).map(r => mapTitleResult(r, 'tv')),
       ].sort((a, b) => b.popularity - a.popularity);
 
-      let personResults = [];
+      let personResults: any[] = [];
       const person = (pe.results || [])[0];
       if (person?.id) {
         try {

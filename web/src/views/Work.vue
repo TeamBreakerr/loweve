@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ratingHref } from '../api/index';
 import { useIdentity } from '../stores/identity';
+import type { Work } from '../types';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
 import EditModal from '../components/EditModal.vue';
@@ -11,14 +12,14 @@ const route = useRoute();
 const router = useRouter();
 const identity = useIdentity();
 
-const work = ref(null);
+const work = ref<Work | null>(null);
 const loading = ref(false);
 const error = ref('');
 
 // 编辑已添加的记录（个人标记 / 共看记录）
 const editOpen = ref(false);
 const editType = ref('mark');
-const editRecord = ref(null);
+const editRecord = ref<any>(null);
 function openEdit(type, record) {
   editType.value = type;
   editRecord.value = { ...record, work: work.value };

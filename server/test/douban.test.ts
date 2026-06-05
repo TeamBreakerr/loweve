@@ -15,7 +15,7 @@ describe('createDoubanClient (HTTP)', () => {
       'subject_suggest': ok([{ id: '26384741', title: '湮灭', year: '2018', type: 'movie', sub_title: 'Annihilation' }]),
       'rexxar/api/v2/movie/26384741': ok({ rating: { value: 7.2, count: 390419 }, title: '湮灭' }),
     });
-    const r = await createDoubanClient({ fetch }).match({ title: '湮灭', year: 2018 });
+    const r: any = await createDoubanClient({ fetch }).match({ title: '湮灭', year: 2018 });
     assert.equal(r.douban_id, '26384741');
     assert.equal(r.rating, 7.2);
     assert.equal(r.votes, 390419);
@@ -27,7 +27,7 @@ describe('createDoubanClient (HTTP)', () => {
       'subject_suggest': ok([{ id: '35597426', title: '稍微想起一些', year: '2021', type: 'movie' }]),
       'rexxar': ok({ rating: { value: 7.7, count: 40498 } }),
     });
-    const r = await createDoubanClient({ fetch }).match({ title: '稍微想起一些', year: 2022 });
+    const r: any = await createDoubanClient({ fetch }).match({ title: '稍微想起一些', year: 2022 });
     assert.equal(r.douban_id, '35597426');
     assert.equal(r.rating, 7.7);
   });
@@ -38,10 +38,10 @@ describe('createDoubanClient (HTTP)', () => {
   });
 
   it('全名搜不到 → 退成"片名 年份"再搜（特别篇等冗长标题）', async () => {
-    const queries = [];
+    const queries: any[] = [];
     const fetch = async (url) => {
       if (url.includes('subject_suggest')) {
-        const q = decodeURIComponent(new URL(url).searchParams.get('q'));
+        const q = decodeURIComponent(new URL(url).searchParams.get('q') || '');
         queries.push(q);
         if (q === '世界奇妙物语2022年夏之特别篇') return ok([]);                 // 全名搜不到
         if (q === '世界奇妙物语 2022') return ok([{ id: '35914301', title: '世界奇妙物语 2022夏季特别篇', year: '2022', type: 'movie' }]);
@@ -50,7 +50,7 @@ describe('createDoubanClient (HTTP)', () => {
       if (url.includes('rexxar')) return ok({ rating: { value: 7.5, count: 1000 } });
       throw new Error('unexpected ' + url);
     };
-    const r = await createDoubanClient({ fetch }).match({ title: '世界奇妙物语2022年夏之特别篇', year: 2022 });
+    const r: any = await createDoubanClient({ fetch }).match({ title: '世界奇妙物语2022年夏之特别篇', year: 2022 });
     assert.equal(r.douban_id, '35914301');
     assert.deepEqual(queries, ['世界奇妙物语2022年夏之特别篇', '世界奇妙物语 2022']);  // 退化查询触发
   });
@@ -175,7 +175,7 @@ describe('Douban upgrade queue', () => {
     const first = insertMovie(db, { tmdb_id: 1, title: '第一部', year: 2020 });
     const second = insertMovie(db, { tmdb_id: 2, title: '第二部', year: 2021 });
     let releaseFirst;
-    const events = [];
+    const events: any[] = [];
     const douban = makeFakeDouban({
       match: async ({ title }) => {
         events.push(`start:${title}`);

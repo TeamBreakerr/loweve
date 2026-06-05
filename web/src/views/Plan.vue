@@ -17,7 +17,7 @@ const sessions = useSessions();
 const identity = useIdentity();
 
 const editOpen = ref(false);
-const editRecord = ref(null);
+const editRecord = ref<any>(null);
 function openEdit(p) { editRecord.value = p; editOpen.value = true; }
 
 const planFilter = ref('全部');
@@ -35,7 +35,7 @@ const planCounts = computed(() => {
 
 const addModalOpen = ref(false);
 const finishModalOpen = ref(false);
-const finishingPlan = ref(null);
+const finishingPlan = ref<any>(null);
 
 function startWatching(p) { plan.update(p.id, { status: 'watching' }); }
 function openFinish(p) {

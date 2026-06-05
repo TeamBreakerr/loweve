@@ -51,7 +51,7 @@ export async function cachePoster({
 
 function extFromUrl(url) {
   const pathname = new URL(url).pathname.toLowerCase();
-  const ext = pathname.match(/\.([a-z0-9]+)$/)?.[1];
+  const ext = pathname.match(/\.([a-z0-9]+)$/)?.[1] ?? '';
   return ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? (ext === 'jpeg' ? 'jpg' : ext) : '';
 }
 

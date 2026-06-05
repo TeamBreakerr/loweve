@@ -73,7 +73,7 @@ describe('GET /api/search', () => {
   });
 
   it('组合查兜底：结果稀疏 + 含空格 → 拆词分别搜再合并', async () => {
-    const calls = [];
+    const calls: any[] = [];
     const tmdb = makeFakeTmdb({
       search: async (q) => {
         calls.push(q);
@@ -97,7 +97,7 @@ describe('GET /api/search', () => {
   });
 
   it('结果充足时不触发拆词兜底', async () => {
-    const calls = [];
+    const calls: any[] = [];
     const tmdb = makeFakeTmdb({
       search: async (q) => {
         calls.push(q);

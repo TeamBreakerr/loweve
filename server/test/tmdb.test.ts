@@ -102,7 +102,7 @@ describe('createTmdbClient', () => {
   }
 
   it('search: v4 Bearer 优先 + include_adult + 合并 movie/tv', async () => {
-    const seen = [];
+    const seen: any[] = [];
     const fakeFetch = async (url, opts) => {
       seen.push({ url, auth: opts.headers.Authorization });
       const payload = url.includes('/search/movie')
@@ -193,7 +193,7 @@ describe('createTmdbClient', () => {
   });
 
   it('movieDetail / tvDetail 走对应 endpoint', async () => {
-    const seen = [];
+    const seen: any[] = [];
     const fakeFetch = async (url) => {
       seen.push(url);
       return { ok: true, status: 200, json: async () => ({ id: 1, title: 't', genres: [] }) };

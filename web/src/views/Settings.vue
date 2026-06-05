@@ -26,7 +26,7 @@ const canSave = computed(() => {
 async function saveNames() {
   saveStatus.value = 'saving';
   try {
-    const tasks = [];
+    const tasks: any[] = [];
     if (nameA.value.trim() !== identity.userById(1)?.display_name) {
       tasks.push(identity.rename(1, nameA.value.trim()));
     }

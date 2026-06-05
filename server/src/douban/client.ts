@@ -45,7 +45,7 @@ function yearScore(qy, cy) {
 
 // 从 subject_suggest 候选里选最佳；标题对不上（score 太低）返回 null，避免错配同名
 export function pickBest(cands, { title, year }) {
-  let best = null, bestScore = 0;
+  let best: any = null, bestScore = 0;
   for (const c of cands) {
     const ts = Math.max(titleScore(title, c.title), titleScore(title, c.sub_title));
     if (ts <= 0) continue;

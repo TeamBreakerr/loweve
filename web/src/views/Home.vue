@@ -18,7 +18,7 @@ const router = useRouter();
 
 const editOpen = ref(false);
 const editType = ref('session');
-const editRecord = ref(null);
+const editRecord = ref<any>(null);
 function openEdit(type, record) { editType.value = type; editRecord.value = record; editOpen.value = true; }
 
 const identity = useIdentity();
