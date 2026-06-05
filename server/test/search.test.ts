@@ -4,13 +4,13 @@ import { createApp } from '../src/app.js';
 import { makeTestDb, makeFakeTmdb } from './helpers.js';
 
 describe('GET /api/search', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
   it('正常 → 200 + results', async () => {
     const tmdb = makeFakeTmdb({
-      search: async (q) => ({
+      search: async (q: any) => ({
         results: [
           { tmdb_id: 1, tmdb_type: 'movie', title: '花束般的恋爱', year: 2022, poster_path: '/a.jpg', overview: '', vote_average: 8.2, original_title: null },
         ],
@@ -75,7 +75,7 @@ describe('GET /api/search', () => {
   it('组合查兜底：结果稀疏 + 含空格 → 拆词分别搜再合并', async () => {
     const calls: any[] = [];
     const tmdb = makeFakeTmdb({
-      search: async (q) => {
+      search: async (q: any) => {
         calls.push(q);
         if (q === '恋之罪 园子温') return { results: [] };       // 组合查 0 结果
         if (q === '恋之罪') return { results: [{ tmdb_id: 80662, tmdb_type: 'movie', title: '恋之罪' }] };
@@ -91,7 +91,7 @@ describe('GET /api/search', () => {
     assert.ok(calls.includes('恋之罪'));
     assert.ok(calls.includes('园子温'));
     // 合并后两部都在
-    const ids = res.body.results.map(r => r.tmdb_id);
+    const ids = res.body.results.map((r: any) => r.tmdb_id);
     assert.ok(ids.includes(80662));
     assert.ok(ids.includes(99));
   });
@@ -99,7 +99,7 @@ describe('GET /api/search', () => {
   it('结果充足时不触发拆词兜底', async () => {
     const calls: any[] = [];
     const tmdb = makeFakeTmdb({
-      search: async (q) => {
+      search: async (q: any) => {
         calls.push(q);
         return { results: [{ tmdb_id: 1, tmdb_type: 'movie' }, { tmdb_id: 2, tmdb_type: 'movie' }, { tmdb_id: 3, tmdb_type: 'movie' }] };
       },

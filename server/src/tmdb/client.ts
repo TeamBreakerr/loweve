@@ -5,7 +5,7 @@ const TIMEOUT_MS = 5000;
 
 export class TmdbError extends Error {
   code: string; status: number; body: any;
-  constructor(code, status, body) {
+  constructor(code: any, status: any, body: any) {
     super(code);
     this.code = code;
     this.status = status;
@@ -14,7 +14,7 @@ export class TmdbError extends Error {
 }
 
 // 把 search/movie 或 search/tv 的单条结果映射成统一形状（含内部 popularity 用于排序）
-export function mapTitleResult(r, type) {
+export function mapTitleResult(r: any, type: any) {
   return {
     tmdb_id: r.id,
     tmdb_type: type,
@@ -31,8 +31,8 @@ export function mapTitleResult(r, type) {
 
 // 从人物的 combined_credits 提取作品：导演作品(crew job=Director) + 主演作品(cast 前 8 热门)
 // 每条标 via「导演 X」/「主演 X」，便于前端展示"为什么出现"
-export function expandPersonCredits(credits, personName) {
-  const map = (c, via) => ({
+export function expandPersonCredits(credits: any, personName: any) {
+  const map = (c: any, via: any) => ({
     tmdb_id: c.id,
     tmdb_type: c.media_type === 'tv' ? 'tv' : 'movie',
     title: c.title || c.name || '',
@@ -51,8 +51,8 @@ export function expandPersonCredits(credits, personName) {
     }
   }
   const cast = (credits.cast || [])
-    .filter(c => c.media_type === 'movie' || c.media_type === 'tv')
-    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+    .filter((c: any) => c.media_type === 'movie' || c.media_type === 'tv')
+    .sort((a: any, b: any) => (b.popularity || 0) - (a.popularity || 0))
     .slice(0, 8);
   for (const c of cast) films.push(map(c, `主演 ${personName}`));
   const seen = new Set<string>();
@@ -63,7 +63,7 @@ export function expandPersonCredits(credits, personName) {
 }
 
 // 多个结果列表合并去重（按 tmdb_type:tmdb_id），保序，去掉内部 popularity 字段
-export function mergeDedupe(...lists) {
+export function mergeDedupe(...lists: any[]) {
   const seen = new Set<string>();
   const out: any[] = [];
   for (const list of lists) {
@@ -79,23 +79,23 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
   // 静态值或 resolve()（运行时从 DB 读，设置页改完即时生效）
   const getCfg = resolve || (() => ({ token, key }));
 
-  function buildUrl(path, params = {}) {
+  function buildUrl(path: any, params = {}) {
     const { token, key } = getCfg();
     const p = new URLSearchParams({ language: 'zh-CN', region: 'CN', ...params });
     if (!token && key) p.set('api_key', key);
     return `${BASE}${path}?${p}`;
   }
 
-  async function request(path, params) {
+  async function request(path: any, params: any) {
     const { token } = getCfg();
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     const url = buildUrl(path, params);
     const delays = [0, ...retryDelays];
-    let lastErr;
+    let lastErr: any;
     for (let i = 0; i < delays.length; i++) {
       if (delays[i] > 0) await new Promise(r => setTimeout(r, delays[i]));
-      let res;
+      let res: any;
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -120,7 +120,7 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
   return {
     isConfigured() { const c = getCfg(); return Boolean(c.token || c.key); },
 
-    async search(q) {
+    async search(q: any) {
       // 并行搜电影/剧/人物，开 include_adult（私有 app）。电影/剧失败→整体失败（route 转 502）；
       // 人物是可选增强（按导演/演员维度补充作品），失败静默忽略。
       const params = { query: q, include_adult: 'true' };
@@ -131,8 +131,8 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
       ]);
 
       const titleResults = [
-        ...(mv.results || []).map(r => mapTitleResult(r, 'movie')),
-        ...(tv.results || []).map(r => mapTitleResult(r, 'tv')),
+        ...(mv.results || []).map((r: any) => mapTitleResult(r, 'movie')),
+        ...(tv.results || []).map((r: any) => mapTitleResult(r, 'tv')),
       ].sort((a, b) => b.popularity - a.popularity);
 
       let personResults: any[] = [];
@@ -148,11 +148,11 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
       return { results: mergeDedupe(titleResults, personResults).slice(0, 30) };
     },
 
-    movieDetail(id) {
+    movieDetail(id: any) {
       return request(`/movie/${id}`, { append_to_response: 'external_ids' });
     },
 
-    tvDetail(id) {
+    tvDetail(id: any) {
       return request(`/tv/${id}`, { append_to_response: 'external_ids' });
     },
   };

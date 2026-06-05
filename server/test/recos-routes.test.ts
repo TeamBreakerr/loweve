@@ -4,25 +4,25 @@ import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
 import { makeTestDb, makeFakeTmdb, makeFakeBangumi, makeFakeDouban, makeFakeLlm } from './helpers.js';
 
-const FAKE_MOVIE = (id) => ({
+const FAKE_MOVIE = (id: any) => ({
   id, title: `片${id}`, original_title: `Movie ${id}`, release_date: '2020-01-01',
   overview: '', genres: [{ id: 18, name: '剧情' }], runtime: 100, origin_country: ['US'],
   vote_average: 8.0, vote_count: 100, poster_path: `/p${id}.jpg`, external_ids: { imdb_id: null },
 });
 
-function appWith(db, { chat }: any = {}) {
+function appWith(db: any, { chat }: any = {}) {
   const llm = makeFakeLlm({ chat: chat ?? (async () => JSON.stringify([
     { title: '片101', year: 2020, type: 'movie', reason: '你们都爱剧情片' },
   ])) });
   const tmdb = makeFakeTmdb({
-    search: async (q) => ({ results: [{ tmdb_id: Number(q.replace('片', '')), tmdb_type: 'movie', title: q, original_title: q, year: 2020 }] }),
-    movieDetail: async (id) => FAKE_MOVIE(id),
+    search: async (q: any) => ({ results: [{ tmdb_id: Number(q.replace('片', '')), tmdb_type: 'movie', title: q, original_title: q, year: 2020 }] }),
+    movieDetail: async (id: any) => FAKE_MOVIE(id),
   });
   return createApp({ db, tmdb, bangumi: makeFakeBangumi(), douban: {}, llm });   // douban 无 match：feedback/生成不触发异步入队
 }
 
 describe('recos routes', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 

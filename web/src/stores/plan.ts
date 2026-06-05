@@ -16,19 +16,19 @@ export const usePlan = defineStore('plan', () => {
     } finally { loading.value = false; }
   }
 
-  async function add(payload) {
+  async function add(payload: any) {
     await api('/api/plan', { method: 'POST', body: JSON.stringify(payload) });
     await load();
   }
 
-  async function update(id, patch) {
+  async function update(id: any, patch: any) {
     const updated = await api(`/api/plan/${id}`, { method: 'PUT', body: JSON.stringify(patch) });
     const idx = list.value.findIndex(p => p.id === id);
     if (idx >= 0) list.value[idx] = { ...list.value[idx], ...updated };
     return updated;
   }
 
-  async function remove(id) {
+  async function remove(id: any) {
     await api(`/api/plan/${id}`, { method: 'DELETE' });
     list.value = list.value.filter(p => p.id !== id);
   }

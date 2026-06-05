@@ -4,7 +4,7 @@ const TIMEOUT_MS = 5000;
 
 export class BangumiError extends Error {
   code: string; status: number; body: any;
-  constructor(code, status, body) {
+  constructor(code: any, status: any, body: any) {
     super(code);
     this.code = code;
     this.status = status;
@@ -24,7 +24,7 @@ export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fet
     };
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-    let res;
+    let res: any;
     try {
       res = await fetch(`${BASE}${path}`, {
         method, headers,
@@ -43,7 +43,7 @@ export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fet
     return res.json();
   }
 
-  function mapItem(s) {
+  function mapItem(s: any) {
     return {
       bangumi_id: s.id,
       name: s.name || null,
@@ -58,7 +58,7 @@ export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fet
   return {
     isConfigured() { return Boolean(getCfg().userAgent); },
 
-    async searchAnime(keyword) {
+    async searchAnime(keyword: any) {
       const data = await request('/v0/search/subjects?limit=10', {
         method: 'POST',
         body: { keyword, filter: { type: [2] } },
@@ -66,7 +66,7 @@ export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fet
       return (data.data || []).map(mapItem);
     },
 
-    async subjectDetail(id) {
+    async subjectDetail(id: any) {
       return mapItem(await request(`/v0/subjects/${id}`));
     },
   };

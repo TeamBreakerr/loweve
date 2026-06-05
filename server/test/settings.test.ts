@@ -6,7 +6,7 @@ import { createApp } from '../src/app.js';
 import { createLlmClient } from '../src/llm/client.js';
 
 describe('settings 运行时配置', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 

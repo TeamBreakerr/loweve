@@ -17,7 +17,7 @@ const modalOpen = ref(false);
 
 const editOpen = ref(false);
 const editRecord = ref<any>(null);
-function openEdit(s) { editRecord.value = s; editOpen.value = true; }
+function openEdit(s: any) { editRecord.value = s; editOpen.value = true; }
 
 onMounted(() => sessions.load());
 
@@ -34,7 +34,7 @@ const grouped = computed(() => {
   });
 });
 
-const fmtDate = (n) => fmtWatched(n, ' 看完');   // 按精度：2026 / 2026-03 / 2026-06-02
+const fmtDate = (n: any) => fmtWatched(n, ' 看完');   // 按精度：2026 / 2026-03 / 2026-06-02
 </script>
 
 <template>

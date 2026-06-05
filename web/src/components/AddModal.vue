@@ -63,11 +63,11 @@ function todayInt() {
   const d = new Date();
   return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 }
-function intToDateInput(n) {
+function intToDateInput(n: any) {
   if (!n) return '';
   return `${Math.floor(n/10000)}-${String(Math.floor(n/100)%100).padStart(2,'0')}-${String(n%100).padStart(2,'0')}`;
 }
-function dateInputToInt(s) {
+function dateInputToInt(s: any) {
   if (!s) return null;
   const [y,m,d] = s.split('-').map(Number);
   return y*10000 + m*100 + d;
@@ -117,7 +117,7 @@ const saveError = ref('');
 function close() { emit('update:modelValue', false); }
 
 // 评分输入清空后会留 '' 或 NaN，归一成 null，避免后端 400 invalid_rating
-function cleanRating(r) {
+function cleanRating(r: any) {
   return (r === '' || r == null || Number.isNaN(r)) ? null : r;
 }
 
@@ -173,7 +173,7 @@ async function save() {
 
 const targetLabel = computed(() => TARGETS.find(t => t.key === target.value)?.label || '');
 
-function ifSelected(c) { return selected.value && selected.value.tmdb_id === c.tmdb_id && selected.value.tmdb_type === c.tmdb_type; }
+function ifSelected(c: any) { return selected.value && selected.value.tmdb_id === c.tmdb_id && selected.value.tmdb_type === c.tmdb_type; }
 </script>
 
 <template>

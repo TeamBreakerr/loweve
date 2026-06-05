@@ -12,9 +12,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 const TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
 
 // 仅允许 https + 白名单 host；返回 URL 或 null
-export function parseAllowedUrl(u) {
+export function parseAllowedUrl(u: any) {
   if (typeof u !== 'string' || !u) return null;
-  let url;
+  let url: any;
   try { url = new URL(u); } catch { return null; }
   if (url.protocol !== 'https:' || !ALLOW.has(url.hostname)) return null;
   return url;
@@ -29,12 +29,12 @@ export function imgRoutes({ fetch = globalThis.fetch, dir = path.join(paths.post
     if (!url) return res.status(400).json({ error: 'bad_url' });
 
     let ext = path.extname(url.pathname).toLowerCase();
-    if (!TYPES[ext]) ext = '.jpg';
+    if (!TYPES[ext as keyof typeof TYPES]) ext = '.jpg';
     const key = crypto.createHash('sha1').update(u).digest('hex');
     const file = path.join(dir, key + ext);
 
     const send = () => {
-      res.set('Content-Type', TYPES[ext]);
+      res.set('Content-Type', TYPES[ext as keyof typeof TYPES]);
       res.set('Cache-Control', 'public, max-age=31536000, immutable');
       fs.createReadStream(file).pipe(res);
     };

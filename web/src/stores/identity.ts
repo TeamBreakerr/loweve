@@ -31,7 +31,7 @@ export const useIdentity = defineStore('identity', () => {
     loaded.value = true;
   }
 
-  async function switchMe(id) {
+  async function switchMe(id: any) {
     const res = await fetch('/api/me/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -45,7 +45,7 @@ export const useIdentity = defineStore('identity', () => {
     }
   }
 
-  function setViewing(id) {
+  function setViewing(id: any) {
     viewing.value = id;
     try { localStorage.setItem(VIEW_KEY, String(id)); } catch (_) {}
   }
@@ -54,7 +54,7 @@ export const useIdentity = defineStore('identity', () => {
     if (me.value) setViewing(me.value);
   }
 
-  async function rename(id, displayName) {
+  async function rename(id: any, displayName: any) {
     const res = await fetch(`/api/users/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -68,8 +68,8 @@ export const useIdentity = defineStore('identity', () => {
     return updated;
   }
 
-  const userById = (id) => users.value.find(u => u.id === id);
-  const whoKey = (id) => id === 1 ? 'a' : id === 2 ? 'b' : '';   // 用户1/2 的稳定 key（驱动配色 data-who）
+  const userById = (id: any) => users.value.find(u => u.id === id);
+  const whoKey = (id: any) => id === 1 ? 'a' : id === 2 ? 'b' : '';   // 用户1/2 的稳定 key（驱动配色 data-who）
 
   const isViewingPartner = computed(() => me.value != null && viewing.value != null && me.value !== viewing.value);
   const meName = computed(() => userById(me.value)?.display_name || '');

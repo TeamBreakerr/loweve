@@ -9,7 +9,7 @@ const props = defineProps({ modelValue: { type: Number as PropType<number | null
 const emit = defineEmits(['update:modelValue']);
 
 // 宽松解析：年 [分隔 月 [分隔 日]]，分隔符 - / . 或 年/月。月日越界则忽略/夹紧。
-function parseWatched(str) {
+function parseWatched(str: any) {
   const m = String(str || '').trim().match(/^(\d{1,4})\s*[-/.年]?\s*(\d{1,2})?\s*[-/.月]?\s*(\d{1,2})?/);
   if (!m) return null;
   const y = parseInt(m[1], 10);
@@ -24,7 +24,7 @@ function parseWatched(str) {
 const text = ref('');
 // 外部值变化（打开编辑）→ 回填文本；自身输入引起的变化不覆盖（避免边打边重排）
 watch(() => props.modelValue, (n) => { if (parseWatched(text.value) !== n) text.value = fmtWatched(n); }, { immediate: true });
-function onInput(e) { text.value = e.target.value; emit('update:modelValue', parseWatched(e.target.value)); }
+function onInput(e: any) { text.value = e.target.value; emit('update:modelValue', parseWatched(e.target.value)); }
 
 const hint = computed(() => {
   const { year, month, day } = decodeWatched(props.modelValue);

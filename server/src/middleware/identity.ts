@@ -7,7 +7,7 @@ export const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
  * 不强制登录 —— 路由自己决定是否拒绝 null。
  */
 export function identityMiddleware() {
-  return (req, _res, next) => {
+  return (req: any, _res: any, next: any) => {
     const raw = req.cookies?.[COOKIE_NAME];
     const n = parseInt(raw, 10);
     req.user_id = (n === 1 || n === 2) ? n : null;

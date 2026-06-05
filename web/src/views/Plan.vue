@@ -18,14 +18,14 @@ const identity = useIdentity();
 
 const editOpen = ref(false);
 const editRecord = ref<any>(null);
-function openEdit(p) { editRecord.value = p; editOpen.value = true; }
+function openEdit(p: any) { editRecord.value = p; editOpen.value = true; }
 
 const planFilter = ref('全部');
 const planFilters = ['全部', '待看', '在看', '弃了'];
 const STATUS_MAP = { '全部': null, '待看': 'pending', '在看': 'watching', '弃了': 'dropped' };
 
 const visible = computed(() => {
-  const s = STATUS_MAP[planFilter.value];
+  const s = STATUS_MAP[planFilter.value as keyof typeof STATUS_MAP];
   return s ? plan.list.filter(p => p.status === s) : plan.list;
 });
 const planCounts = computed(() => {
@@ -37,8 +37,8 @@ const addModalOpen = ref(false);
 const finishModalOpen = ref(false);
 const finishingPlan = ref<any>(null);
 
-function startWatching(p) { plan.update(p.id, { status: 'watching' }); }
-function openFinish(p) {
+function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
+function openFinish(p: any) {
   finishingPlan.value = { id: p.id, work: p.work };
   finishModalOpen.value = true;
 }
@@ -49,7 +49,7 @@ async function onFinished() {
 
 onMounted(() => plan.load());
 
-function statusZh(s) { return { pending:'待看', watching:'在看', done:'看完', dropped:'弃了' }[s] || s; }
+function statusZh(s: any) { return ({ pending:'待看', watching:'在看', done:'看完', dropped:'弃了' } as Record<string, string>)[s] || s; }
 </script>
 
 <template>
@@ -67,7 +67,7 @@ function statusZh(s) { return { pending:'待看', watching:'在看', done:'看�
       <div class="filters">
         <button v-for="f in planFilters" :key="f" class="chip"
                 :class="{ 'is-active': planFilter === f }" @click="planFilter = f">
-          {{ f }}<span class="count">{{ planCounts[f] }}</span>
+          {{ f }}<span class="count">{{ (planCounts as any)[f] }}</span>
         </button>
       </div>
       <div class="section__actions">

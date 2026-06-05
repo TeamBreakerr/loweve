@@ -2,7 +2,7 @@
 // 所有 fetch 走这里。识别 viewing != me 时自动追加 ?as_user= 参数。
 import { useIdentity } from '../stores/identity';
 
-function withViewing(url) {
+function withViewing(url: any) {
   const identity = useIdentity();
   if (identity.viewing && identity.viewing !== identity.me) {
     const sep = url.includes('?') ? '&' : '?';
@@ -30,15 +30,15 @@ export async function api(url: string, opts: RequestInit = {}) {
 }
 
 // 海报路径工具
-export const tmdbPoster = (path, size = 'w500') =>
+export const tmdbPoster = (path: any, size = 'w500') =>
   path ? `https://image.tmdb.org/t/p/${size}${path.startsWith('/') ? path : '/' + path}` : null;
 
 // 外链海报走本站代理+缓存（没梯子也能看）；本地/相对路径原样返回
-export const imgProxy = (u) =>
+export const imgProxy = (u: any) =>
   !u ? '' : (/^https?:\/\//.test(u) ? '/api/img?u=' + encodeURIComponent(u) : u);
 
 // 评分跳转链接：豆瓣/Bangumi 评分点击跳到该平台的影片条目；tmdb 无外链返回空
-export function ratingHref(w) {
+export function ratingHref(w: any) {
   if (!w) return '';
   if (w.rating_source === 'douban') return w.douban_url || (w.douban_id ? `https://movie.douban.com/subject/${w.douban_id}/` : '');
   if (w.rating_source === 'bangumi' && w.bangumi_id) return `https://bgm.tv/subject/${w.bangumi_id}`;

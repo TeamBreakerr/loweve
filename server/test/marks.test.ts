@@ -10,7 +10,7 @@ const FAKE_MOVIE = {
   poster_path: null, external_ids: { imdb_id: null },
 };
 
-function seedWork(db, tmdb_id = 1) {
+function seedWork(db: any, tmdb_id = 1) {
   // 直接 INSERT 一条 work（绕过 tmdb，给已知 work_id 用）
   const now = Date.now();
   const info = db.prepare(`INSERT INTO works (tmdb_id, tmdb_type, title, rating_source, tmdb_raw, fetched_at, updated_at) VALUES (?, 'movie', 'X', 'tmdb', '{}', ?, ?)`).run(tmdb_id, now, now);
@@ -18,7 +18,7 @@ function seedWork(db, tmdb_id = 1) {
 }
 
 describe('POST /api/marks (Form A: work_id)', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -77,7 +77,7 @@ describe('POST /api/marks (Form A: work_id)', () => {
 });
 
 describe('POST /api/marks (Form B: tmdb_id + tmdb_type)', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -97,7 +97,7 @@ describe('POST /api/marks (Form B: tmdb_id + tmdb_type)', () => {
 });
 
 describe('GET /api/marks', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -135,7 +135,7 @@ describe('GET /api/marks', () => {
 });
 
 describe('PUT/DELETE /api/marks/:id', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 

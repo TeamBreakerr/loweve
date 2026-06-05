@@ -1,13 +1,13 @@
 // 看完日期：存成 YYYYMMDD 整数，月/日未知填 00（只到年=YYYY0000，到月=YYYYMM00）。
 // 复用现有整数列：排序与「按年分组」照常工作。
 
-export function decodeWatched(n) {
+export function decodeWatched(n: any) {
   if (!n) return { year: null, month: 0, day: 0 };
   return { year: Math.floor(n / 10000), month: Math.floor(n / 100) % 100, day: n % 100 };
 }
 
 // year 为空 → null（无日期）；月需有年、日需有月，否则置 0；日按当月天数夹紧。
-export function encodeWatched(year, month, day) {
+export function encodeWatched(year: any, month: any, day: any) {
   const y = parseInt(year, 10);
   if (!y) return null;
   let m = parseInt(month, 10) || 0;
@@ -21,10 +21,10 @@ export function encodeWatched(year, month, day) {
   return y * 10000 + m * 100 + d;
 }
 
-const pad = (x) => String(x).padStart(2, '0');
+const pad = (x: any) => String(x).padStart(2, '0');
 
 // 完整形式，按精度："2026" / "2026-03" / "2026-06-02"（可加后缀如 " 看完"）
-export function fmtWatched(n, suffix = '') {
+export function fmtWatched(n: any, suffix = '') {
   const { year, month, day } = decodeWatched(n);
   if (!year) return '';
   let s = `${year}`;
@@ -34,7 +34,7 @@ export function fmtWatched(n, suffix = '') {
 }
 
 // 紧凑形式（首页小卡）：完整→"MM-DD"，到月→"YYYY-MM"，到年→"YYYY"
-export function fmtWatchedShort(n) {
+export function fmtWatchedShort(n: any) {
   const { year, month, day } = decodeWatched(n);
   if (!year) return '';
   if (!month) return `${year}`;

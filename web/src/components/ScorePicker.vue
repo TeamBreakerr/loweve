@@ -5,7 +5,7 @@ defineProps({
   label: { type: String, default: '' },
 });
 const emit = defineEmits(['update:modelValue']);
-function pick(n) { emit('update:modelValue', n); }
+function pick(n: any) { emit('update:modelValue', n); }
 function clear() { emit('update:modelValue', null); }
 </script>
 

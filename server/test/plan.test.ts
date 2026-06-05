@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
 import { makeTestDb, makeFakeTmdb } from './helpers.js';
 
-function seedWork(db, tmdb_id = 1) {
+function seedWork(db: any, tmdb_id = 1) {
   const now = Date.now();
   return db.prepare(`INSERT INTO works (tmdb_id, tmdb_type, title, rating_source, tmdb_raw, fetched_at, updated_at) VALUES (?, 'movie', 'X', 'tmdb', '{}', ?, ?)`).run(tmdb_id, now, now).lastInsertRowid;
 }
 
 describe('POST /api/plan', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -36,7 +36,7 @@ describe('POST /api/plan', () => {
 });
 
 describe('GET /api/plan', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -63,7 +63,7 @@ describe('GET /api/plan', () => {
 });
 
 describe('PUT/DELETE /api/plan/:id', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -93,7 +93,7 @@ describe('PUT/DELETE /api/plan/:id', () => {
 });
 
 describe('POST /api/sessions?from_plan=<id> 闭环', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 

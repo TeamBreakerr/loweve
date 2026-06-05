@@ -8,8 +8,8 @@ describe('createBangumiClient', () => {
   });
 
   it('searchAnime: POST /v0/search/subjects with type=[2] + UA header', async () => {
-    let captured;
-    const fakeFetch = async (url, opts) => {
+    let captured: any;
+    const fakeFetch = async (url: any, opts: any) => {
       captured = { url, opts };
       return { ok: true, status: 200, json: async () => ({ data: [] }) };
     };

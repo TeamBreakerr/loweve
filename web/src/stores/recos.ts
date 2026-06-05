@@ -16,7 +16,7 @@ export const useRecos = defineStore('recos', () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  function apply(data) {
+  function apply(data: any) {
     items.value = data.items || [];
     batchId.value = data.batch_id ?? null;
     recType.value = data.rec_type || 'standing';
@@ -37,15 +37,15 @@ export const useRecos = defineStore('recos', () => {
     finally { loading.value = false; }
   }
 
-  async function custom(prompt) {
+  async function custom(prompt: any) {
     loading.value = true;
     try { apply(await api('/api/recos/custom', { method: 'POST', body: JSON.stringify({ prompt }) })); }
     catch (e) { error.value = e.body?.error || e.message; }
     finally { loading.value = false; }
   }
 
-  async function feedback(rec, emitName) {
-    const action = ACTION[emitName];
+  async function feedback(rec: any, emitName: any) {
+    const action = ACTION[emitName as keyof typeof ACTION];
     if (!action) return;
     items.value = items.value.filter(i => i.id !== rec.id);   // 本地立即移除
     try {

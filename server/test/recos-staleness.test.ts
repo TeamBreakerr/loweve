@@ -7,7 +7,7 @@ import { clearRecosStale, isRecosStale } from '../src/recos/state.js';
 
 const FAKE_MOVIE = { id: 5, title: '片5', original_title: 'M5', release_date: '2020-01-01', overview: '', genres: [{ id: 18, name: '剧情' }], runtime: 100, origin_country: ['US'], vote_average: 8, vote_count: 10, poster_path: '/p.jpg', external_ids: { imdb_id: null } };
 
-function app(db) {
+function app(db: any) {
   return createApp({
     db,
     tmdb: makeFakeTmdb({ movieDetail: async () => FAKE_MOVIE }),
@@ -16,7 +16,7 @@ function app(db) {
 }
 
 describe('recos staleness 钩子', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 

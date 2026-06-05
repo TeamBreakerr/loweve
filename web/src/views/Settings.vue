@@ -41,7 +41,7 @@ async function saveNames() {
   }
 }
 
-function pickIdentity(id) { identity.switchMe(id); }
+function pickIdentity(id: any) { identity.switchMe(id); }
 
 // —— 服务配置（LLM / TMDB / Bangumi 凭证）：存服务器、覆盖 env、改完即时生效 ——
 const svc = ref<Partial<ApiSettings>>({});   // GET /api/settings（密钥脱敏）

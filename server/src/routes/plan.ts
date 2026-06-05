@@ -12,19 +12,19 @@ export function planRoutes() {
   router.get('/', (req, res) => {
     const db = req.app.locals.db;
     const status = req.query.status as string;
-    let rows;
+    let rows: any;
     if (status) {
       if (!VALID_STATUS.includes(status)) return res.status(400).json({ error: 'invalid_status' });
       rows = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items WHERE status = ? ORDER BY priority DESC, created_at DESC`).all(status);
     } else {
       rows = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items ORDER BY priority DESC, created_at DESC`).all();
     }
-    const workIds = [...new Set(rows.map(r => r.work_id))];
+    const workIds = [...new Set(rows.map((r: any) => r.work_id))];
     const works = workIds.length
       ? db.prepare(`SELECT * FROM works WHERE id IN (${workIds.map(() => '?').join(',')})`).all(...workIds)
       : [];
-    const workMap = new Map(works.map(w => [w.id, w]));
-    res.json({ items: rows.map(r => ({ ...r, work: workMap.get(r.work_id) })) });
+    const workMap = new Map(works.map((w: any) => [w.id, w]));
+    res.json({ items: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) });
   });
 
   router.post('/', async (req, res) => {

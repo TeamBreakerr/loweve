@@ -20,21 +20,21 @@ export const useMarks = defineStore('marks', () => {
     } finally { loading.value = false; }
   }
 
-  async function add(payload) {
+  async function add(payload: any) {
     const created = await api('/api/marks', { method: 'POST', body: JSON.stringify(payload) });
     // 重新拉一次以拿到 work join
     await load();
     return created;
   }
 
-  async function update(id, patch) {
+  async function update(id: any, patch: any) {
     const updated = await api(`/api/marks/${id}`, { method: 'PUT', body: JSON.stringify(patch) });
     const idx = list.value.findIndex(m => m.id === id);
     if (idx >= 0) list.value[idx] = { ...list.value[idx], ...updated };
     return updated;
   }
 
-  async function remove(id) {
+  async function remove(id: any) {
     await api(`/api/marks/${id}`, { method: 'DELETE' });
     list.value = list.value.filter(m => m.id !== id);
   }

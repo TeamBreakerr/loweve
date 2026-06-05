@@ -5,7 +5,7 @@ import { markRecosStale } from '../recos/state.js';
 
 const SESSION_COLS = 'id, work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at';
 
-function validateRating(r) { return r == null || (Number.isInteger(r) && r >= 1 && r <= 10); }
+function validateRating(r: any) { return r == null || (Number.isInteger(r) && r >= 1 && r <= 10); }
 
 export function sessionsRoutes() {
   const router = Router();
@@ -13,12 +13,12 @@ export function sessionsRoutes() {
   router.get('/', (req, res) => {
     const db = req.app.locals.db;
     const rows = db.prepare(`SELECT ${SESSION_COLS} FROM couple_sessions ORDER BY watched_at DESC, id DESC`).all();
-    const workIds = [...new Set(rows.map(r => r.work_id))];
+    const workIds = [...new Set(rows.map((r: any) => r.work_id))];
     const works = workIds.length
       ? db.prepare(`SELECT * FROM works WHERE id IN (${workIds.map(() => '?').join(',')})`).all(...workIds)
       : [];
-    const workMap = new Map(works.map(w => [w.id, w]));
-    res.json({ sessions: rows.map(r => ({ ...r, work: workMap.get(r.work_id) })) });
+    const workMap = new Map(works.map((w: any) => [w.id, w]));
+    res.json({ sessions: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) });
   });
 
   router.post('/', async (req, res) => {

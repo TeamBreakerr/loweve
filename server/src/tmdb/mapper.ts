@@ -1,24 +1,24 @@
 // server/src/tmdb/mapper.js
 // TMDB payload → loweve works 表字段
 
-export function isAnime(payload) {
-  const genreIds = (payload.genres || []).map(g => g.id);
+export function isAnime(payload: any) {
+  const genreIds = (payload.genres || []).map((g: any) => g.id);
   const hasAnimation = genreIds.includes(16);
   const origins = payload.origin_country || [];
-  const isAsian = origins.some(c => ['JP','CN','KR'].includes(c));
+  const isAsian = origins.some((c: any) => ['JP','CN','KR'].includes(c));
   return (hasAnimation && isAsian) ? 1 : 0;
 }
 
-function posterUrl(path) {
+function posterUrl(path: any) {
   return path ? `https://image.tmdb.org/t/p/w500${path}` : null;
 }
 
-function commonFields(payload, tmdb_type) {
+function commonFields(payload: any, tmdb_type: any) {
   return {
     tmdb_id: payload.id,
     tmdb_type,
     overview: payload.overview || null,
-    genres: JSON.stringify((payload.genres || []).map(g => g.name)),
+    genres: JSON.stringify((payload.genres || []).map((g: any) => g.name)),
     is_anime: isAnime(payload),
     primary_rating: typeof payload.vote_average === 'number' ? payload.vote_average : null,
     primary_rating_count: typeof payload.vote_count === 'number' ? payload.vote_count : null,
@@ -34,7 +34,7 @@ function commonFields(payload, tmdb_type) {
   };
 }
 
-export function mapMovie(payload) {
+export function mapMovie(payload: any) {
   return {
     ...commonFields(payload, 'movie'),
     title: payload.title || payload.original_title || '',
@@ -44,7 +44,7 @@ export function mapMovie(payload) {
   };
 }
 
-export function mapTv(payload) {
+export function mapTv(payload: any) {
   return {
     ...commonFields(payload, 'tv'),
     title: payload.name || payload.original_name || '',

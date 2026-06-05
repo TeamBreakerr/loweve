@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
 import { makeTestDb, makeFakeTmdb } from './helpers.js';
 
-function seedWork(db) {
+function seedWork(db: any) {
   const now = Date.now();
   return db.prepare(`INSERT INTO works (tmdb_id, tmdb_type, title, rating_source, tmdb_raw, fetched_at, updated_at) VALUES (1, 'movie', 'X', 'tmdb', '{}', ?, ?)`).run(now, now).lastInsertRowid;
 }
 
 describe('POST /api/sessions', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -82,7 +82,7 @@ describe('POST /api/sessions', () => {
 });
 
 describe('GET /api/sessions', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -101,7 +101,7 @@ describe('GET /api/sessions', () => {
 });
 
 describe('PUT/DELETE /api/sessions/:id', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 

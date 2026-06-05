@@ -18,7 +18,7 @@ describe('img 海报代理', () => {
     assert.equal(parseAllowedUrl(''), null);
   });
 
-  function appWith(fetch, dir) {
+  function appWith(fetch: any, dir: any) {
     const app = express();
     app.use('/api/img', imgRoutes({ fetch, dir }));
     return app;

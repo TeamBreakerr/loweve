@@ -15,27 +15,27 @@ export const SETTING_FIELDS = [
 ];
 const ALLOWED = new Set(SETTING_FIELDS.map(f => f.key));
 
-function override(db, key) {
+function override(db: any, key: any) {
   const v = getState(db, 'cfg:' + key);
   return v && v.length ? v : null;
 }
 
 // 合并后的有效配置（DB 覆盖 > env），各 client 的 resolve 用它
-export function effectiveConfig(db) {
+export function effectiveConfig(db: any) {
   const e: Record<string, any> = {};
-  for (const f of SETTING_FIELDS) e[f.env] = override(db, f.key) ?? config[f.env];
+  for (const f of SETTING_FIELDS) e[f.env] = override(db, f.key) ?? config[f.env as keyof typeof config];
   return e;
 }
 
 // 给前端：密钥只回布尔「是否已配置」+ 来源；非密钥回明文。附整体就绪状态。
-export function readForApi(db) {
+export function readForApi(db: any) {
   const eff = effectiveConfig(db);
   const out: Record<string, any> = {};
   for (const f of SETTING_FIELDS) {
     const val = eff[f.env];
     if (f.secret) out[f.key + '_set'] = Boolean(val);
     else out[f.key] = val || '';
-    out[f.key + '_source'] = override(db, f.key) ? 'db' : (config[f.env] ? 'env' : 'unset');
+    out[f.key + '_source'] = override(db, f.key) ? 'db' : (config[f.env as keyof typeof config] ? 'env' : 'unset');
   }
   out.llm_ready = Boolean(eff.llmBaseUrl && eff.llmApiKey && eff.llmModel);
   out.tmdb_ready = Boolean(eff.tmdbToken || eff.tmdbKey);
@@ -43,7 +43,7 @@ export function readForApi(db) {
 }
 
 // patch: { key: value }；只处理白名单 key；空串=清除覆盖回退 env
-export function updateSettings(db, patch) {
+export function updateSettings(db: any, patch: any) {
   for (const [k, v] of Object.entries(patch || {})) {
     if (ALLOWED.has(k) && typeof v === 'string') setState(db, 'cfg:' + k, v.trim());
   }

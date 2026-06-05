@@ -6,7 +6,7 @@ import { upsertWork } from './works.js';
 
 const ACTIONS = { want: 'interested', not_interested: 'not_interested', already_seen: 'already_seen' };
 
-function depsOf(req) {
+function depsOf(req: any) {
   return {
     llm: req.app.locals.llm,
     tmdb: req.app.locals.tmdb,
@@ -45,7 +45,7 @@ export function recosRoutes() {
     const db = req.app.locals.db;
     const id = parseInt(req.params.id, 10);
     const action = req.body?.action;
-    const feedback = ACTIONS[action];
+    const feedback = ACTIONS[action as keyof typeof ACTIONS];
     if (!feedback) return res.status(400).json({ error: 'invalid_action' });
 
     const rec = db.prepare('SELECT id, work_id FROM recommendations WHERE id = ?').get(id);

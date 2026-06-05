@@ -5,7 +5,7 @@ import { createApp } from '../src/app.js';
 import { makeTestDb } from './helpers.js';
 
 describe('GET /api/me', () => {
-  let app, db;
+  let app: any, db: any;
   beforeEach(() => { db = makeTestDb({ userA: '小爱', userB: '小波' }); app = createApp({ db }); });
   afterEach(() => db.close());
 
@@ -26,7 +26,7 @@ describe('GET /api/me', () => {
 });
 
 describe('POST /api/me/switch', () => {
-  let app, db;
+  let app: any, db: any;
   beforeEach(() => { db = makeTestDb(); app = createApp({ db }); });
   afterEach(() => db.close());
 

@@ -30,7 +30,7 @@ const groups = computed(() => {
     return b[0].localeCompare(a[0]);
   });
 });
-const fmtMonthDay = (n) => fmtWatchedShort(n);
+const fmtMonthDay = (n: any) => fmtWatchedShort(n);
 
 // —— 自绘滚动条 ——
 const scroller = ref<HTMLElement | null>(null);
@@ -54,14 +54,14 @@ function scheduleHide(delay = 900) { clearTimeout(hideTimer); hideTimer = setTim
 function onScroll() { updateBar(); showBar(); scheduleHide(); }
 
 let drag: any = null;
-function onDown(e) {
+function onDown(e: any) {
   const el = scroller.value!;
   drag = { x: e.clientX, scroll: el.scrollLeft, trackW: el.clientWidth };
   showBar();
   e.target.setPointerCapture?.(e.pointerId);
   e.preventDefault();
 }
-function onMove(e) {
+function onMove(e: any) {
   if (!drag) return;
   const el = scroller.value!;
   const travel = drag.trackW * (1 - thumbW.value / 100) || 1;

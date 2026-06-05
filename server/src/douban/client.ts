@@ -10,7 +10,7 @@ const UA_MOBILE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleW
 
 export class DoubanError extends Error {
   code: string; status: number; body: any;
-  constructor(code, status, body) {
+  constructor(code: any, status: any, body: any) {
     super(code);
     this.code = code;
     this.status = status;
@@ -18,10 +18,10 @@ export class DoubanError extends Error {
   }
 }
 
-const norm = (s) => String(s || '').toLowerCase().replace(/[\s·:：!！?？.,。、…\-—_()（）\[\]【】"'""'']/g, '');
+const norm = (s: any) => String(s || '').toLowerCase().replace(/[\s·:：!！?？.,。、…\-—_()（）\[\]【】"'""'']/g, '');
 
 // 候选标题与查询标题的字符集重合比例（占查询标题）
-function charOverlap(nq, nc) {
+function charOverlap(nq: any, nc: any) {
   if (!nq || !nc) return 0;
   const sc = new Set(nc);
   let inter = 0;
@@ -29,7 +29,7 @@ function charOverlap(nq, nc) {
   return inter / new Set(nq).size;
 }
 
-function titleScore(query, cand) {
+function titleScore(query: any, cand: any) {
   const nq = norm(query), nc = norm(cand);
   if (!nq || !nc) return 0;
   if (nq === nc) return 1;
@@ -37,14 +37,14 @@ function titleScore(query, cand) {
   return charOverlap(nq, nc) >= 0.6 ? 0.6 : 0;
 }
 
-function yearScore(qy, cy) {
+function yearScore(qy: any, cy: any) {
   if (!qy || !cy) return 0.5;           // 缺年份 → 中性
   const d = Math.abs(qy - cy);
   return d <= 1 ? 1 : d <= 3 ? 0.5 : 0; // 豆瓣年份常与 TMDB 差 1
 }
 
 // 从 subject_suggest 候选里选最佳；标题对不上（score 太低）返回 null，避免错配同名
-export function pickBest(cands, { title, year }) {
+export function pickBest(cands: any, { title, year }: any) {
   let best: any = null, bestScore = 0;
   for (const c of cands) {
     const ts = Math.max(titleScore(title, c.title), titleScore(title, c.sub_title));
@@ -56,10 +56,10 @@ export function pickBest(cands, { title, year }) {
 }
 
 export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }: { fetch?: any; timeoutMs?: number } = {}) {
-  async function getJson(url, headers) {
+  async function getJson(url: any, headers: any) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-    let res;
+    let res: any;
     try {
       res = await fetch(url, { headers, signal: ctrl.signal });
     } catch (e) {
@@ -71,14 +71,14 @@ export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAU
     return res.json();
   }
 
-  async function suggest(q) {
+  async function suggest(q: any) {
     const sug = await getJson(
       'https://movie.douban.com/j/subject_suggest?q=' + encodeURIComponent(q),
       { 'User-Agent': UA_PC, Referer: 'https://movie.douban.com/' });
     return Array.isArray(sug) ? sug.filter(s => s && s.id && (s.type === 'movie' || s.type === 'tv')) : [];
   }
 
-  async function match({ title, year }) {
+  async function match({ title, year }: any) {
     let best = pickBest(await suggest(title), { title, year });
     if (!best) {
       // 全名搜不到（常见于"片名+年份+特别篇/季"这类冗长标题）→ 退成"片名 年份"再搜一次

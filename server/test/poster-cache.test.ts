@@ -5,7 +5,7 @@ import path from 'node:path';
 import { cachePoster } from '../src/posters/cache.js';
 
 describe('cachePoster', () => {
-  let dir;
+  let dir: any;
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loweve-posters-'));
   });
@@ -14,8 +14,8 @@ describe('cachePoster', () => {
   });
 
   it('downloads a poster once and returns same-origin API URL', async () => {
-    let captured;
-    const fetch = async (url, opts) => {
+    let captured: any;
+    const fetch = async (url: any, opts: any) => {
       captured = { url, opts };
       return {
         ok: true,

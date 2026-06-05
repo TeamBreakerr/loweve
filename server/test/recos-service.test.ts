@@ -4,7 +4,7 @@ import { makeTestDb, makeFakeTmdb, makeFakeBangumi, makeFakeDouban, makeFakeLlm 
 import { generateStanding, getCurrentRecos, gatherContext } from '../src/recos/service.js';
 import { markRecosStale, isRecosStale, getStandingBatchId } from '../src/recos/state.js';
 
-const FAKE_MOVIE = (id) => ({
+const FAKE_MOVIE = (id: any) => ({
   id, title: `片${id}`, original_title: `Movie ${id}`, release_date: '2020-01-01',
   overview: '', genres: [{ id: 18, name: '剧情' }], runtime: 100, origin_country: ['US'],
   vote_average: 8.0, vote_count: 100, poster_path: `/p${id}.jpg`, external_ids: { imdb_id: null },
@@ -18,11 +18,11 @@ function deps({ chat }: any = {}) {
       { title: '片102', year: 2020, type: 'movie', is_anime: false, reason: '导演同款' },
     ])) }),
     tmdb: makeFakeTmdb({
-      search: async (q) => ({ results: [{
+      search: async (q: any) => ({ results: [{
         tmdb_id: q === '片101' ? 101 : 102, tmdb_type: 'movie',
         title: q, original_title: q, year: 2020,
       }] }),
-      movieDetail: async (id) => FAKE_MOVIE(id),
+      movieDetail: async (id: any) => FAKE_MOVIE(id),
     }),
     bangumi: makeFakeBangumi(),
     douban: {},   // 推荐不再 skipUpgrade；这里用无 match 的 douban，避免电影异步入队污染测试
@@ -30,7 +30,7 @@ function deps({ chat }: any = {}) {
 }
 
 describe('recos/service', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -91,7 +91,7 @@ describe('recos/service', () => {
     const w = await (await import('../src/routes/works.js')).upsertWork(db, d.tmdb, d.bangumi, d.douban, { tmdb_id: 101, tmdb_type: 'movie', skipUpgrade: true });
     db.prepare(`INSERT INTO plan_items (work_id, added_by, priority, status, created_at, updated_at) VALUES (?,1,0,'pending',?,?)`).run(w.id, Date.now(), Date.now());
     const out = await generateStanding(db, d, {});
-    assert.deepEqual(out.items.map(i => i.title), ['片102']);   // 101 被排除
+    assert.deepEqual(out.items.map((i: any) => i.title), ['片102']);   // 101 被排除
   });
 
   it('避雷池作品（feedback not_interested）硬过滤，LLM 重复返回也不再推荐', async () => {
@@ -101,7 +101,7 @@ describe('recos/service', () => {
     db.prepare(`INSERT INTO recommendations (batch_id, rec_type, work_id, raw_title, reason, validated, feedback, created_at) VALUES ('old','standing',?,'片101','r',1,'not_interested',?)`).run(w.id, Date.now());
     // LLM 仍返回 片101 + 片102（默认 deps 的 chat）→ 101 应被避雷池硬挡
     const out = await generateStanding(db, d, {});
-    assert.deepEqual(out.items.map(i => i.title), ['片102']);
+    assert.deepEqual(out.items.map((i: any) => i.title), ['片102']);
   });
 
   it('gatherContext 汇集双方与避雷池', async () => {

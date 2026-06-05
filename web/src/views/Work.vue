@@ -20,7 +20,7 @@ const error = ref('');
 const editOpen = ref(false);
 const editType = ref('mark');
 const editRecord = ref<any>(null);
-function openEdit(type, record) {
+function openEdit(type: any, record: any) {
   editType.value = type;
   editRecord.value = { ...record, work: work.value };
   editOpen.value = true;
@@ -52,7 +52,7 @@ const subtitle = computed(() => {
   return parts.join(' · ');
 });
 
-function statusLabel(s) { return s === 'watched' ? '看过' : s === 'wish' ? '想看' : s; }
+function statusLabel(s: any) { return s === 'watched' ? '看过' : s === 'wish' ? '想看' : s; }
 </script>
 
 <template>

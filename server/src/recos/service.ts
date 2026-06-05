@@ -19,17 +19,17 @@ const READ_SQL = `
   WHERE r.batch_id = @batch AND r.validated = 1 AND r.feedback IS NULL
   ORDER BY r.id ASC LIMIT ${SHOW}`;
 
-export function readBatch(db, batchId) {
+export function readBatch(db: any, batchId: any) {
   if (!batchId) return [];
   return db.prepare(READ_SQL).all({ batch: batchId });
 }
 
-export function gatherContext(db) {
+export function gatherContext(db: any) {
   const users = db.prepare('SELECT id, display_name FROM users ORDER BY id').all();
-  const userA = users.find(u => u.id === 1)?.display_name || 'A';
-  const userB = users.find(u => u.id === 2)?.display_name || 'B';
+  const userA = users.find((u: any) => u.id === 1)?.display_name || 'A';
+  const userB = users.find((u: any) => u.id === 2)?.display_name || 'B';
 
-  const marks = (uid) => db.prepare(`
+  const marks = (uid: any) => db.prepare(`
     SELECT w.tmdb_id, w.tmdb_type, w.title, w.year, m.status, m.rating, m.comment
     FROM user_marks m JOIN works w ON w.id = m.work_id
     WHERE m.user_id = ? ORDER BY m.marked_at DESC`).all(uid);
@@ -48,7 +48,7 @@ export function gatherContext(db) {
 
   const avoidTitles = db.prepare(`
     SELECT DISTINCT raw_title FROM recommendations
-    WHERE feedback IN ('not_interested', 'already_seen')`).all().map(r => r.raw_title);
+    WHERE feedback IN ('not_interested', 'already_seen')`).all().map((r: any) => r.raw_title);
 
   const knownKeys = new Set();
   for (const w of [...marksA, ...marksB, ...sessions, ...plan]) {
@@ -65,7 +65,7 @@ export function gatherContext(db) {
   return { userA, userB, marksA, marksB, sessions, plan, avoidTitles, knownKeys };
 }
 
-export async function generateStanding(db, deps, { userPrompt = null } = {}) {
+export async function generateStanding(db: any, deps: any, { userPrompt = null } = {}) {
   const ctx = gatherContext(db);
   const messages = buildMessages({ ...ctx, userPrompt });
   const raw = await deps.llm.chat(messages);          // 失败抛 LlmError → 由 getCurrentRecos 捕获
@@ -106,7 +106,7 @@ export async function generateStanding(db, deps, { userPrompt = null } = {}) {
   return { items: readBatch(db, batch_id), batch_id, rec_type };
 }
 
-export async function getCurrentRecos(db, deps) {
+export async function getCurrentRecos(db: any, deps: any) {
   if (!deps.llm?.isConfigured?.()) {
     const batchId = getStandingBatchId(db);
     return { items: readBatch(db, batchId), batch_id: batchId, rec_type: 'standing', stale: false, error: batchId ? null : 'llm_unconfigured' };

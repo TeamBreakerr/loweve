@@ -5,7 +5,7 @@ import { markRecosStale } from '../recos/state.js';
 
 const MARK_COLS = 'id, user_id, work_id, status, rating, comment, marked_at';
 
-function requireViewing(req, res) {
+function requireViewing(req: any, res: any) {
   if (!req.viewing_user_id) {
     res.status(401).json({ error: 'not_authenticated' });
     return false;
@@ -13,8 +13,8 @@ function requireViewing(req, res) {
   return true;
 }
 
-function validateStatus(s) { return s === 'watched' || s === 'wish'; }
-function validateRating(r) { return r == null || (Number.isInteger(r) && r >= 1 && r <= 10); }
+function validateStatus(s: any) { return s === 'watched' || s === 'wish'; }
+function validateRating(r: any) { return r == null || (Number.isInteger(r) && r >= 1 && r <= 10); }
 
 export function marksRoutes() {
   const router = Router();
@@ -23,7 +23,7 @@ export function marksRoutes() {
     if (!requireViewing(req, res)) return;
     const db = req.app.locals.db;
     const status = req.query.status || 'all';
-    let rows;
+    let rows: any;
     if (status === 'all') {
       rows = db.prepare(`SELECT ${MARK_COLS} FROM user_marks WHERE user_id = ? ORDER BY marked_at DESC`).all(req.viewing_user_id);
     } else if (validateStatus(status)) {
@@ -32,12 +32,12 @@ export function marksRoutes() {
       return res.status(400).json({ error: 'invalid_status' });
     }
     // 附 work 联表（一次查所有需要的 work）
-    const workIds = [...new Set(rows.map(r => r.work_id))];
+    const workIds = [...new Set(rows.map((r: any) => r.work_id))];
     const works = workIds.length
       ? db.prepare(`SELECT * FROM works WHERE id IN (${workIds.map(() => '?').join(',')})`).all(...workIds)
       : [];
-    const workMap = new Map(works.map(w => [w.id, w]));
-    res.json({ marks: rows.map(r => ({ ...r, work: workMap.get(r.work_id) })) });
+    const workMap = new Map(works.map((w: any) => [w.id, w]));
+    res.json({ marks: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) });
   });
 
   router.post('/', async (req, res) => {

@@ -7,7 +7,7 @@ import {
 } from '../src/recos/state.js';
 
 describe('recos/state', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 

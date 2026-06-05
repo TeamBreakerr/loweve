@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { resolveTmdb } from '../src/recos/validate.js';
 import { makeFakeTmdb } from './helpers.js';
 
-const RES = (results) => makeFakeTmdb({ search: async () => ({ results }) });
+const RES = (results: any) => makeFakeTmdb({ search: async () => ({ results }) });
 
 describe('recos/validate resolveTmdb', () => {
   it('标题+年份命中', async () => {

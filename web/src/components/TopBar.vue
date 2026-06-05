@@ -6,7 +6,7 @@ const identity = useIdentity();
 const route = useRoute();
 const router = useRouter();
 
-function pickWho(id) {
+function pickWho(id: any) {
   // 顶栏切换的是"看谁的视角"（viewing）。切到对方时 ProxyBanner 高亮提示「正在代维护」。
   // 本机身份（me/cookie）在 设置→我是谁 里设定一次。
   identity.setViewing(id);

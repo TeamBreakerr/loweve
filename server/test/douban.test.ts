@@ -4,8 +4,8 @@ import { enqueueDoubanUpgrade, resetDoubanQueueForTests, upgradeWithDouban, swee
 import { makeFakeDouban, makeTestDb } from './helpers.js';
 
 describe('createDoubanClient (HTTP)', () => {
-  const ok = (json) => ({ ok: true, status: 200, json: async () => json });
-  const routed = (map) => async (url) => {
+  const ok = (json: any) => ({ ok: true, status: 200, json: async () => json });
+  const routed = (map: any) => async (url: any) => {
     for (const key of Object.keys(map)) if (url.includes(key)) return map[key];
     throw new Error('unexpected fetch ' + url);
   };
@@ -39,7 +39,7 @@ describe('createDoubanClient (HTTP)', () => {
 
   it('全名搜不到 → 退成"片名 年份"再搜（特别篇等冗长标题）', async () => {
     const queries: any[] = [];
-    const fetch = async (url) => {
+    const fetch = async (url: any) => {
       if (url.includes('subject_suggest')) {
         const q = decodeURIComponent(new URL(url).searchParams.get('q') || '');
         queries.push(q);
@@ -79,14 +79,14 @@ describe('createDoubanClient (HTTP)', () => {
   });
 
   it('timeout 抛 DoubanError', async () => {
-    const fetch = async (_url, opts) => new Promise((_res, rej) =>
+    const fetch = async (_url: any, opts: any) => new Promise((_res, rej) =>
       opts.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
     await assert.rejects(() => createDoubanClient({ fetch, timeoutMs: 5 }).match({ title: 'x', year: 2020 }), DoubanError);
   });
 });
 
 describe('Douban upgrade queue', () => {
-  let db;
+  let db: any;
   beforeEach(() => {
     resetDoubanQueueForTests();
     db = makeTestDb();
@@ -174,10 +174,10 @@ describe('Douban upgrade queue', () => {
   it('enqueueDoubanUpgrade runs jobs serially', async () => {
     const first = insertMovie(db, { tmdb_id: 1, title: '第一部', year: 2020 });
     const second = insertMovie(db, { tmdb_id: 2, title: '第二部', year: 2021 });
-    let releaseFirst;
+    let releaseFirst: any;
     const events: any[] = [];
     const douban = makeFakeDouban({
-      match: async ({ title }) => {
+      match: async ({ title }: any) => {
         events.push(`start:${title}`);
         if (title === '第一部') await new Promise(resolve => { releaseFirst = resolve; });
         events.push(`end:${title}`);
@@ -213,7 +213,7 @@ describe('Douban upgrade queue', () => {
   });
 });
 
-function insertMovie(db, overrides: any = {}) {
+function insertMovie(db: any, overrides: any = {}) {
   const now = Date.now();
   const row = {
     tmdb_id: overrides.tmdb_id ?? 695932,
@@ -255,7 +255,7 @@ function insertMovie(db, overrides: any = {}) {
   return getWork(db, info.lastInsertRowid);
 }
 
-function getWork(db, id) {
+function getWork(db: any, id: any) {
   return db.prepare(`SELECT
     id, tmdb_id, tmdb_type, title, original_title, year, overview, genres, runtime, is_anime,
     primary_rating, primary_rating_count, primary_poster_url, rating_source,

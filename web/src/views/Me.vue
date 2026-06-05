@@ -16,7 +16,7 @@ function openAdd() { modalOpen.value = true; }
 
 const editOpen = ref(false);
 const editRecord = ref<any>(null);
-function openEdit(m) { editRecord.value = m; editOpen.value = true; }
+function openEdit(m: any) { editRecord.value = m; editOpen.value = true; }
 
 onMounted(async () => {
   marks.bindIdentityWatcher();

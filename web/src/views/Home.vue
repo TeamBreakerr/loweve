@@ -19,7 +19,7 @@ const router = useRouter();
 const editOpen = ref(false);
 const editType = ref('session');
 const editRecord = ref<any>(null);
-function openEdit(type, record) { editType.value = type; editRecord.value = record; editOpen.value = true; }
+function openEdit(type: any, record: any) { editType.value = type; editRecord.value = record; editOpen.value = true; }
 
 const identity = useIdentity();
 
@@ -32,8 +32,8 @@ const mids = computed(() => recos.items.slice(1, 3));
 const minis = computed(() => recos.items.slice(3));
 function refresh() { intent.value.trim() ? recos.custom(intent.value.trim()) : recos.refresh(); }
 function submitIntent() { if (intent.value.trim()) recos.custom(intent.value.trim()); }
-function onFeedback(rec, emitName) { recos.feedback(rec, emitName); }
-function openWork(rec) { if (rec.work_id) router.push(`/work/${rec.work_id}`); }
+function onFeedback(rec: any, emitName: any) { recos.feedback(rec, emitName); }
+function openWork(rec: any) { if (rec.work_id) router.push(`/work/${rec.work_id}`); }
 
 // —— 一起看过 ——
 const sessions = useSessions();
@@ -51,7 +51,7 @@ const STATUS_MAP_HOME = { '全部': null, '待看': 'pending', '在看': 'watchi
 
 const planRecent = computed(() => plan.list.slice(0, 5));
 const visiblePlan = computed(() => {
-  const f = STATUS_MAP_HOME[planFilter.value];
+  const f = STATUS_MAP_HOME[planFilter.value as keyof typeof STATUS_MAP_HOME];
   return f ? planRecent.value.filter(p => p.status === f) : planRecent.value;
 });
 const planCountsHome = computed(() => {
@@ -60,8 +60,8 @@ const planCountsHome = computed(() => {
 });
 const planModalOpen = ref(false);
 
-function statusZhHome(s) { return { pending:'待看', watching:'在看', done:'看完', dropped:'弃了' }[s] || s; }
-function startWatching(p) { plan.update(p.id, { status: 'watching' }); }
+function statusZhHome(s: any) { return ({ pending:'待看', watching:'在看', done:'看完', dropped:'弃了' } as Record<string, string>)[s] || s; }
+function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
 </script>
 
 <template>
@@ -208,7 +208,7 @@ function startWatching(p) { plan.update(p.id, { status: 'watching' }); }
       <div class="filters" style="margin-bottom:var(--s-5)">
         <button v-for="f in planFilters" :key="f" class="chip"
                 :class="{ 'is-active': planFilter === f }" @click="planFilter = f">
-          {{ f }}<span class="count">{{ planCountsHome[f] }}</span>
+          {{ f }}<span class="count">{{ (planCountsHome as any)[f] }}</span>
         </button>
       </div>
 

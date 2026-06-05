@@ -92,8 +92,8 @@ describe('createTmdbClient', () => {
   });
 
   // 按路径分发的 fakeFetch：search 现在并行打 movie/tv/person（+ 可能 person credits）
-  function routedFetch(routes) {
-    return async (url) => {
+  function routedFetch(routes: any) {
+    return async (url: any) => {
       for (const [frag, payload] of Object.entries(routes)) {
         if (url.includes(frag)) return { ok: true, status: 200, json: async () => payload };
       }
@@ -103,7 +103,7 @@ describe('createTmdbClient', () => {
 
   it('search: v4 Bearer 优先 + include_adult + 合并 movie/tv', async () => {
     const seen: any[] = [];
-    const fakeFetch = async (url, opts) => {
+    const fakeFetch = async (url: any, opts: any) => {
       seen.push({ url, auth: opts.headers.Authorization });
       const payload = url.includes('/search/movie')
         ? { results: [{ id: 1, title: 'A', release_date: '2020-01-01', poster_path: '/a.jpg', vote_average: 7, popularity: 9 }] }
@@ -128,8 +128,8 @@ describe('createTmdbClient', () => {
   });
 
   it('search: 无 token 有 key → v3 query string', async () => {
-    let captured;
-    const fakeFetch = async (url, opts) => {
+    let captured: any;
+    const fakeFetch = async (url: any, opts: any) => {
       captured = { url, opts };
       return { ok: true, status: 200, json: async () => ({ results: [] }) };
     };
@@ -177,7 +177,7 @@ describe('createTmdbClient', () => {
   });
 
   it('search: 人物 credits 拉取失败 → 不影响标题结果', async () => {
-    const fakeFetch = async (url) => {
+    const fakeFetch = async (url: any) => {
       if (url.includes('/combined_credits')) return { ok: false, status: 500, json: async () => ({}) };
       const payload = url.includes('/search/movie')
         ? { results: [{ id: 1, title: 'A', release_date: '2020-01-01', vote_average: 7, popularity: 1 }] }
@@ -194,7 +194,7 @@ describe('createTmdbClient', () => {
 
   it('movieDetail / tvDetail 走对应 endpoint', async () => {
     const seen: any[] = [];
-    const fakeFetch = async (url) => {
+    const fakeFetch = async (url: any) => {
       seen.push(url);
       return { ok: true, status: 200, json: async () => ({ id: 1, title: 't', genres: [] }) };
     };

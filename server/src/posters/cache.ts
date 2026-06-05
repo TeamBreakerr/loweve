@@ -39,7 +39,7 @@ export async function cachePoster({
   if (!res.ok) throw new Error(`poster_fetch_${res.status}`);
 
   const contentType = res.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() || '';
-  const typeExt = EXT_BY_TYPE[contentType];
+  const typeExt = EXT_BY_TYPE[contentType as keyof typeof EXT_BY_TYPE];
   const finalFile = typeExt && typeExt !== ext ? path.join(dir, `${safeId}.${typeExt}`) : file;
   const finalUrl = typeExt && typeExt !== ext ? `/api/posters/${safeSource}/${safeId}.${typeExt}` : apiUrl;
   if (await exists(finalFile)) return finalUrl;
@@ -49,17 +49,17 @@ export async function cachePoster({
   return finalUrl;
 }
 
-function extFromUrl(url) {
+function extFromUrl(url: any) {
   const pathname = new URL(url).pathname.toLowerCase();
   const ext = pathname.match(/\.([a-z0-9]+)$/)?.[1] ?? '';
   return ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? (ext === 'jpeg' ? 'jpg' : ext) : '';
 }
 
-function sanitizeSegment(value) {
+function sanitizeSegment(value: any) {
   return String(value).replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
-async function exists(file) {
+async function exists(file: any) {
   try {
     await fs.access(file);
     return true;

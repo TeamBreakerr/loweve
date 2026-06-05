@@ -12,7 +12,7 @@ describe('db migration', () => {
       WHERE type='table' AND name NOT LIKE 'sqlite_%'
       ORDER BY name
     `).all();
-    const names = rows.map(r => r.name);
+    const names = rows.map((r: any) => r.name);
     assert.deepEqual(names.sort(), [
       'app_state',
       'couple_sessions',

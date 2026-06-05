@@ -10,8 +10,8 @@ describe('llm/client', () => {
   });
 
   it('chat 构造正确请求并取 content', async () => {
-    let captured;
-    const fakeFetch = async (url, opts) => {
+    let captured: any;
+    const fakeFetch = async (url: any, opts: any) => {
       captured = { url, opts };
       return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: '[]' } }] }) };
     };
@@ -44,7 +44,7 @@ describe('llm/client', () => {
   it('超时抛 LlmError', async () => {
     const client = createLlmClient({
       baseUrl: 'http://p/v1', apiKey: 'k', model: 'm', timeoutMs: 5,
-      fetch: (_u, opts) => new Promise((_res, rej) => {
+      fetch: (_u: any, opts: any) => new Promise((_res, rej) => {
         opts.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' })));
       }),
     });

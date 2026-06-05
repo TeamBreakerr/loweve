@@ -5,7 +5,7 @@ const ACCEPT_TOTAL = 0.6;   // 综合分阈值
 const ACCEPT_NAME = 0.5;    // 名称相似度下限（防纯蒙年份）
 
 // 归一化 Levenshtein 相似度：1 - dist/maxLen，范围 [0,1]
-export function similarity(a, b) {
+export function similarity(a: any, b: any) {
   a = (a || '').trim().toLowerCase();
   b = (b || '').trim().toLowerCase();
   if (a === b) return 1;
@@ -22,7 +22,7 @@ export function similarity(a, b) {
   return 1 - dp[m][n] / Math.max(m, n);
 }
 
-function nameScore(tmdb, cand) {
+function nameScore(tmdb: any, cand: any) {
   // TMDB 的 original_title / title 对 候选 name / name_cn 取最高相似度
   const tmdbNames = [tmdb.original_title, tmdb.title].filter(Boolean);
   const candNames = [cand.name, cand.name_cn].filter(Boolean);
@@ -31,7 +31,7 @@ function nameScore(tmdb, cand) {
   return best;
 }
 
-function yearScore(tmdbYear, candYear) {
+function yearScore(tmdbYear: any, candYear: any) {
   if (tmdbYear == null || candYear == null) return 0.5;  // 缺年份中性
   const diff = Math.abs(tmdbYear - candYear);
   if (diff === 0) return 1;
@@ -39,7 +39,7 @@ function yearScore(tmdbYear, candYear) {
   return 0;
 }
 
-export function matchAnime(tmdb, candidates) {
+export function matchAnime(tmdb: any, candidates: any) {
   let best: any = null, bestTotal = 0, bestName = 0;
   for (const c of candidates || []) {
     const nScore = nameScore(tmdb, c);

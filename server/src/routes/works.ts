@@ -10,7 +10,7 @@ const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, year, overview
 
 // upsertWork：work 不存在则调 tmdb 拉详情入库；存在直接返回。番剧再尝试 Bangumi 升级。
 // 暴露为函数，便于 marks/sessions/plan 复用。
-export async function upsertWork(db, tmdb, bangumi, douban, { tmdb_id, tmdb_type, skipUpgrade = false }) {
+export async function upsertWork(db: any, tmdb: any, bangumi: any, douban: any, { tmdb_id, tmdb_type, skipUpgrade = false }: any) {
   const existing = db.prepare(`SELECT ${WORK_COLS} FROM works WHERE tmdb_id = ? AND tmdb_type = ?`).get(tmdb_id, tmdb_type);
   if (existing) {
     // 自愈：已入库但仍 tmdb 的作品（如推荐 skipUpgrade 纯 tmdb 入库，或 browser-svc 重启窗口升级失败）
@@ -65,7 +65,7 @@ export async function upsertWork(db, tmdb, bangumi, douban, { tmdb_id, tmdb_type
 
 // work 行已含 original_title（WORK_COLS），不依赖只在首次插入时才有的 mapped，
 // 便于 existing 分支（推荐 want / 自愈）复用。
-async function upgradeWithBangumi(db, bangumi, work) {
+async function upgradeWithBangumi(db: any, bangumi: any, work: any) {
   const keyword = work.original_title || work.title;
   const candidates = await bangumi.searchAnime(keyword);
   const best = matchAnime(
@@ -122,7 +122,7 @@ export function worksRoutes() {
     if (!work) return res.status(404).json({ error: 'not_found' });
 
     const all_marks = db.prepare('SELECT id, user_id, work_id, status, rating, comment, marked_at FROM user_marks WHERE work_id = ?').all(id);
-    const my_mark = req.viewing_user_id ? all_marks.find(m => m.user_id === req.viewing_user_id) || null : null;
+    const my_mark = req.viewing_user_id ? all_marks.find((m: any) => m.user_id === req.viewing_user_id) || null : null;
     const sessions = db.prepare('SELECT id, work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at FROM couple_sessions WHERE work_id = ? ORDER BY watched_at DESC').all(id);
     const plan = db.prepare('SELECT id, work_id, added_by, note, priority, status, created_at, updated_at FROM plan_items WHERE work_id = ?').get(id) || null;
 

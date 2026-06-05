@@ -18,13 +18,13 @@ const FAKE_TV_ANIME = {
 };
 
 describe('POST /api/works', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
   it('首次入库电影 → 调 movieDetail → 返回 work', async () => {
     let calls = 0;
-    const tmdb = makeFakeTmdb({ movieDetail: async (id) => { calls++; assert.equal(id, 695932); return FAKE_MOVIE; } });
+    const tmdb = makeFakeTmdb({ movieDetail: async (id: any) => { calls++; assert.equal(id, 695932); return FAKE_MOVIE; } });
     const app = createApp({ db, tmdb });
     const res = await request(app).post('/api/works').send({ tmdb_id: 695932, tmdb_type: 'movie' });
     assert.equal(res.status, 200);
@@ -77,7 +77,7 @@ describe('POST /api/works', () => {
 });
 
 describe('GET /api/works/:id', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -120,7 +120,7 @@ const BGM_HIT = {
 };
 
 describe('upsertWork Bangumi 升级', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -197,7 +197,7 @@ describe('upsertWork Bangumi 升级', () => {
 });
 
 describe('upsertWork Douban 异步升级', () => {
-  let db;
+  let db: any;
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
@@ -205,7 +205,7 @@ describe('upsertWork Douban 异步升级', () => {
     let calls = 0;
     const tmdb = makeFakeTmdb({ movieDetail: async () => FAKE_MOVIE2 });
     const douban = makeFakeDouban({
-      match: async ({ title, year }) => {
+      match: async ({ title, year }: any) => {
         calls++;
         assert.equal(title, '花束般的恋爱');
         assert.equal(year, 2021);
@@ -352,7 +352,7 @@ describe('upsertWork Douban 异步升级', () => {
   });
 });
 
-async function eventually(read, timeoutMs = 250) {
+async function eventually(read: any, timeoutMs = 250) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     const value = read();
@@ -362,6 +362,6 @@ async function eventually(read, timeoutMs = 250) {
   assert.fail('condition was not met before timeout');
 }
 
-function waitMs(ms) {
+function waitMs(ms: any) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
