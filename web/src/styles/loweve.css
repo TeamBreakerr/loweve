@@ -366,11 +366,11 @@ a.rating--link:active{ transform:none; }
 /* ② 一起看过卡片 */
 .watched-card{
   display:flex; gap:var(--s-4); padding:var(--s-4);
-  background:var(--surface); border:1px solid var(--line-soft);
+  background:var(--surface);
   border-radius:var(--r-lg); box-shadow:var(--shadow-card);
-  transition:transform .22s var(--ease), border-color .22s;
+  transition:transform .22s var(--ease);
 }
-.watched-card:hover{ transform:translateY(-3px); border-color:var(--line); }
+.watched-card:hover{ transform:translateY(-3px); }
 .watched-card .poster{ width:84px; }
 .watched-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-2); }
 .watched-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
@@ -399,11 +399,11 @@ a.rating--link:active{ transform:none; }
 
 .plan-card{
   display:flex; gap:var(--s-3); padding:var(--s-3);
-  background:var(--surface); border:1px solid var(--line-soft);
+  background:var(--surface);
   border-radius:var(--r-lg); box-shadow:var(--shadow-card);
-  transition:transform .22s var(--ease), border-color .22s;
+  transition:transform .22s var(--ease);
 }
-.plan-card:hover{ transform:translateY(-3px); border-color:var(--line); }
+.plan-card:hover{ transform:translateY(-3px); }
 .plan-card .poster{ width:72px; }
 .plan-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
 .plan-card__head{ display:flex; align-items:flex-start; gap:var(--s-2); }
@@ -696,7 +696,7 @@ footer .brand__mark{ font-size:20px; }
 
 /* —— 推荐顶部：1 号大卡 + 2/3 号中卡 —— */
 .reco-top{ display:grid; grid-template-columns:1.55fr 1fr; gap:var(--s-4); margin-bottom:var(--s-4); }
-.rk{ position:relative; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); }
+.rk{ position:relative; background:var(--surface); border-radius:var(--r-lg); }
 .rk-num{ position:absolute; z-index:2; font-family:var(--font-brand); font-style:italic; font-weight:600; line-height:.78; color:var(--rose); pointer-events:none; }
 
 .rk-hero{ display:flex; gap:var(--s-6); padding:var(--s-5); height:100%; }
@@ -706,7 +706,7 @@ footer .brand__mark{ font-size:20px; }
 .rk-hero__title{ font-family:var(--font-serif); font-weight:700; font-size:var(--fs-xl); line-height:1.15; padding-right:70px; }
 .rk-hero__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-md); }
 .rk-meta{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
-.rk-reason{ background:var(--surface-2); border:1px solid var(--line-soft); border-radius:var(--r-md); padding:var(--s-3) var(--s-4); font-size:var(--fs-body); line-height:1.6; color:var(--text-dim); }
+.rk-reason{ font-size:var(--fs-body); line-height:1.6; color:var(--text-dim); }
 .rk-reason .label{ display:inline-flex; align-items:center; gap:6px; color:var(--rose); font-size:var(--fs-sm); margin-bottom:6px; }
 .rk-reason .label svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; }
 .rk-reason .quote{ color:var(--rose); font-weight:600; }
@@ -719,7 +719,7 @@ footer .brand__mark{ font-size:20px; }
 .rk-mid__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
 .rk-mid__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); line-height:1.2; padding-right:36px; }
 .rk-mid__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
-.rk-mid .rk-reason{ font-size:var(--fs-sm); padding:8px 11px; line-height:1.5; }
+.rk-mid .rk-reason{ font-size:var(--fs-sm); line-height:1.5; }
 .rk-mid .rk-actions{ gap:6px; }
 .rk-mid .feedback{ width:40px; height:36px; }
 
@@ -727,7 +727,7 @@ footer .brand__mark{ font-size:20px; }
 .reco-rail{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:var(--s-3); padding-bottom:var(--s-4); }
 .reco-rail::-webkit-scrollbar{ height:8px; }
 .reco-rail::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
-.rk-mini{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
+.rk-mini{ background:var(--surface); border-radius:var(--r-md); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
 .rk-mini:hover{ transform:translateY(-4px); }
 .rk-mini__pw{ position:relative; }
 /* 小卡推荐评语：悬浮 ~0.4s 后磨砂玻璃浮层上滑淡入，移开即收 */
@@ -749,7 +749,7 @@ footer .brand__mark{ font-size:20px; }
   margin:0; color:oklch(0.93 0.012 60); font-size:var(--fs-sm); line-height:1.6;
   overflow-y:auto; flex:1 1 auto;
 }
-.rk-mini .poster{ width:100%; border:none; border-radius:0; border-bottom:1px solid var(--line); }
+.rk-mini .poster{ width:100%; border:none; border-radius:0; }
 .rk-mini .rk-num{ top:5px; left:9px; font-size:30px; color:oklch(0.98 0.06 25); }
 .rk-mini .poster__kind{ left:auto; right:7px; }
 .rk-mini__body{ padding:var(--s-3); display:flex; flex-direction:column; gap:8px; }
@@ -762,10 +762,10 @@ footer .brand__mark{ font-size:20px; }
 .hrail{ display:flex; gap:var(--s-4); overflow-x:auto; padding:4px 4px var(--s-4); margin:0 -4px; scroll-snap-type:x mandatory; scrollbar-width:thin; }
 .hrail::-webkit-scrollbar{ height:8px; }
 .hrail::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
-.hcard{ scroll-snap-align:start; flex:0 0 205px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
+.hcard{ scroll-snap-align:start; flex:0 0 205px; background:var(--surface); border-radius:var(--r-lg); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
 .hcard:hover{ transform:translateY(-4px); }
 .hcard__pw{ position:relative; }
-.hcard .poster{ width:100%; border:none; border-radius:0; border-bottom:1px solid var(--line); }
+.hcard .poster{ width:100%; border:none; border-radius:0; }
 .hcard__corner{ position:absolute; top:8px; right:8px; display:flex; gap:5px; }
 .hcard__edit{ width:30px; height:30px; border-radius:50%; display:grid; place-items:center; background:oklch(0.16 0.02 30 / 0.8); border:1px solid oklch(1 0 0 / 0.2); color:oklch(0.95 0 0 / 0.92); }
 .hcard__edit svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; }
