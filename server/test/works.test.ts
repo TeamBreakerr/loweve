@@ -69,7 +69,7 @@ describe('POST /api/works', () => {
   });
 
   it('tmdb 上游 5xx → 502', async () => {
-    const tmdb = makeFakeTmdb({ movieDetail: async () => { const e = new Error('x'); e.code = 'tmdb_upstream'; throw e; } });
+    const tmdb = makeFakeTmdb({ movieDetail: async () => { const e: any = new Error('x'); e.code = 'tmdb_upstream'; throw e; } });
     const app = createApp({ db, tmdb });
     const res = await request(app).post('/api/works').send({ tmdb_id: 1, tmdb_type: 'movie' });
     assert.equal(res.status, 502);

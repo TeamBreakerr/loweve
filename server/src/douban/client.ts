@@ -9,6 +9,7 @@ const UA_PC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.3
 const UA_MOBILE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1';
 
 export class DoubanError extends Error {
+  code: string; status: number; body: any;
   constructor(code, status, body) {
     super(code);
     this.code = code;
@@ -54,7 +55,7 @@ export function pickBest(cands, { title, year }) {
   return bestScore >= 0.5 ? best : null;
 }
 
-export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }: { fetch?: any; timeoutMs?: number } = {}) {
   async function getJson(url, headers) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);

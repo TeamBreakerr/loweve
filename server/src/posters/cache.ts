@@ -17,7 +17,7 @@ export async function cachePoster({
   referer = '',
   posterDir,
   fetch = globalThis.fetch,
-}) {
+}: { source?: string; id?: string | number; url?: string; referer?: string; posterDir?: string; fetch?: any }) {
   if (!source || !id || !url || !posterDir) return null;
 
   const safeSource = sanitizeSegment(source);

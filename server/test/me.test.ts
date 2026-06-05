@@ -36,7 +36,7 @@ describe('POST /api/me/switch', () => {
       .send({ user_id: 2 });
     assert.equal(res.status, 200);
     assert.equal(res.body.user_id, 2);
-    const setCookie = res.headers['set-cookie'].join(';');
+    const setCookie = (res.headers['set-cookie'] as any).join(';');
     assert.match(setCookie, /loweve_user_id=2/);
     assert.match(setCookie, /Max-Age=2592000/);  // 30d
   });

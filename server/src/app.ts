@@ -18,7 +18,7 @@ import { recosRoutes } from './routes/recos.js';
 import { imgRoutes } from './routes/img.js';
 import { settingsRoutes } from './routes/settings.js';
 
-export function createApp({ db, tmdb, bangumi, douban, llm }) {
+export function createApp({ db, tmdb, bangumi, douban, llm }: { db: any; tmdb?: any; bangumi?: any; douban?: any; llm?: any }) {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());

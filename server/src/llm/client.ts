@@ -2,6 +2,7 @@
 const DEFAULT_TIMEOUT_MS = 60000;
 
 export class LlmError extends Error {
+  code: string; status: number; body: any;
   constructor(code, status = 0, body = null) {
     super(code);
     this.code = code;
@@ -26,7 +27,7 @@ export function parseJsonArray(text) {
   return arr;
 }
 
-export function createLlmClient({ baseUrl, apiKey, model, resolve, fetch = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+export function createLlmClient({ baseUrl, apiKey, model, resolve, fetch = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }: { baseUrl?: string; apiKey?: string; model?: string; resolve?: () => any; fetch?: any; timeoutMs?: number } = {}) {
   // 静态值或 resolve()（运行时从 DB 读，设置页改完即时生效）
   const getCfg = resolve || (() => ({ baseUrl, apiKey, model }));
   const ready = (c) => Boolean(c.baseUrl && c.apiKey && c.model);

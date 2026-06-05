@@ -47,7 +47,7 @@ describe('GET /api/search', () => {
   it('tmdb 抛 tmdb_upstream → 502', async () => {
     const tmdb = makeFakeTmdb({
       search: async () => {
-        const e = new Error('tmdb_upstream');
+        const e: any = new Error('tmdb_upstream');
         e.code = 'tmdb_upstream';
         throw e;
       },
@@ -61,7 +61,7 @@ describe('GET /api/search', () => {
   it('tmdb 抛 tmdb_auth → 502', async () => {
     const tmdb = makeFakeTmdb({
       search: async () => {
-        const e = new Error('tmdb_auth');
+        const e: any = new Error('tmdb_auth');
         e.code = 'tmdb_auth';
         throw e;
       },

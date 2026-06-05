@@ -14,7 +14,8 @@ COPY server/package.json server/package-lock.json* ./
 RUN npm install --omit=dev
 # 再拷源码
 COPY server ./
-# 拷入 web 构建产物到 ../../web/dist（config.js 的 paths.webDist 指向此处）
+# 拷入 web 构建产物到 ../../web/dist（config.ts 的 paths.webDist 指向此处）
 COPY --from=web-build /build/web/dist /app/web/dist
 EXPOSE 18083
-CMD ["node", "index.js"]
+# 用 tsx 直接跑 TS（tsx 是 dependencies，--omit=dev 已装；start = tsx index.ts）
+CMD ["npm", "start"]

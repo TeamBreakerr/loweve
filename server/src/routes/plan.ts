@@ -11,7 +11,7 @@ export function planRoutes() {
 
   router.get('/', (req, res) => {
     const db = req.app.locals.db;
-    const status = req.query.status;
+    const status = req.query.status as string;
     let rows;
     if (status) {
       if (!VALID_STATUS.includes(status)) return res.status(400).json({ error: 'invalid_status' });

@@ -3,18 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
-    "start": "node index.js",
-    "test": "mocha --timeout 15000 --exit 'test/**/*.test.js'"
+    "start": "tsx index.ts",
+    "test": "mocha",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "better-sqlite3": "^11.5.0",
     "cookie-parser": "^1.4.7",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "tsx": "^4.22.4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.6",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^25.9.1",
+    "@types/supertest": "^7.2.0",
     "mocha": "^10.7.3",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "typescript": "^6.0.3"
   }
 }

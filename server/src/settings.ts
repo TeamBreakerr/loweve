@@ -22,7 +22,7 @@ function override(db, key) {
 
 // 合并后的有效配置（DB 覆盖 > env），各 client 的 resolve 用它
 export function effectiveConfig(db) {
-  const e = {};
+  const e: Record<string, any> = {};
   for (const f of SETTING_FIELDS) e[f.env] = override(db, f.key) ?? config[f.env];
   return e;
 }
@@ -30,7 +30,7 @@ export function effectiveConfig(db) {
 // 给前端：密钥只回布尔「是否已配置」+ 来源；非密钥回明文。附整体就绪状态。
 export function readForApi(db) {
   const eff = effectiveConfig(db);
-  const out = {};
+  const out: Record<string, any> = {};
   for (const f of SETTING_FIELDS) {
     const val = eff[f.env];
     if (f.secret) out[f.key + '_set'] = Boolean(val);

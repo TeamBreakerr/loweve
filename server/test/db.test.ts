@@ -45,12 +45,12 @@ describe('db migration', () => {
     db.prepare(`INSERT INTO couple_sessions (work_id, watched_at, rating_a, joint_note, created_at) VALUES (1, 20240101, 8, '哭了', 111)`).run();
 
     assert.equal(migrateNullableWatchedAt(db), true);                 // 执行了迁移
-    const row = db.prepare('SELECT * FROM couple_sessions').get();
+    const row: any = db.prepare('SELECT * FROM couple_sessions').get();
     assert.equal(row.watched_at, 20240101);                           // 数据保留
     assert.equal(row.rating_a, 8);
     assert.equal(row.joint_note, '哭了');
     db.prepare(`INSERT INTO couple_sessions (work_id, watched_at, created_at) VALUES (1, NULL, 222)`).run();  // 现可空
-    assert.equal(db.prepare('SELECT COUNT(*) c FROM couple_sessions WHERE watched_at IS NULL').get().c, 1);
+    assert.equal((db.prepare('SELECT COUNT(*) c FROM couple_sessions WHERE watched_at IS NULL').get() as any).c, 1);
     assert.equal(migrateNullableWatchedAt(db), false);                // 幂等：已可空，不再动
     db.close();
   });

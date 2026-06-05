@@ -213,7 +213,7 @@ describe('Douban upgrade queue', () => {
   });
 });
 
-function insertMovie(db, overrides = {}) {
+function insertMovie(db, overrides: any = {}) {
   const now = Date.now();
   const row = {
     tmdb_id: overrides.tmdb_id ?? 695932,

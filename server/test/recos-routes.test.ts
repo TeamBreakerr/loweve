@@ -10,7 +10,7 @@ const FAKE_MOVIE = (id) => ({
   vote_average: 8.0, vote_count: 100, poster_path: `/p${id}.jpg`, external_ids: { imdb_id: null },
 });
 
-function appWith(db, { chat } = {}) {
+function appWith(db, { chat }: any = {}) {
   const llm = makeFakeLlm({ chat: chat ?? (async () => JSON.stringify([
     { title: '片101', year: 2020, type: 'movie', reason: '你们都爱剧情片' },
   ])) });

@@ -3,7 +3,7 @@ const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, year, overview
   runtime, is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source,
   bangumi_id, douban_id, douban_url, imdb_id, fetched_at, updated_at, douban_raw`;
 
-let chain = Promise.resolve();
+let chain: Promise<any> = Promise.resolve();
 let delayMs = 0;   // 任务间隔，默认 0（测试快）；生产在 index.js setDoubanQueueDelay(1000) 防豆瓣限流
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 

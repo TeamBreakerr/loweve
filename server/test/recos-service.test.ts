@@ -11,7 +11,7 @@ const FAKE_MOVIE = (id) => ({
 });
 
 // 两条推荐都能在 TMDB 命中
-function deps({ chat } = {}) {
+function deps({ chat }: any = {}) {
   return {
     llm: makeFakeLlm({ chat: chat ?? (async () => JSON.stringify([
       { title: '片101', year: 2020, type: 'movie', is_anime: false, reason: '你们都爱剧情片' },

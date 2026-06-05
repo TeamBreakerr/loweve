@@ -4,6 +4,7 @@ const DEFAULT_RETRY_DELAYS = [500, 2000, 8000];  // ms
 const TIMEOUT_MS = 5000;
 
 export class TmdbError extends Error {
+  code: string; status: number; body: any;
   constructor(code, status, body) {
     super(code);
     this.code = code;
@@ -74,7 +75,7 @@ export function mergeDedupe(...lists) {
   return out;
 }
 
-export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch, retryDelays = DEFAULT_RETRY_DELAYS } = {}) {
+export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch, retryDelays = DEFAULT_RETRY_DELAYS }: { token?: string; key?: string; resolve?: () => any; fetch?: any; retryDelays?: number[] } = {}) {
   // 静态值或 resolve()（运行时从 DB 读，设置页改完即时生效）
   const getCfg = resolve || (() => ({ token, key }));
 
@@ -87,7 +88,7 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
 
   async function request(path, params) {
     const { token } = getCfg();
-    const headers = {};
+    const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     const url = buildUrl(path, params);
     const delays = [0, ...retryDelays];

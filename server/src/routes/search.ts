@@ -7,7 +7,7 @@ export function searchRoutes() {
 
   router.get('/', async (req, res) => {
     const tmdb = req.app.locals.tmdb;
-    const q = (req.query.q || '').trim();
+    const q = ((req.query.q as string) || '').trim();
     if (!q) return res.status(400).json({ error: 'missing_query' });
     if (!tmdb.isConfigured()) return res.status(503).json({ error: 'tmdb_not_configured' });
     try {

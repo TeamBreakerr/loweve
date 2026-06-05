@@ -3,6 +3,7 @@ const BASE = 'https://api.bgm.tv';
 const TIMEOUT_MS = 5000;
 
 export class BangumiError extends Error {
+  code: string; status: number; body: any;
   constructor(code, status, body) {
     super(code);
     this.code = code;
@@ -11,11 +12,11 @@ export class BangumiError extends Error {
   }
 }
 
-export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fetch } = {}) {
+export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fetch }: { userAgent?: string; resolve?: () => any; fetch?: any } = {}) {
   // 静态值或 resolve()（运行时从 DB 读）
   const getCfg = resolve || (() => ({ userAgent }));
 
-  async function request(path, { method = 'GET', body } = {}) {
+  async function request(path: string, { method = 'GET', body }: { method?: string; body?: any } = {}) {
     const headers = {
       'User-Agent': getCfg().userAgent,
       'Content-Type': 'application/json',

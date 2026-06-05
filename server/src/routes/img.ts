@@ -20,11 +20,11 @@ export function parseAllowedUrl(u) {
   return url;
 }
 
-export function imgRoutes({ fetch = globalThis.fetch, dir = path.join(paths.posterDir, 'proxy') } = {}) {
+export function imgRoutes({ fetch = globalThis.fetch, dir = path.join(paths.posterDir, 'proxy') }: { fetch?: any; dir?: string } = {}) {
   const router = Router();
 
   router.get('/', async (req, res) => {
-    const u = req.query.u;
+    const u = req.query.u as string;
     const url = parseAllowedUrl(u);
     if (!url) return res.status(400).json({ error: 'bad_url' });
 

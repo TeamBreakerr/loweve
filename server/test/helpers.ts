@@ -2,14 +2,14 @@
 import { openDb } from '../src/db/index.js';
 import { migrate } from '../src/db/migrate.js';
 
-export function makeTestDb({ userA = 'TestA', userB = 'TestB' } = {}) {
+export function makeTestDb({ userA = 'TestA', userB = 'TestB' } = {}): any {
   const db = openDb(':memory:');
   migrate(db, { userA, userB });
   return db;
 }
 
 // 测试 stub：模拟 tmdb client 接口。impl 任意子集，未实现的方法回 throw 提示。
-export function makeFakeTmdb(impl = {}) {
+export function makeFakeTmdb(impl: any = {}) {
   return {
     isConfigured: impl.isConfigured ?? (() => true),
     search:        impl.search        ?? (async () => { throw new Error('fake tmdb.search not stubbed'); }),
@@ -19,7 +19,7 @@ export function makeFakeTmdb(impl = {}) {
 }
 
 // 测试 stub：模拟 bangumi client。impl 任意子集。
-export function makeFakeBangumi(impl = {}) {
+export function makeFakeBangumi(impl: any = {}) {
   return {
     isConfigured: impl.isConfigured ?? (() => true),
     searchAnime:  impl.searchAnime  ?? (async () => []),
@@ -27,13 +27,13 @@ export function makeFakeBangumi(impl = {}) {
   };
 }
 
-export function makeFakeDouban(impl = {}) {
+export function makeFakeDouban(impl: any = {}) {
   return {
     match: impl.match ?? (async () => null),
   };
 }
 
-export function makeFakeLlm(impl = {}) {
+export function makeFakeLlm(impl: any = {}) {
   return {
     isConfigured: impl.isConfigured ?? (() => true),
     chat: impl.chat ?? (async () => '[]'),
