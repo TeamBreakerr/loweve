@@ -1,0 +1,11 @@
+node_modules/
+dist/
+/data/
+.env
+.env.local
+.superpowers/
+*.log
+.DS_Store
+
+# 内部设计/计划文档（含私人引用，不发布）
+docs/

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>loweve</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c2421"/>
+      <stop offset="1" stop-color="#1b1613"/>
+    </linearGradient>
+    <linearGradient id="heart" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff9088"/>
+      <stop offset="1" stop-color="#e47b7c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <g transform="translate(8 9.5) scale(2)">
+    <path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z" fill="url(#heart)"/>
+  </g>
+  <path d="M29.5 28 L29.5 40 L40 34 Z" fill="#f6f1eb"/>
+</svg>

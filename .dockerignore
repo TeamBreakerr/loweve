@@ -1,0 +1,11 @@
+# 关键：排除宿主 node_modules，否则 COPY 会用宿主（node 22）编译的 better-sqlite3
+# 覆盖镜像内 npm install 装好的 node 20 二进制，导致 NODE_MODULE_VERSION ABI 冲突
+**/node_modules
+**/dist
+/data
+.git
+.env
+*.log
+.superpowers
+.DS_Store
+docs

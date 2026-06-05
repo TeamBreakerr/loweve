@@ -1,0 +1,41 @@
+// server/test/helpers.js
+import { openDb } from '../src/db/index.js';
+import { migrate } from '../src/db/migrate.js';
+
+export function makeTestDb({ userA = 'TestA', userB = 'TestB' } = {}) {
+  const db = openDb(':memory:');
+  migrate(db, { userA, userB });
+  return db;
+}
+
+// 测试 stub：模拟 tmdb client 接口。impl 任意子集，未实现的方法回 throw 提示。
+export function makeFakeTmdb(impl = {}) {
+  return {
+    isConfigured: impl.isConfigured ?? (() => true),
+    search:        impl.search        ?? (async () => { throw new Error('fake tmdb.search not stubbed'); }),
+    movieDetail:   impl.movieDetail   ?? (async () => { throw new Error('fake tmdb.movieDetail not stubbed'); }),
+    tvDetail:      impl.tvDetail      ?? (async () => { throw new Error('fake tmdb.tvDetail not stubbed'); }),
+  };
+}
+
+// 测试 stub：模拟 bangumi client。impl 任意子集。
+export function makeFakeBangumi(impl = {}) {
+  return {
+    isConfigured: impl.isConfigured ?? (() => true),
+    searchAnime:  impl.searchAnime  ?? (async () => []),
+    subjectDetail: impl.subjectDetail ?? (async () => { throw new Error('fake bangumi.subjectDetail not stubbed'); }),
+  };
+}
+
+export function makeFakeDouban(impl = {}) {
+  return {
+    match: impl.match ?? (async () => null),
+  };
+}
+
+export function makeFakeLlm(impl = {}) {
+  return {
+    isConfigured: impl.isConfigured ?? (() => true),
+    chat: impl.chat ?? (async () => '[]'),
+  };
+}
