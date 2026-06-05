@@ -19,9 +19,11 @@
 
 ## 🧱 技术栈
 
-- **后端**：Node 20 · Express 4 · better-sqlite3（单文件 SQLite，WAL）· Mocha
-- **前端**：Vue 3 · Vite · Pinia · vue-router
+- **后端**：TypeScript（tsx 运行，无构建步骤）· Node 20 · Express 4 · better-sqlite3（单文件 SQLite，WAL）· Mocha
+- **前端**：TypeScript · Vue 3 · Vite · Pinia · vue-router
 - **部署**：Docker（多阶段构建：先编译前端，再拷进后端镜像，由后端统一托管 SPA + API）
+
+> 类型检查：`cd server && npm run typecheck`、`cd web && npm run typecheck`（web `npm run build` 已含）。
 
 ## 🚀 快速开始
 
