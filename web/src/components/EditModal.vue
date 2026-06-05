@@ -1,11 +1,11 @@
-<script setup>
+<script setup lang="ts">
 // 编辑/删除已添加的记录。type: mark(个人看过) | session(共看) | plan(想看就一起看)
 // 评分用 ScorePicker；session 只编辑当前 viewer 那侧；后端 PUT/DELETE 已就绪。
 import { ref, watch, computed } from 'vue';
-import { useIdentity } from '../stores/identity.js';
-import { useMarks } from '../stores/marks.js';
-import { useSessions } from '../stores/sessions.js';
-import { usePlan } from '../stores/plan.js';
+import { useIdentity } from '../stores/identity';
+import { useMarks } from '../stores/marks';
+import { useSessions } from '../stores/sessions';
+import { usePlan } from '../stores/plan';
 import Poster from './Poster.vue';
 import ScorePicker from './ScorePicker.vue';
 import DatePicker from './DatePicker.vue';
@@ -68,7 +68,7 @@ async function save() {
     if (props.type === 'mark') {
       await marks.update(props.record.id, { rating: rating.value, comment: text.value || null, status: status.value });
     } else if (props.type === 'session') {
-      const patch = { joint_note: jointNote.value || null, watched_at: watchedAt.value };
+      const patch: any = { joint_note: jointNote.value || null, watched_at: watchedAt.value };
       if (isViewerA.value) { patch.rating_a = rating.value; patch.review_a = text.value || null; }
       else { patch.rating_b = rating.value; patch.review_b = text.value || null; }
       await sessions.update(props.record.id, patch);

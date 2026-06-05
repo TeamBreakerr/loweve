@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 // 推荐卡反馈三按钮：想看 / 没兴趣 / 看过（纯图标 + 悬停提示）
 defineEmits(['want', 'no', 'seen']);
 </script>

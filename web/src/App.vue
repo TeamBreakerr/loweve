@@ -1,6 +1,6 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, watchEffect } from 'vue';
-import { useIdentity } from './stores/identity.js';
+import { useIdentity } from './stores/identity';
 import TopBar from './components/TopBar.vue';
 import ProxyBanner from './components/ProxyBanner.vue';
 

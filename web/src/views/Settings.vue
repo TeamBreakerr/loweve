@@ -1,7 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
-import { useIdentity } from '../stores/identity.js';
-import { api } from '../api/index.js';
+import { useIdentity } from '../stores/identity';
+import { api } from '../api/index';
+import type { ApiSettings } from '../types';
 
 const identity = useIdentity();
 
@@ -43,7 +44,7 @@ async function saveNames() {
 function pickIdentity(id) { identity.switchMe(id); }
 
 // —— 服务配置（LLM / TMDB / Bangumi 凭证）：存服务器、覆盖 env、改完即时生效 ——
-const svc = ref({});   // GET /api/settings（密钥脱敏）
+const svc = ref<Partial<ApiSettings>>({});   // GET /api/settings（密钥脱敏）
 const form = ref({ llm_base_url: '', llm_api_key: '', llm_model: '', tmdb_token: '', tmdb_key: '', bangumi_ua: '' });
 const svcSaving = ref(false), svcSaved = ref(false), svcError = ref(false);
 
@@ -60,7 +61,7 @@ onMounted(loadServices);
 async function saveServices() {
   svcSaving.value = true; svcError.value = false;
   try {
-    const patch = {};
+    const patch: Record<string, string> = {};
     // 非密钥：变了才发（清空=回退 env）；密钥：填了才发（留空=不改）
     if (form.value.llm_base_url !== (svc.value.llm_base_url || '')) patch.llm_base_url = form.value.llm_base_url.trim();
     if (form.value.llm_model !== (svc.value.llm_model || '')) patch.llm_model = form.value.llm_model.trim();

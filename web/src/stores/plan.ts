@@ -1,10 +1,11 @@
 // web/src/stores/plan.js
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { api } from '../api/index.js';
+import { api } from '../api/index';
+import type { PlanItem } from '../types';
 
 export const usePlan = defineStore('plan', () => {
-  const list = ref([]);
+  const list = ref<PlanItem[]>([]);
   const loading = ref(false);
 
   async function load() {

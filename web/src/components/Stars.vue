@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 defineProps({
   value: { type: Number, default: 0 },   // 0–3
   total: { type: Number, default: 3 },

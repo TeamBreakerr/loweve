@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 // 看完日期：一个输入框，填多少算多少——2024 / 2024-06 / 2024-06-02 都行。
 // v-model 是 YYYYMMDD 整数，月/日未知为 00；空 → null。下方实时回显识别到的精度。
 import { ref, watch, computed } from 'vue';
-import { fmtWatched, decodeWatched } from '../utils/watchedDate.js';
+import { fmtWatched, decodeWatched } from '../utils/watchedDate';
 
 const props = defineProps({ modelValue: { type: Number, default: null } });
 const emit = defineEmits(['update:modelValue']);

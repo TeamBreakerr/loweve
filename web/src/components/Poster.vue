@@ -1,6 +1,6 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { imgProxy } from '../api/index.js';
+import { imgProxy } from '../api/index';
 
 const props = defineProps({
   color: { type: String, default: '' },

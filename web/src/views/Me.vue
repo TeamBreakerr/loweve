@@ -1,12 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useIdentity } from '../stores/identity.js';
-import { useMarks } from '../stores/marks.js';
+import { useIdentity } from '../stores/identity';
+import { useMarks } from '../stores/marks';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
 import AddModal from '../components/AddModal.vue';
 import EditModal from '../components/EditModal.vue';
-import { ratingHref } from '../api/index.js';
+import { ratingHref } from '../api/index';
 
 const identity = useIdentity();
 const marks = useMarks();

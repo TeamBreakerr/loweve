@@ -1,5 +1,5 @@
-<script setup>
-import { useIdentity } from '../stores/identity.js';
+<script setup lang="ts">
+import { useIdentity } from '../stores/identity';
 defineProps({
   ratingA: { type: [Number, String], default: '–' },  // 用户A 评分（user_id=1）
   ratingB: { type: [Number, String], default: '–' },  // 用户B 评分（user_id=2）

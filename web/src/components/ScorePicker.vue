@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 // 1–10 评分选择器：一排可点数字，选中高亮影院金；再点已选中的数字 = 取消（设 null）
 defineProps({
   modelValue: { type: [Number, null], default: null },

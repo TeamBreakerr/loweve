@@ -1,19 +1,20 @@
 // web/src/stores/recos.js
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { api } from '../api/index.js';
-import { usePlan } from './plan.js';
-import { useMarks } from './marks.js';
+import { api } from '../api/index';
+import { usePlan } from './plan';
+import { useMarks } from './marks';
+import type { Reco } from '../types';
 
 // 反馈按钮 emit → 后端 action
 const ACTION = { want: 'want', no: 'not_interested', seen: 'already_seen' };
 
 export const useRecos = defineStore('recos', () => {
-  const items = ref([]);
-  const batchId = ref(null);
+  const items = ref<Reco[]>([]);
+  const batchId = ref<string | null>(null);
   const recType = ref('standing');
   const loading = ref(false);
-  const error = ref(null);
+  const error = ref<string | null>(null);
 
   function apply(data) {
     items.value = data.items || [];

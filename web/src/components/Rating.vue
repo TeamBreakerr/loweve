@@ -1,6 +1,6 @@
-<script setup>
+<script setup lang="ts">
 defineProps({
-  source: { type: String, required: true, validator: v => ['douban','bangumi','tmdb'].includes(v) },
+  source: { type: String, required: true, validator: (v: string) => ['douban','bangumi','tmdb'].includes(v) },
   score: { type: [Number, String], required: true },
   href: { type: String, default: '' },   // 给了就渲染成可点链接，跳到该平台条目
 });

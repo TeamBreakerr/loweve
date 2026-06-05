@@ -1,7 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { api, tmdbPoster, imgProxy } from '../api/index.js';
-import { useIdentity } from '../stores/identity.js';
+import { api, tmdbPoster, imgProxy } from '../api/index';
+import { useIdentity } from '../stores/identity';
 import ScorePicker from './ScorePicker.vue';
 import DatePicker from './DatePicker.vue';
 

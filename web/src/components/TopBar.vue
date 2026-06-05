@@ -1,5 +1,5 @@
-<script setup>
-import { useIdentity } from '../stores/identity.js';
+<script setup lang="ts">
+import { useIdentity } from '../stores/identity';
 import { useRoute, useRouter } from 'vue-router';
 
 const identity = useIdentity();

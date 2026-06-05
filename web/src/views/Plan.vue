@@ -1,15 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { usePlan } from '../stores/plan.js';
-import { useSessions } from '../stores/sessions.js';
-import { useIdentity } from '../stores/identity.js';
+import { usePlan } from '../stores/plan';
+import { useSessions } from '../stores/sessions';
+import { useIdentity } from '../stores/identity';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
 import Stars from '../components/Stars.vue';
 import AddModal from '../components/AddModal.vue';
 import EditModal from '../components/EditModal.vue';
-import { ratingHref } from '../api/index.js';
+import { ratingHref } from '../api/index';
 
 const router = useRouter();
 const plan = usePlan();
@@ -29,7 +29,7 @@ const visible = computed(() => {
   return s ? plan.list.filter(p => p.status === s) : plan.list;
 });
 const planCounts = computed(() => {
-  const c = plan.list.reduce((m, x) => (m[x.status] = (m[x.status] || 0) + 1, m), {});
+  const c = plan.list.reduce((m: Record<string, number>, x) => (m[x.status] = (m[x.status] || 0) + 1, m), {} as Record<string, number>);
   return { 全部: plan.list.length, 待看: c.pending||0, 在看: c.watching||0, 弃了: c.dropped||0 };
 });
 

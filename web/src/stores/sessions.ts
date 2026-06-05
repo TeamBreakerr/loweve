@@ -1,10 +1,11 @@
 // web/src/stores/sessions.js
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { api } from '../api/index.js';
+import { api } from '../api/index';
+import type { Session } from '../types';
 
 export const useSessions = defineStore('sessions', () => {
-  const list = ref([]);
+  const list = ref<Session[]>([]);
   const loading = ref(false);
 
   async function load() {

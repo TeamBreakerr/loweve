@@ -1,6 +1,6 @@
 // web/src/api/index.js
 // 所有 fetch 走这里。识别 viewing != me 时自动追加 ?as_user= 参数。
-import { useIdentity } from '../stores/identity.js';
+import { useIdentity } from '../stores/identity';
 
 function withViewing(url) {
   const identity = useIdentity();
@@ -11,7 +11,7 @@ function withViewing(url) {
   return url;
 }
 
-export async function api(url, opts = {}) {
+export async function api(url: string, opts: RequestInit = {}) {
   const finalUrl = withViewing(url);
   const res = await fetch(finalUrl, {
     credentials: 'include',

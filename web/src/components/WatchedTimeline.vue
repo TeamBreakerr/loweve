@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 // 一起看过 · 横向时间线：按年分组、节点+圆点+竖轴线、左右滚动。
 // 自绘滚动条（藏原生）；overscroll-behavior-x 屏蔽左右滑触发的浏览器前进/后退。
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
@@ -6,19 +6,20 @@ import { useRouter } from 'vue-router';
 import Poster from './Poster.vue';
 import Rating from './Rating.vue';
 import Dual from './Dual.vue';
-import { fmtWatchedShort } from '../utils/watchedDate.js';
-import { ratingHref } from '../api/index.js';
+import { fmtWatchedShort } from '../utils/watchedDate';
+import { ratingHref } from '../api/index';
+import type { Session } from '../types';
 
 const router = useRouter();
-const props = defineProps({
-  sessions: { type: Array, default: () => [] },
-  limit: { type: Number, default: 0 },   // 0 = 全部
+const props = withDefaults(defineProps<{ sessions?: Session[]; limit?: number }>(), {
+  sessions: () => [],
+  limit: 0,   // 0 = 全部
 });
 const emit = defineEmits(['edit']);
 
 const groups = computed(() => {
   const list = props.limit ? props.sessions.slice(0, props.limit) : props.sessions;
-  const g = {};
+  const g: Record<string, Session[]> = {};
   list.forEach(s => {
     const year = s.watched_at ? String(Math.floor(s.watched_at / 10000)) : '未知';
     (g[year] = g[year] || []).push(s);

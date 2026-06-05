@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { api, ratingHref } from '../api/index.js';
-import { useIdentity } from '../stores/identity.js';
+import { api, ratingHref } from '../api/index';
+import { useIdentity } from '../stores/identity';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
 import EditModal from '../components/EditModal.vue';

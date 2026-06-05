@@ -7,13 +7,14 @@
 // 切换 me 调用 /api/me/switch 持久化；切换 viewing 只本地，不动 cookie。
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import type { User } from '../types';
 
 const VIEW_KEY = 'loweve.viewing';
 
 export const useIdentity = defineStore('identity', () => {
-  const me = ref(null);              // null | 1 | 2
-  const viewing = ref(null);         // null | 1 | 2，默认跟随 me
-  const users = ref([]);             // [{id, display_name, avatar}]
+  const me = ref<number | null>(null);              // null | 1 | 2
+  const viewing = ref<number | null>(null);         // null | 1 | 2，默认跟随 me
+  const users = ref<User[]>([]);             // [{id, display_name, avatar}]
   const loaded = ref(false);
 
   async function load() {

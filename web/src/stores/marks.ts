@@ -1,11 +1,12 @@
 // web/src/stores/marks.js
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
-import { api } from '../api/index.js';
-import { useIdentity } from './identity.js';
+import { api } from '../api/index';
+import { useIdentity } from './identity';
+import type { Mark } from '../types';
 
 export const useMarks = defineStore('marks', () => {
-  const list = ref([]);     // 当前 viewing 的全部 marks（含 work join）
+  const list = ref<Mark[]>([]);     // 当前 viewing 的全部 marks（含 work join）
   const loading = ref(false);
 
   const watched = computed(() => list.value.filter(m => m.status === 'watched'));

@@ -1,14 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSessions } from '../stores/sessions.js';
+import { useSessions } from '../stores/sessions';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
 import Dual from '../components/Dual.vue';
 import AddModal from '../components/AddModal.vue';
 import EditModal from '../components/EditModal.vue';
-import { fmtWatched } from '../utils/watchedDate.js';
-import { ratingHref } from '../api/index.js';
+import { fmtWatched } from '../utils/watchedDate';
+import { ratingHref } from '../api/index';
+import type { Session } from '../types';
 
 const router = useRouter();
 const sessions = useSessions();
@@ -21,7 +22,7 @@ function openEdit(s) { editRecord.value = s; editOpen.value = true; }
 onMounted(() => sessions.load());
 
 const grouped = computed(() => {
-  const groups = {};
+  const groups: Record<string, Session[]> = {};
   sessions.list.forEach(s => {
     const year = s.watched_at ? String(Math.floor(s.watched_at / 10000)) : '未知';
     (groups[year] = groups[year] || []).push(s);
