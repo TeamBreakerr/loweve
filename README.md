@@ -36,7 +36,7 @@ docker compose up --build
 
 打开 http://localhost:18083
 
-> ⚠️ 仓库自带的 `docker-compose.yml` 默认接入名为 `web-internal` 的外部网络（作者用 Nginx Proxy Manager 反代的部署）。**本地直接跑请改 compose**：删掉 `loweve` 服务里的 `web-internal` 网络引用和文件末尾的 `networks` 段，并给 `loweve` 加上端口映射 `ports: ["18083:18083"]`。
+> 用反向代理（如 Nginx Proxy Manager）部署时，可加一个 `docker-compose.override.yml` 去掉端口映射、接入你的代理网络。
 
 ### 本地开发
 

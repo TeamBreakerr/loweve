@@ -14,7 +14,8 @@ services:
       # 否则容器内 ./data 会落到 /app/server/data，重建即丢库）
       - LOWEVE_DATA_DIR=/data
       - TZ=Asia/Shanghai
-    # 不映射端口到宿主：仅经 web-internal 由 NPM 入口访问（部署准则）
+    ports:
+      - "18083:18083"          # 浏览器访问 http://localhost:18083
     volumes:
       - ${LOWEVE_DATA_DIR:-./data}:/data
     healthcheck:
@@ -23,11 +24,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    networks:
-      - default
-      - web-internal
-
-networks:
-  default:
-  web-internal:
-    external: true
