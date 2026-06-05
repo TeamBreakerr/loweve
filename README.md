@@ -30,13 +30,12 @@
 ```bash
 git clone <your-repo-url> loweve
 cd loweve
-cp .env.example .env        # 至少填 TMDB 凭证
+cp .env.example .env                          # 至少填 TMDB 凭证
+cp docker-compose.example.yml docker-compose.yml   # 默认映射 18083，可按需改
 docker compose up --build
 ```
 
 打开 http://localhost:18083
-
-> 用反向代理（如 Nginx Proxy Manager）部署时，可加一个 `docker-compose.override.yml` 去掉端口映射、接入你的代理网络。
 
 ### 本地开发
 

@@ -10,5 +10,5 @@ dist/
 # 内部设计/计划文档（含私人引用，不发布）
 docs/
 
-# 本机生产 compose 覆盖（web-internal/NPM），不发布
-docker-compose.override.yml
+# 本机实际用的 compose（生产配置，因机器而异）；仓库用 docker-compose.example.yml
+docker-compose.yml
