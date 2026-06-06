@@ -13,7 +13,8 @@
     "better-sqlite3": "^11.5.0",
     "cookie-parser": "^1.4.7",
     "express": "^4.21.0",
-    "tsx": "^4.22.4"
+    "tsx": "^4.22.4",
+    "undici": "^6.26.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

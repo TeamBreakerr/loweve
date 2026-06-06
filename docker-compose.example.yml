@@ -14,6 +14,10 @@ services:
       # 否则容器内 ./data 会落到 /app/server/data，重建即丢库）
       - LOWEVE_DATA_DIR=/data
       - TZ=Asia/Shanghai
+      # 墙内访问 TMDB 需要代理时，设置标准代理变量即可（留空则全程直连，海外/CI 无需配置）。
+      # 后端会读 HTTPS_PROXY 给外网 fetch 挂代理；NO_PROXY 内务必排除内网 LLM 端点。
+      # - HTTPS_PROXY=http://你的代理地址:端口
+      # - NO_PROXY=cli-proxy-api,localhost,127.0.0.1
     ports:
       - "18083:18083"          # 浏览器访问 http://localhost:18083
     volumes:

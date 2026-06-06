@@ -65,9 +65,22 @@ cd server && npm test
 | `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | 选填 | AI 推荐，任意 OpenAI 兼容端点；三项都填才启用，留空则推荐功能关闭 |
 | `USER_A_NAME` / `USER_B_NAME` | 选填 | 两位用户的初始显示名（仅首次启动写入；之后可在设置页改） |
 | `BANGUMI_USER_AGENT` | 选填 | 番剧评分请求的 User-Agent |
+| `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` | 选填 | 墙内访问 TMDB 时给外网请求挂代理（标准代理变量）；留空则全程直连 |
 | `LOWEVE_PORT` / `LOWEVE_DATA_DIR` / `TZ` | 选填 | 端口 / 数据卷（SQLite + 海报缓存） / 时区 |
 
 > LLM / TMDB / Bangumi 凭证也可在 **设置 → 服务配置** 里改：存数据库、覆盖环境变量、改完即时生效，无需重启。
+
+### 🌐 墙内代理（可选）
+
+墙内访问 TMDB 需要代理时，配置标准代理变量（留空则全程直连）：
+
+```yaml
+# docker-compose.yml
+environment:
+  - HTTPS_PROXY=http://你的代理地址:端口
+  - HTTP_PROXY=http://你的代理地址:端口
+  - NO_PROXY=cli-proxy-api,localhost,127.0.0.1   # 内网 LLM 端点务必排除
+```
 
 ## 📊 数据来源
 

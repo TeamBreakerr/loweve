@@ -1,5 +1,6 @@
 // server/index.js
 import fs from 'node:fs';
+import { installProxyFromEnv } from './src/net/proxy.js';
 import { config, paths } from './src/config.js';
 import { openDb } from './src/db/index.js';
 import { migrate } from './src/db/migrate.js';
@@ -12,6 +13,10 @@ import { createLlmClient } from './src/llm/client.js';
 import { effectiveConfig } from './src/settings.js';
 
 async function main() {
+  // 必须在任何 fetch 之前装代理（外网请求经 HTTPS_PROXY 走代理，内网 cli-proxy-api 经 NO_PROXY 直连）
+  const proxyUrl = installProxyFromEnv();
+  if (proxyUrl) console.log(`[net] 外网请求经代理 ${proxyUrl}（NO_PROXY=${process.env.NO_PROXY || process.env.no_proxy || ''}）`);
+
   fs.mkdirSync(config.dataDir, { recursive: true });
 
   const db = openDb(paths.dbFile);
