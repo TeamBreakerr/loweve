@@ -81,7 +81,7 @@ function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
       <div class="intent">
         <svg class="intent__ic" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M7 7 5.5 5.5M17 17l1.5 1.5M17 7l1.5-1.5M7 17l-1.5 1.5"/><circle cx="12" cy="12" r="4"/></svg>
         <input class="intent__input" type="text" v-model="intent" @keyup.enter="submitIntent"
-               placeholder='想要什么？例如「今晚 90 分钟内的轻松治愈片」「完结的短番 12 集左右」' />
+               placeholder='想看什么？例如「今晚 90 分钟内的轻松治愈片」「完结的短番 12 集左右」' />
         <button class="intent__btn" title="按要求推荐" @click="submitIntent">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>

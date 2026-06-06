@@ -295,7 +295,7 @@ a.rating--link:active{ transform:none; }
 .intent{
   display:flex; gap:var(--s-2); margin-bottom:var(--s-5);
   background:var(--surface); border:1px solid var(--line-soft);
-  border-radius:var(--r-pill); padding:5px 5px 5px var(--s-5);
+  border-radius:var(--r-pill); padding:2px 4px 2px var(--s-5);
   align-items:center; box-shadow:var(--shadow-sm);
   max-width:680px;
 }
@@ -308,7 +308,7 @@ a.rating--link:active{ transform:none; }
 .intent__btn{
   background:var(--rose); border:1px solid var(--rose);
   color:oklch(0.16 0.02 30); font-weight:600; font-size:var(--fs-sm);
-  padding:9px 18px; border-radius:var(--r-pill); white-space:nowrap;
+  padding:5px 16px; border-radius:var(--r-pill); white-space:nowrap;
   transition:background .2s, transform .2s;
 }
 .intent__btn:hover{ background:var(--rose-bright); border-color:var(--rose-bright); transform:translateY(-1px); }
@@ -696,13 +696,21 @@ footer .brand__mark{ font-size:20px; }
 
 /* —— 推荐顶部：1 号大卡 + 2/3 号中卡 —— */
 .reco-top{ display:grid; grid-template-columns:1.55fr 1fr; gap:var(--s-4); margin-bottom:var(--s-4); }
-.rk{ position:relative; background:var(--surface); border-radius:var(--r-lg); }
+.rk{ position:relative; background:var(--surface); border-radius:var(--r-lg); overflow:hidden; }
 .rk-num{ position:absolute; z-index:2; font-family:var(--font-brand); font-style:italic; font-weight:600; line-height:.78; color:var(--rose); pointer-events:none; }
 
-.rk-hero{ display:flex; gap:var(--s-6); padding:var(--s-5); height:100%; }
-.rk-hero .poster{ align-self:stretch; width:auto; }   /* 海报填满卡高度，宽度按 2:3 自动算 */
+.rk-hero{ display:flex; gap:0; height:100%; }
+.rk-hero .poster{ align-self:stretch; width:auto; border:none; border-radius:0; }   /* 贴紧卡片上下左，宽度按 2:3 自动算 */
+/* 海报右缘：磨砂模糊 + 渐隐到卡片底色，与正文无缝衔接 */
+.rk-hero .poster::before, .rk-mid .poster::before{
+  content:""; position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:linear-gradient(90deg, transparent 58%, var(--surface));
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  -webkit-mask:linear-gradient(90deg, transparent 55%, #000 90%);
+  mask:linear-gradient(90deg, transparent 55%, #000 90%);
+}
 .rk-hero .rk-num{ top:18px; right:24px; font-size:90px; }
-.rk-hero__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-3); padding-top:var(--s-1); }
+.rk-hero__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-3); padding:var(--s-5); }
 .rk-hero__title{ font-family:var(--font-serif); font-weight:700; font-size:var(--fs-xl); line-height:1.15; padding-right:70px; }
 .rk-hero__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-md); }
 .rk-meta{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
@@ -710,13 +718,13 @@ footer .brand__mark{ font-size:20px; }
 .rk-reason .label{ display:inline-flex; align-items:center; gap:6px; color:var(--rose); font-size:var(--fs-sm); margin-bottom:6px; }
 .rk-reason .label svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; }
 .rk-reason .quote{ color:var(--rose); font-weight:600; }
-.rk-actions{ display:flex; gap:var(--s-2); margin-top:auto; }
+.rk-actions{ display:flex; gap:var(--s-2); margin-top:auto; justify-content:flex-end; }
 
 .rk-mids{ display:flex; flex-direction:column; gap:var(--s-4); }
-.rk-mid{ display:flex; gap:var(--s-4); padding:var(--s-4); flex:1; }
-.rk-mid .poster{ align-self:center; width:110px; }   /* 海报固定宽 2:3、垂直居中；卡高度随内容（min-height:auto），按钮不会出框 */
+.rk-mid{ display:flex; gap:0; flex:1; }
+.rk-mid .poster{ align-self:stretch; width:auto; border:none; border-radius:0; }   /* 贴紧卡片上下左，宽度按 2:3 自动算 */
 .rk-mid .rk-num{ top:12px; right:16px; font-size:40px; }
-.rk-mid__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
+.rk-mid__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; padding:var(--s-4); }
 .rk-mid__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); line-height:1.2; padding-right:36px; }
 .rk-mid__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
 .rk-mid .rk-reason{ font-size:var(--fs-sm); line-height:1.5; }
