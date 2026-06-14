@@ -27,11 +27,11 @@ describe('recos staleness 钩子', () => {
     assert.equal(isRecosStale(db), true);
   });
 
-  it('加 plan → 置 stale', async () => {
+  it('加 plan → 不置 stale（推荐生成时实时读最新清单避雷，改清单不该触发重推）', async () => {
     clearRecosStale(db);
     await request(app(db)).post('/api/plan').set('Cookie', 'loweve_user_id=1')
       .send({ tmdb_id: 5, tmdb_type: 'movie' });
-    assert.equal(isRecosStale(db), true);
+    assert.equal(isRecosStale(db), false);
   });
 
   it('加 session → 置 stale', async () => {

@@ -47,6 +47,8 @@ export function recosRoutes() {
     const action = req.body?.action;
     const feedback = ACTIONS[action as keyof typeof ACTIONS];
     if (!feedback) return res.status(400).json({ error: 'invalid_action' });
+    // 想看时可带优先级（0–3），非法值归 0
+    const priority = (Number.isInteger(req.body?.priority) && req.body.priority >= 0 && req.body.priority <= 3) ? req.body.priority : 0;
 
     const rec = db.prepare('SELECT id, work_id FROM recommendations WHERE id = ?').get(id);
     if (!rec) return res.status(404).json({ error: 'not_found' });
@@ -72,7 +74,7 @@ export function recosRoutes() {
         catch (e) { console.warn('[recos] want upsert failed', e.message); }
         try {
           const info = db.prepare(`INSERT INTO plan_items (work_id, added_by, note, priority, status, created_at, updated_at)
-            VALUES (?, ?, NULL, 0, 'pending', ?, ?)`).run(rec.work_id, req.viewing_user_id, now, now);
+            VALUES (?, ?, NULL, ?, 'pending', ?, ?)`).run(rec.work_id, req.viewing_user_id, priority, now, now);
           plan = db.prepare('SELECT id, work_id, added_by, note, priority, status, created_at, updated_at FROM plan_items WHERE id = ?').get(info.lastInsertRowid);
         } catch (e) { if (!String(e).includes('UNIQUE')) throw e; }   // 已在计划里就忽略
       }

@@ -48,7 +48,7 @@ describe('recos routes', () => {
     assert.equal(res.body.rec_type, 'custom');
   });
 
-  it('feedback want → 写 interested + 建 plan_item', async () => {
+  it('feedback want → 写 interested + 建 plan_item（默认优先级 0）', async () => {
     const app = appWith(db);
     const recos = (await request(app).get('/api/recos')).body;
     const id = recos.items[0].id;
@@ -56,8 +56,25 @@ describe('recos routes', () => {
     assert.equal(res.status, 200);
     const plan = (await request(app).get('/api/plan')).body;
     assert.equal(plan.items.length, 1);
+    assert.equal(plan.items[0].priority, 0);
     const row = db.prepare('SELECT feedback FROM recommendations WHERE id = ?').get(id);
     assert.equal(row.feedback, 'interested');
+  });
+
+  it('feedback want 带 priority → plan_item 用该优先级', async () => {
+    const app = appWith(db);
+    const id = (await request(app).get('/api/recos')).body.items[0].id;
+    await request(app).post(`/api/recos/${id}/feedback`).set('Cookie', 'loweve_user_id=1').send({ action: 'want', priority: 3 });
+    const plan = (await request(app).get('/api/plan')).body;
+    assert.equal(plan.items[0].priority, 3);
+  });
+
+  it('feedback want priority 越界 → 归 0', async () => {
+    const app = appWith(db);
+    const id = (await request(app).get('/api/recos')).body.items[0].id;
+    await request(app).post(`/api/recos/${id}/feedback`).set('Cookie', 'loweve_user_id=1').send({ action: 'want', priority: 9 });
+    const plan = (await request(app).get('/api/plan')).body;
+    assert.equal(plan.items[0].priority, 0);
   });
 
   it('feedback not_interested → 写避雷 + 该卡不再出现在批次', async () => {

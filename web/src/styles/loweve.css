@@ -504,6 +504,7 @@ a.rating--link:active{ transform:none; }
 .modal__foot{
   display:flex; gap:var(--s-3); padding:var(--s-4) var(--s-5) var(--s-5);
   border-top:1px solid var(--line-soft);
+  position:sticky; bottom:0; background:var(--surface); z-index:1;   /* 始终吸底，保存按钮无需滚动 */
 }
 .modal__foot .btn{ padding:11px 20px; }
 .btn--primary{
@@ -649,7 +650,7 @@ footer .brand__mark{ font-size:20px; }
 .record[data-who="b"] .record__avatar{ background:var(--user-b); }
 .record__who{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
 .record__role{ font-size:var(--fs-sm); color:var(--text-faint); }
-.record__score{ margin-left:auto; font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:var(--fs-2xl); color:var(--gold); line-height:1; }
+.record__score{ margin-left:auto; margin-right:26px; font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:var(--fs-2xl); color:var(--gold); line-height:1; }   /* 留出右上角编辑按钮的位置，避免重合 */
 .record__review{ color:var(--text-dim); line-height:1.7; font-size:var(--fs-body); }
 .record__date{ font-size:var(--fs-sm); color:var(--text-faint); margin-top:var(--s-3); }
 .joint{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--s-5) var(--s-6); }
@@ -834,7 +835,7 @@ footer .brand__mark{ font-size:20px; }
   border:1px solid oklch(1 0 0 / 0.18); color:oklch(0.95 0 0 / 0.92);
   opacity:0; transition:opacity .18s var(--ease), background .18s;
 }
-.title-card:hover .card-edit, .hcard:hover .card-edit, .watched-card:hover .card-edit, .card-edit:focus{ opacity:1; }
+.title-card:hover .card-edit, .hcard:hover .card-edit, .watched-card:hover .card-edit, .vcard:hover .card-edit, .card-edit:focus{ opacity:1; }
 /* 查看页（Work）的记录卡 .record/.joint 不在上面的 hover 列表里——编辑按钮常驻可见 */
 .record .card-edit, .joint .card-edit{ opacity:.82; }
 .record:hover .card-edit, .joint:hover .card-edit{ opacity:1; }
@@ -842,3 +843,35 @@ footer .brand__mark{ font-size:20px; }
 .card-edit svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.9; }
 /* 触屏没有 hover：窄屏常驻显示 */
 @media (max-width:680px){ .card-edit{ opacity:.85; } }
+
+/* ============================================================ 片名后的年份
+   统一浅色 + 不同字体（sans）+ 比片名略小；各卡可用 .X__title .year 覆盖字号 */
+.year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:0.84em; }
+
+/* ============================================================ 快速悬浮提示
+   取代浏览器默认 title（约 2s 才弹）。用法：给元素加 data-tip="文字"；
+   想朝下弹（如卡片顶角按钮，免被 overflow 裁切）再加 data-tip-pos="below" */
+[data-tip]{ position:relative; }
+[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute; left:50%; bottom:calc(100% + 7px);
+  transform:translateX(-50%) translateY(3px);
+  z-index:90; white-space:nowrap; pointer-events:none;
+  background:oklch(0.14 0.015 40 / 0.97); color:var(--text);
+  font-size:11px; line-height:1; font-weight:500; letter-spacing:.01em;
+  padding:6px 9px; border-radius:var(--r-sm); border:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+  opacity:0; transition:opacity .14s ease, transform .14s ease; transition-delay:.16s;
+}
+[data-tip][data-tip-pos="below"]::after{
+  bottom:auto; top:calc(100% + 7px); transform:translateX(-50%) translateY(-3px);
+}
+[data-tip]:hover::after, [data-tip]:focus-visible::after{
+  opacity:1; transform:translateX(-50%) translateY(0);
+}
+/* [data-tip] 的 position:relative 与 .card-edit 同特异性、且在后面，会盖掉它的绝对定位
+   （导致编辑按钮掉进文档流、压住头像）。这里用更高特异性补回绝对定位。 */
+.card-edit[data-tip]{ position: absolute; }
+
+/* 优先级选择按钮：心形图标居中 */
+.prio-opt{ display:flex; align-items:center; justify-content:center; min-height:1.4em; }

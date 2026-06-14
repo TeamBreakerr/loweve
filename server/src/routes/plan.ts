@@ -1,7 +1,6 @@
 // server/src/routes/plan.js
 import { Router } from 'express';
 import { upsertWork } from './works.js';
-import { markRecosStale } from '../recos/state.js';
 
 const PLAN_COLS = 'id, work_id, added_by, note, priority, status, created_at, updated_at';
 const VALID_STATUS = ['pending', 'watching', 'done', 'dropped'];
@@ -53,7 +52,6 @@ export function planRoutes() {
       const info = db.prepare(`INSERT INTO plan_items (work_id, added_by, note, priority, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'pending', ?, ?)`)
         .run(finalWorkId, req.viewing_user_id, note ?? null, prio, now, now);
       const row = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items WHERE id = ?`).get(info.lastInsertRowid);
-      markRecosStale(db);
       res.json(row);
     } catch (e) {
       if (String(e).includes('UNIQUE')) return res.status(409).json({ error: 'plan_exists' });
@@ -79,7 +77,6 @@ export function planRoutes() {
       updated_at = @updated_at
       WHERE id = @id`).run({ note: note ?? null, priority: priority ?? null, status: status ?? null, updated_at: Date.now(), id });
     const row = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items WHERE id = ?`).get(id);
-    markRecosStale(db);
     res.json(row);
   });
 
@@ -88,7 +85,6 @@ export function planRoutes() {
     const id = parseInt(req.params.id, 10);
     const info = db.prepare('DELETE FROM plan_items WHERE id = ?').run(id);
     if (info.changes === 0) return res.status(404).json({ error: 'not_found' });
-    markRecosStale(db);
     res.status(204).end();
   });
 

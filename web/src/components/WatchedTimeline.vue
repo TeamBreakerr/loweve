@@ -88,7 +88,7 @@ onBeforeUnmount(() => { clearTimeout(hideTimer); window.removeEventListener('res
             <Poster :color="'#2a2a30'" :url="s.work?.primary_poster_url" :kind="s.work?.is_anime ? '番剧' : ''"
                     style="cursor:pointer" @click="s.work_id && router.push(`/work/${s.work_id}`)" />
             <div class="hcard__corner">
-              <button class="hcard__edit" title="编辑" @click="emit('edit', s)">
+              <button class="hcard__edit" data-tip="编辑" data-tip-pos="below" @click="emit('edit', s)">
                 <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
               </button>
             </div>
@@ -103,7 +103,6 @@ onBeforeUnmount(() => { clearTimeout(hideTimer); window.removeEventListener('res
                 {{ fmtMonthDay(s.watched_at) }}
               </span>
             </div>
-            <p v-if="s.joint_note" class="hcard__note">"{{ s.joint_note }}"</p>
           </div>
         </article>
       </template>

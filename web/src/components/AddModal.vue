@@ -4,6 +4,7 @@ import { api, tmdbPoster, imgProxy } from '../api/index';
 import { useIdentity } from '../stores/identity';
 import ScorePicker from './ScorePicker.vue';
 import DatePicker from './DatePicker.vue';
+import Priority from './Priority.vue';
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -55,7 +56,6 @@ const target = ref(props.initialTarget);
 const rating = ref<number | null>(null);
 const comment = ref('');
 const watchedAt = ref<number | null>(null);     // 默认空：有时忘了哪天看的
-const jointNote = ref('');
 const planNote = ref('');
 const planPriority = ref(0);
 
@@ -73,39 +73,42 @@ function dateInputToInt(s: any) {
   return y*10000 + m*100 + d;
 }
 
-// —— from_plan 模式：预填 ——
-watch(() => props.fromPlan, (fp) => {
-  if (fp) {
-    target.value = 'couple_watched';
-    selected.value = {
-      tmdb_id: fp.work.tmdb_id,
-      tmdb_type: fp.work.tmdb_type,
-      title: fp.work.title,
-      year: fp.work.year,
-      poster_path: fp.work.primary_poster_url
-        ? fp.work.primary_poster_url.replace(/^.*\/t\/p\/w\d+/, '')
-        : null,
-      _fromPlan: true,
-      _workId: fp.work.id,
-    };
-    query.value = fp.work.title;
-  }
-}, { immediate: true });
+// —— from_plan 模式：预填（提取成函数，reset 时也要重新套用，否则开窗会被清空）——
+function prefillFromPlan() {
+  const fp = props.fromPlan;
+  if (!fp) return false;
+  target.value = 'couple_watched';
+  selected.value = {
+    tmdb_id: fp.work.tmdb_id,
+    tmdb_type: fp.work.tmdb_type,
+    title: fp.work.title,
+    year: fp.work.year,
+    poster_path: fp.work.primary_poster_url
+      ? fp.work.primary_poster_url.replace(/^.*\/t\/p\/w\d+/, '')
+      : null,
+    _fromPlan: true,
+    _workId: fp.work.id,
+  };
+  query.value = fp.work.title;
+  return true;
+}
+watch(() => props.fromPlan, () => { prefillFromPlan(); }, { immediate: true });
 
 // —— 重置 ——
 function reset() {
-  query.value = '';
   candidates.value = [];
-  selected.value = null;
-  target.value = props.initialTarget;
   rating.value = null;
   comment.value = '';
   watchedAt.value = null;
-  jointNote.value = '';
   planNote.value = '';
   planPriority.value = 0;
   saving.value = false;
   saveError.value = '';
+  if (!prefillFromPlan()) {   // 普通模式才清空走搜索；from_plan 模式保留预填
+    query.value = '';
+    selected.value = null;
+    target.value = props.initialTarget;
+  }
 }
 watch(() => props.modelValue, (open) => { if (open) reset(); });
 watch(() => props.initialTarget, (t) => { target.value = t; });
@@ -149,7 +152,6 @@ async function save() {
           watched_at: watchedAt.value,
           rating: cleanRating(rating.value),
           review: comment.value || null,
-          joint_note: jointNote.value || null,
         }),
       });
     } else if (target.value === 'couple_plan') {
@@ -209,9 +211,9 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
                 <img v-if="c.poster_path" :src="imgProxy(tmdbPoster(c.poster_path, 'w92'))" alt="" referrerpolicy="no-referrer" />
               </div>
               <div class="result__info">
-                <div class="result__name">{{ c.title }}<span v-if="c.original_title && c.original_title !== c.title" style="color:var(--text-faint);font-weight:400">  {{ c.original_title }}</span></div>
+                <div class="result__name">{{ c.title }} <span class="year">{{ c.year }}</span><span v-if="c.original_title && c.original_title !== c.title" style="color:var(--text-faint);font-weight:400">  {{ c.original_title }}</span></div>
                 <div class="result__sub">
-                  {{ c.year || '—' }} · {{ c.tmdb_type === 'movie' ? '电影' : '剧/番' }} · TMDB {{ c.vote_average?.toFixed(1) || '—' }}
+                  {{ c.tmdb_type === 'movie' ? '电影' : '剧/番' }} · TMDB {{ c.vote_average?.toFixed(1) || '—' }}
                   <span v-if="c.via" style="color:var(--rose);font-weight:500"> · {{ c.via }}</span>
                 </div>
               </div>
@@ -240,24 +242,16 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
               <ScorePicker v-model="rating" :label="`${identity.viewingName} 的评分`" />
               <textarea class="review-input" v-model="comment" :placeholder="`${identity.viewingName} 的短评…`" style="margin-top:var(--s-3)"></textarea>
             </div>
-            <div class="field">
-              <span class="field__label"><span class="step">{{ fromPlan ? 3 : 5 }}</span>联合备注（可选）</span>
-              <textarea class="review-input" v-model="jointNote" placeholder="我们的感想…"></textarea>
-            </div>
           </div>
 
-          <!-- 想看就一起看 -->
+          <!-- 想看就一起看（只需选优先级，备注/状态都不再维护）-->
           <div v-else-if="target === 'couple_plan'">
             <div class="field">
-              <span class="field__label"><span class="step">{{ fromPlan ? 1 : 3 }}</span>备注（可选）</span>
-              <textarea class="review-input" v-model="planNote" placeholder="为什么想一起看…"></textarea>
-            </div>
-            <div class="field">
-              <span class="field__label"><span class="step">{{ fromPlan ? 2 : 4 }}</span>优先级</span>
+              <span class="field__label"><span class="step">3</span>优先级（可选）</span>
               <div class="rate-row">
-                <button v-for="n in [0,1,2,3]" :key="n" class="target" style="flex:0 0 auto;padding:6px 12px"
+                <button v-for="n in [0,1,2,3]" :key="n" class="target prio-opt" style="flex:0 0 auto;padding:6px 12px"
                         :class="{ 'is-active': planPriority === n }"
-                        @click="planPriority = n">{{ n === 0 ? '无' : '★'.repeat(n) }}</button>
+                        @click="planPriority = n"><span v-if="n === 0">无</span><Priority v-else :value="n" :total="n" /></button>
               </div>
             </div>
           </div>

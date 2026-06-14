@@ -51,7 +51,7 @@ onMounted(async () => {
         <article v-for="m in marks.watched" :key="m.id" class="title-card">
           <div class="title-card__pw">
             <Poster :color="'#2a2a30'" :url="m.work.primary_poster_url" :kind="m.work.is_anime ? '番剧' : ''" />
-            <button class="card-edit" title="编辑" @click="openEdit(m)">
+            <button class="card-edit" data-tip="编辑" data-tip-pos="below" @click="openEdit(m)">
               <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             </button>
           </div>

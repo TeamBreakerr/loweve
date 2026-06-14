@@ -8,7 +8,7 @@ import { useIdentity } from '../stores/identity';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
 import FeedbackBtns from '../components/FeedbackBtns.vue';
-import Stars from '../components/Stars.vue';
+import Priority from '../components/Priority.vue';
 import AddModal from '../components/AddModal.vue';
 import EditModal from '../components/EditModal.vue';
 import WatchedTimeline from '../components/WatchedTimeline.vue';
@@ -32,7 +32,18 @@ const mids = computed(() => recos.items.slice(1, 3));
 const minis = computed(() => recos.items.slice(3));
 function refresh() { intent.value.trim() ? recos.custom(intent.value.trim()) : recos.refresh(); }
 function submitIntent() { if (intent.value.trim()) recos.custom(intent.value.trim()); }
-function onFeedback(rec: any, emitName: any) { recos.feedback(rec, emitName); }
+// 爱心(想看)→ 先弹优先级，选完再加入「想看就一起看」；没兴趣/看过即时处理
+const wantPickerOpen = ref(false);
+const wantRec = ref<any>(null);
+const wantPriority = ref(0);
+function onFeedback(rec: any, emitName: any) {
+  if (emitName === 'want') { wantRec.value = rec; wantPriority.value = 0; wantPickerOpen.value = true; }
+  else recos.feedback(rec, emitName);
+}
+function confirmWant() {
+  if (wantRec.value) recos.feedback(wantRec.value, 'want', wantPriority.value);
+  wantPickerOpen.value = false; wantRec.value = null;
+}
 function openWork(rec: any) { if (rec.work_id) router.push(`/work/${rec.work_id}`); }
 
 // —— 一起看过 ——
@@ -41,27 +52,12 @@ onMounted(() => sessions.load());
 
 const watchedModalOpen = ref(false);
 
-// —— 想看就一起看 ——
+// —— 想看就一起看（扁平清单：只显示还想看的，已看过/弃了不展示）——
 const plan = usePlan();
 onMounted(() => plan.load());
-
-const planFilter = ref('全部');
-const planFilters = ['全部', '待看', '在看', '弃了'];
-const STATUS_MAP_HOME = { '全部': null, '待看': 'pending', '在看': 'watching', '弃了': 'dropped' };
-
-const planRecent = computed(() => plan.list.slice(0, 5));
-const visiblePlan = computed(() => {
-  const f = STATUS_MAP_HOME[planFilter.value as keyof typeof STATUS_MAP_HOME];
-  return f ? planRecent.value.filter(p => p.status === f) : planRecent.value;
-});
-const planCountsHome = computed(() => {
-  const c = plan.list.reduce((m: Record<string, number>, x) => (m[x.status] = (m[x.status] || 0) + 1, m), {} as Record<string, number>);
-  return { 全部: plan.list.length, 待看: c.pending||0, 在看: c.watching||0, 弃了: c.dropped||0 };
-});
+const visiblePlan = computed(() =>
+  plan.list.filter(p => p.status !== 'done' && p.status !== 'dropped').slice(0, 5));
 const planModalOpen = ref(false);
-
-function statusZhHome(s: any) { return ({ pending:'待看', watching:'在看', done:'看完', dropped:'弃了' } as Record<string, string>)[s] || s; }
-function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
 </script>
 
 <template>
@@ -72,7 +68,7 @@ function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
       <div class="section__head">
         <h2 class="section__title">今晚为<span class="accent">你们</span>排片</h2>
         <div class="section__actions">
-          <button class="btn btn--icon btn--ghost" title="换一批" @click="refresh" :disabled="recos.loading">
+          <button class="btn btn--icon btn--ghost" data-tip="换一批" @click="refresh" :disabled="recos.loading">
             <svg class="btn__ic" viewBox="0 0 24 24" :class="{ 'spin-loop': recos.loading }"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
           </button>
         </div>
@@ -82,7 +78,7 @@ function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
         <svg class="intent__ic" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M7 7 5.5 5.5M17 17l1.5 1.5M17 7l1.5-1.5M7 17l-1.5 1.5"/><circle cx="12" cy="12" r="4"/></svg>
         <input class="intent__input" type="text" v-model="intent" @keyup.enter="submitIntent"
                placeholder='想看什么？例如「今晚 90 分钟内的轻松治愈片」「完结的短番 12 集左右」' />
-        <button class="intent__btn" title="按要求推荐" @click="submitIntent">
+        <button class="intent__btn" data-tip="按要求推荐" @click="submitIntent">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
       </div>
@@ -164,7 +160,7 @@ function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
             </div>
           </div>
           <div class="rk-mini__body">
-            <h4 class="rk-mini__title" style="cursor:pointer" @click="openWork(d)">{{ d.title }}</h4>
+            <h4 class="rk-mini__title" style="cursor:pointer" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h4>
             <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" style="align-self:flex-start" />
             <div class="rk-mini__foot"><FeedbackBtns @want="onFeedback(d,'want')" @no="onFeedback(d,'no')" @seen="onFeedback(d,'seen')" /></div>
           </div>
@@ -179,10 +175,10 @@ function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
       <div class="section__head">
         <h2 class="section__title">一起看过</h2>
         <div class="section__actions">
-          <button class="btn btn--icon btn--rose" title="添加" @click="watchedModalOpen = true">
+          <button class="btn btn--icon btn--rose" data-tip="添加" @click="watchedModalOpen = true">
             <svg class="btn__ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
-          <router-link class="link-more" to="/together" title="查看全部">
+          <router-link class="link-more" to="/together" data-tip="查看全部">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </router-link>
         </div>
@@ -196,58 +192,62 @@ function startWatching(p: any) { plan.update(p.id, { status: 'watching' }); }
       <div class="section__head">
         <h2 class="section__title">想看就一起看</h2>
         <div class="section__actions">
-          <button class="btn btn--icon btn--rose" title="添加" @click="planModalOpen = true">
+          <button class="btn btn--icon btn--rose" data-tip="添加" @click="planModalOpen = true">
             <svg class="btn__ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
-          <router-link class="link-more" to="/plan" title="查看全部">
+          <router-link class="link-more" to="/plan" data-tip="查看全部">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </router-link>
         </div>
       </div>
 
-      <div class="filters" style="margin-bottom:var(--s-5)">
-        <button v-for="f in planFilters" :key="f" class="chip"
-                :class="{ 'is-active': planFilter === f }" @click="planFilter = f">
-          {{ f }}<span class="count">{{ (planCountsHome as any)[f] }}</span>
-        </button>
-      </div>
-
       <div class="hrail">
         <p v-if="!visiblePlan.length" style="color:var(--text-faint);padding:0 var(--s-3)">
-          {{ planFilter === '全部' ? '想看清单还是空的。' : '这个状态下还没有作品。' }}
+          想看清单还是空的。
         </p>
-        <article v-for="p in visiblePlan" :key="p.id" class="hcard" :data-status="statusZhHome(p.status)">
+        <article v-for="p in visiblePlan" :key="p.id" class="hcard">
           <div class="hcard__pw">
-            <Poster :color="'#2a2a30'" :url="p.work?.primary_poster_url" :kind="p.work?.is_anime ? '番剧' : ''" />
-            <div class="hcard__corner">
-              <Stars :value="p.priority" />
-            </div>
+            <Poster :color="'#2a2a30'" :url="p.work?.primary_poster_url" :kind="p.work?.is_anime ? '番剧' : ''"
+                    style="cursor:pointer" @click="p.work_id && router.push(`/work/${p.work_id}`)" />
           </div>
           <div class="hcard__body">
-            <h3 class="hcard__title">{{ p.work?.title }} <span class="year">{{ p.work?.year }}</span></h3>
+            <h3 class="hcard__title" style="cursor:pointer" @click="p.work_id && router.push(`/work/${p.work_id}`)">{{ p.work?.title }} <span class="year">{{ p.work?.year }}</span></h3>
             <div class="hcard__row">
               <Rating v-if="p.work" :source="p.work.rating_source" :score="p.work.primary_rating?.toFixed(1) || '—'" :href="ratingHref(p.work)" />
-              <span class="status" :data-s="statusZhHome(p.status)">{{ statusZhHome(p.status) }}</span>
-              <span class="adder" :data-who="identity.whoKey(p.added_by)" :title="(identity.userById(p.added_by)?.display_name || '') + ' 添加'">
+              <Priority :value="p.priority" />
+              <span class="adder" :data-who="identity.whoKey(p.added_by)" :data-tip="(identity.userById(p.added_by)?.display_name || '') + ' 添加'" style="margin-left:auto">
                 <span class="adder__dot">{{ identity.userById(p.added_by)?.display_name?.[0] || (p.added_by === 1 ? 'A' : 'B') }}</span>
               </span>
-            </div>
-            <p class="hcard__note" :style="!p.note ? 'color:var(--text-faint)' : ''">{{ p.note || '还没写备注…' }}</p>
-            <div class="hcard__foot">
-              <button v-if="p.status === 'pending'" class="feedback feedback--want" title="开始观看" @click="startWatching(p)">
-                <svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>
-              </button>
-              <button class="feedback" title="详情" @click="router.push(`/work/${p.work_id}`)">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              </button>
-              <button class="feedback feedback--no" title="删除" @click="plan.remove(p.id)">
-                <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
-              </button>
             </div>
           </div>
         </article>
       </div>
     </section>
+
+    <!-- 推荐爱心 → 选优先级再加入想看 -->
+    <div v-if="wantPickerOpen" class="modal-overlay is-open" @click.self="wantPickerOpen = false">
+      <div class="modal" style="max-width:380px" role="dialog" aria-modal="true">
+        <div class="modal__head">
+          <h3 class="modal__title">加入想看 · 优先级</h3>
+          <button class="modal__close" @click="wantPickerOpen = false" aria-label="关闭">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal__body">
+          <p style="color:var(--text-dim);font-size:var(--fs-body)">{{ wantRec?.title }}<span v-if="wantRec?.year" class="year"> {{ wantRec.year }}</span></p>
+          <div class="rate-row">
+            <button v-for="n in [0,1,2,3]" :key="n" class="target prio-opt" style="flex:1;padding:9px 0"
+                    :class="{ 'is-active': wantPriority === n }" @click="wantPriority = n">
+              <span v-if="n === 0">无</span><Priority v-else :value="n" :total="n" />
+            </button>
+          </div>
+        </div>
+        <div class="modal__foot">
+          <button class="btn btn--primary" style="flex:1" @click="confirmWant">加入想看</button>
+          <button class="btn" @click="wantPickerOpen = false">取消</button>
+        </div>
+      </div>
+    </div>
 
     <AddModal v-model="watchedModalOpen" initial-target="couple_watched" @added="sessions.load" />
     <AddModal v-model="planModalOpen" initial-target="couple_plan" @added="plan.load" />

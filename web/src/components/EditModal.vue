@@ -24,7 +24,6 @@ const plan = usePlan();
 
 const rating = ref<number | null>(null);
 const text = ref('');         // mark.comment / session.review(我那侧) / plan.note
-const jointNote = ref('');    // session.joint_note
 const watchedAt = ref<number | null>(null);
 const status = ref('');       // mark: watched|wish ; plan: pending|watching|done|dropped
 const priority = ref(0);
@@ -48,7 +47,6 @@ function fillFrom(r: any) {
   } else if (props.type === 'session') {
     rating.value = (isViewerA.value ? r.rating_a : r.rating_b) ?? null;
     text.value = (isViewerA.value ? r.review_a : r.review_b) || '';
-    jointNote.value = r.joint_note || '';
     watchedAt.value = r.watched_at ?? null;     // 空就保持空，别默认今天
   } else if (props.type === 'plan') {
     text.value = r.note || '';
@@ -68,7 +66,7 @@ async function save() {
     if (props.type === 'mark') {
       await marks.update(props.record.id, { rating: rating.value, comment: text.value || null, status: status.value });
     } else if (props.type === 'session') {
-      const patch: any = { joint_note: jointNote.value || null, watched_at: watchedAt.value };
+      const patch: any = { watched_at: watchedAt.value };   // 联合备注已下线：不下发，后端按"为空则保留"逻辑不会抹除旧值
       if (isViewerA.value) { patch.rating_a = rating.value; patch.review_a = text.value || null; }
       else { patch.rating_b = rating.value; patch.review_b = text.value || null; }
       await sessions.update(props.record.id, patch);
@@ -137,10 +135,6 @@ function close() { emit('update:modelValue', false); }
           <div class="field">
             <span class="field__label">{{ identity.viewingName }} 的短评</span>
             <textarea class="review-input" v-model="text" :placeholder="`${identity.viewingName} 的短评…`"></textarea>
-          </div>
-          <div class="field">
-            <span class="field__label">联合备注</span>
-            <textarea class="review-input" v-model="jointNote" placeholder="我们的感想…"></textarea>
           </div>
         </template>
 
