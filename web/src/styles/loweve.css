@@ -793,7 +793,13 @@ footer .brand__mark{ font-size:20px; }
 @media (max-width:860px){
   .reco-top{ grid-template-columns:1fr; }
   /* 窄屏大卡高度不再由栅格撑定，海报回退固定宽（仍 2:3），避免 stretch+auto 失效 */
-  .rk-hero .poster{ align-self:center; height:auto; width:150px; }
+  .rk-hero .poster{ align-self:center; height:auto; width:150px; border-radius:var(--r-md); }
+  /* 中卡（2/3 名）同理：窄屏下 stretch+auto 会塌成 0 宽 → 没海报，回退固定宽 */
+  .rk-mid{ gap:var(--s-4); padding:var(--s-4); }
+  .rk-mid .poster{ align-self:center; height:auto; width:104px; border-radius:var(--r-md); }
+  .rk-mid__body{ padding:0; }
+  /* 非贴边布局时不要海报右缘的磨砂渐隐 */
+  .rk-hero .poster::before, .rk-mid .poster::before{ display:none; }
 }
 @media (max-width:680px){
   .rk-hero{ flex-direction:column; gap:var(--s-4); }

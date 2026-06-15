@@ -4,6 +4,7 @@
 // 拖/滚滚筒→列表跳到对应月；滚列表→滚筒联动 + 点亮对准卡片；停下吸附到光束线。咔哒音效可静音。
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useIdentity } from '../stores/identity';
 import Poster from './Poster.vue';
 import Rating from './Rating.vue';
 import Dual from './Dual.vue';
@@ -12,6 +13,7 @@ import { fmtWatched } from '../utils/watchedDate';
 import type { Session } from '../types';
 
 const router = useRouter();
+const identity = useIdentity();
 const props = withDefaults(defineProps<{ sessions?: Session[] }>(), { sessions: () => [] });
 const emit = defineEmits(['edit']);
 
@@ -53,6 +55,7 @@ const GROUPS = computed(() => {
   return g;
 });
 const fmtDate = (n: any) => fmtWatched(n, ' 看完');
+function tags(s: Session) { try { return (JSON.parse(s.work?.genres || '[]') as string[]).slice(0, 3); } catch { return []; } }
 function goWork(s: Session) { if (s.work_id) router.push(`/work/${s.work_id}`); }
 
 // ============================================================ 放映机引擎（移植自设计稿）
@@ -71,9 +74,11 @@ let cards: HTMLElement[] = [];
 const N = () => GROUPS.value.length;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
+const isMobile = () => window.matchMedia('(max-width: 880px)').matches;
 function lineWithinTl() {
-  const g = gateEl.value, t = tlEl.value;
-  if (!g || !t) return 0;
+  const t = tlEl.value; if (!t) return 0;
+  if (isMobile()) return 56;   // 移动端：参考线放在列表顶部附近，避免被顶部胶片条挡住
+  const g = gateEl.value; if (!g) return 0;
   const gb = g.getBoundingClientRect(), tb = t.getBoundingClientRect();
   return (gb.top + gb.height / 2) - tb.top;
 }
@@ -99,9 +104,11 @@ function updateLit(rotateDrum: boolean) {
 function applyTopPad() {
   const t = tlEl.value; if (!t || !cards.length) return;
   t.style.paddingTop = '0px';
+  if (isMobile()) return;   // 移动端不加动态顶部留白（否则会把首卡顶到胶片条后面）
   const pad = lineWithinTl() - cards[0].offsetTop - cards[0].offsetHeight / 2;
   t.style.paddingTop = Math.max(0, Math.round(pad)) + 'px';
 }
+let suppressTick = false;
 function renderDrum() {
   const d = drumEl.value; if (!d) return;
   rotB = clamp(rotB, 0, (N() - 1) * STEP);
@@ -109,7 +116,7 @@ function renderDrum() {
   if (reelTopEl.value) reelTopEl.value.style.transform = `rotate(${rotB * 4.6}deg)`;
   const act = clamp(Math.round(rotB / STEP), 0, N() - 1);
   cells.forEach((c, i) => c.classList.toggle('is-active', i === act));
-  if (act !== lastActive) { lastActive = act; tick(); }
+  if (act !== lastActive) { lastActive = act; if (!suppressTick) tick(); }
 }
 function programScrollTo(top: number) {
   const t = tlEl.value; if (!t) return;
@@ -130,12 +137,27 @@ function programScrollTo(top: number) {
 function selectIdx(i: number, doScroll: boolean) {
   i = clamp(i, 0, N() - 1);
   rotB = i * STEP; renderDrum();
-  if (doScroll) {
-    const g = GROUPS.value[i];
-    const sec = tlEl.value?.querySelector(`#${CSS.escape(g.gid)}`) as HTMLElement | null;
-    const card = sec?.querySelector('.watched-card') as HTMLElement | null;
-    if (card) programScrollTo(card.offsetTop + card.offsetHeight / 2 - lineWithinTl());
+  if (!doScroll) return;
+  const g = GROUPS.value[i];
+  if (isMobile()) {
+    // 移动端走整页滚动：直接滚到该月分组（CSS scroll-margin-top 让它落在胶片条下方）
+    document.getElementById(g.gid)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
   }
+  const sec = tlEl.value?.querySelector(`#${CSS.escape(g.gid)}`) as HTMLElement | null;
+  const card = sec?.querySelector('.watched-card') as HTMLElement | null;
+  if (card) programScrollTo(card.offsetTop + card.offsetHeight / 2 - lineWithinTl());
+}
+// 移动端：整页滚动时让滚筒静默跟随到当前月（不发声、不归位）
+function onWinScroll() {
+  if (!isMobile() || dragging) return;
+  const bar = 116;
+  let idx = 0;
+  for (let i = 0; i < GROUPS.value.length; i++) {
+    const el = document.getElementById(GROUPS.value[i].gid);
+    if (el && el.getBoundingClientRect().top <= bar) idx = i; else break;
+  }
+  suppressTick = true; rotB = idx * STEP; renderDrum(); suppressTick = false;
 }
 function settle() { selectIdx(Math.round(rotB / STEP), true); }
 
@@ -173,6 +195,7 @@ function onWheel(e: WheelEvent) {
 function onListScroll() {
   if (programScroll || dragging) return;
   updateLit(true);
+  if (isMobile()) return;   // 移动端：滚动只转滚筒反馈，不做归位吸附（避免遮挡）
   clearTimeout(snapT);
   snapT = setTimeout(() => {
     if (programScroll || dragging) return;
@@ -228,6 +251,7 @@ onMounted(() => {
   }
   if (t) t.addEventListener('scroll', onScrollRaw);
   window.addEventListener('resize', onResize);
+  window.addEventListener('scroll', onWinScroll, { passive: true });
   pollTimer = setInterval(() => {
     if (programScroll || dragging) return;
     const tt = tlEl.value; if (!tt) return;
@@ -239,6 +263,7 @@ onMounted(() => {
 watch(() => props.sessions, () => init(), { deep: false });
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize);
+  window.removeEventListener('scroll', onWinScroll);
   clearInterval(pollTimer); clearTimeout(scrollTimer); clearTimeout(snapT); clearTimeout(spyT); clearTimeout(wt);
 });
 </script>
@@ -306,6 +331,12 @@ onBeforeUnmount(() => {
                   <Dual :rating-a="s.rating_a ?? '–'" :rating-b="s.rating_b ?? '–'" />
                   <Rating v-if="s.work" :source="s.work.rating_source" :score="s.work.primary_rating?.toFixed(1) || '—'" :href="ratingHref(s.work)" />
                 </div>
+              </div>
+              <div class="wm">
+                <p v-if="s.review_a" class="wm__rev" :data-who="identity.whoKey(1)"><span class="wm__who">{{ identity.userById(1)?.display_name?.[0] || 'A' }}</span><span class="wm__txt">{{ s.review_a }}</span></p>
+                <p v-if="s.review_b" class="wm__rev" :data-who="identity.whoKey(2)"><span class="wm__who">{{ identity.userById(2)?.display_name?.[0] || 'B' }}</span><span class="wm__txt">{{ s.review_b }}</span></p>
+                <div v-if="tags(s).length" class="wm__tags"><span v-for="t in tags(s)" :key="t" class="tag">{{ t }}</span></div>
+                <p v-if="!s.review_a && !s.review_b && !tags(s).length" class="wm__empty">这部还没写短评</p>
               </div>
             </article>
           </div>
@@ -383,27 +414,60 @@ onBeforeUnmount(() => {
 .mutebtn.is-muted { color: var(--text-faint); }
 .mutebtn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.7; }
 
-.tl2 { position: relative; z-index: 1; max-height: calc(100vh - 150px); overflow-y: auto; padding: 0 var(--s-2) 46vh 0; scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+.tl2 { position: relative; z-index: 1; max-height: calc(100vh - 150px); overflow-y: auto; padding: 0 var(--s-2) 46vh 26px; scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+/* 时间脊线：月份节点挂在一条细竖线上，呼应左侧胶片 */
+.tl2::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 46vh; width: 2px; background: linear-gradient(var(--line), var(--line) 88%, transparent); z-index: 0; }
 .tl2::-webkit-scrollbar { width: 8px; }
 .tl2::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--r-pill); }
 .tl2::-webkit-scrollbar-track { background: transparent; }
 .tl2__year { font-family: var(--font-brand); font-style: italic; font-size: var(--fs-2xl); color: var(--rose); margin: var(--s-6) 0 var(--s-2); }
 .tl2__year:first-child { margin-top: 0; }
 .mg { scroll-margin-top: 8px; }
-.mg__head { display: flex; align-items: center; gap: var(--s-3); font-size: var(--fs-md); color: var(--text-dim); margin: var(--s-5) 0 var(--s-4); }
+.mg__head { position: relative; display: flex; align-items: center; gap: var(--s-3); font-size: var(--fs-md); color: var(--text-dim); margin: var(--s-5) 0 var(--s-4); }
 .mg__head::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
-.mg__head .mark { width: 7px; height: 7px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 7px var(--rose); }
+.mg__head .mark { position: absolute; left: -17px; top: 50%; transform: translateY(-50%); width: 9px; height: 9px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 8px var(--rose); }
 .mg__cards { display: flex; flex-direction: column; gap: var(--s-4); }
+
+/* 卡片：撑开右侧放双方短评 + 标签；字体层级更硬 */
+:deep(.tl2 .watched-card) { align-items: stretch; gap: var(--s-4); }
+:deep(.tl2 .watched-card__body) { flex: 0 0 230px; }
+:deep(.tl2 .watched-card__title) { font-size: var(--fs-lg); color: var(--text); }
+:deep(.tl2 .watched-card__title .year) { color: var(--text-faint); font-weight: 400; font-size: var(--fs-sm); }
+:deep(.tl2 .watched-card__date) { font-size: 12px; color: var(--text-faint); }
+.wm { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 7px; padding-left: var(--s-4); border-left: 1px solid var(--line-soft); }
+.wm__rev { display: flex; align-items: flex-start; gap: 7px; font-size: var(--fs-sm); color: var(--text-dim); line-height: 1.5; }
+.wm__who { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--bg); border: 1px solid oklch(0 0 0 / 0.28); }
+.wm__rev[data-who="a"] .wm__who { background: var(--user-a); }
+.wm__rev[data-who="b"] .wm__who { background: var(--user-b); }
+.wm__txt { min-width: 0; }
+.wm__tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
+.wm__empty { font-size: var(--fs-sm); color: var(--text-faint); }
 
 .cinema-fx { position: fixed; inset: 0; pointer-events: none; z-index: 60; background: radial-gradient(120% 92% at 50% 38%, transparent 56%, rgba(0,0,0,.34) 100%); }
 .cinema-fx::before { content: ""; position: absolute; inset: 0; opacity: .05; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 170px 170px; }
 
 @media (max-width: 880px) {
-  .watched-layout { grid-template-columns: 1fr; gap: var(--s-6); }
-  .reel-rail { position: sticky; top: 60px; z-index: 5; background: var(--bg); padding-bottom: var(--s-2); }
-  .drum-wrap { width: 190px; height: 264px; }
-  .beam { display: none; }
-  .tl2 { max-height: none; overflow: visible; padding-bottom: 0; }
+  .watched-layout { grid-template-columns: 1fr; gap: var(--s-3); }
+  /* 顶部一条轻薄胶片窗：去掉卷盘/镜头/光束/深色面板，背景接近页面色不再是黑块 */
+  .reel-rail { position: sticky; top: 52px; z-index: 5; background: var(--bg); padding: 6px 0 var(--s-3); flex-direction: row; align-items: center; gap: var(--s-3); }
+  .preel, .film-link, .lens, .lightbeam, .beam, .proj-led { display: none; }
+  .projector { flex: 1; min-width: 0; flex-direction: row; align-items: center; }
+  .gate-frame { flex: 1; min-width: 0; padding: 0; background: transparent; border: none; box-shadow: none; }
+  .drum-wrap { width: 100%; height: 56px; background: var(--surface); border: 1px solid var(--line-soft); box-shadow: none; }
+  .reel-foot { margin-top: 0; flex-shrink: 0; }
+  .reel-foot span { display: none; }
+  .cinema-fx { display: none; }   /* 小屏不要满屏暗角，避免显得糊/挡 */
+  /* 列表跟随整页滚动（不再内部滚动），给分组留出胶片条高度 */
+  .tl2 { max-height: none; overflow: visible; padding: 0 0 var(--s-8) 20px; }
+  .tl2::before { left: 7px; bottom: var(--s-8); }
+  .mg { scroll-margin-top: 116px; }
+  .tl2__year { scroll-margin-top: 108px; }
+  /* 卡片竖排：信息列 + 短评列堆叠；窄屏不压暗 */
+  :deep(.tl2 .watched-card) { flex-wrap: wrap; }
+  :deep(.tl2 .watched-card__body) { flex: 1 1 170px; }
+  .wm { flex: 1 1 100%; border-left: none; border-top: 1px solid var(--line-soft); padding-left: 0; padding-top: var(--s-3); margin-top: var(--s-1); }
+  .tl2.lit-mode :deep(.watched-card) { opacity: 1; filter: none; }
+  .tl2.lit-mode :deep(.watched-card.is-lit) { box-shadow: none; }
 }
 </style>
