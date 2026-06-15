@@ -39,12 +39,36 @@ function yearScore(tmdbYear: any, candYear: any) {
   return 0;
 }
 
+const ZH = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 } as Record<string, number>;
+const ROMAN = { Ⅱ: 2, Ⅲ: 3, Ⅳ: 4, Ⅴ: 5, II: 2, III: 3, IV: 4, V: 5 } as Record<string, number>;
+// 从一个名称里提取「季/续作序号」，默认 1。番剧续作（2/第二季/2nd Season…）不该匹配到第一季，反之亦然。
+function seasonNum(name: any) {
+  if (!name) return 1;
+  const s = String(name).normalize('NFKC').trim();  // 全角２→2
+  let m;
+  if ((m = s.match(/第\s*([0-9]+|[一二三四五六七八九十]+)\s*[季期部篇]/))) return /^[0-9]+$/.test(m[1]) ? parseInt(m[1], 10) : (ZH[m[1]] || 1);
+  if ((m = s.match(/(?:season|part|cour)\s*([0-9]+)/i))) return parseInt(m[1], 10);
+  if ((m = s.match(/\b([0-9]+)(?:st|nd|rd|th)\b/i))) return parseInt(m[1], 10);
+  if ((m = s.match(/(?:^|\s)(Ⅱ|Ⅲ|Ⅳ|Ⅴ|II|III|IV|V)\s*$/))) return ROMAN[m[1]] || 1;
+  // 结尾独立小数字（前面是空格 / 标点 / 字母 / 假名 / 汉字），如「… 2」「Edgerunners２」
+  if ((m = s.match(/(?:[\s:：·・\-]|[a-z぀-ヿ一-鿿])([2-9])$/i))) return parseInt(m[1], 10);
+  return 1;
+}
+function seasonOf(names: any[]) {
+  let s = 1;
+  for (const n of names) s = Math.max(s, seasonNum(n));
+  return s;
+}
+
 export function matchAnime(tmdb: any, candidates: any) {
+  const tmdbSeason = seasonOf([tmdb.title, tmdb.original_title]);
   let best: any = null, bestTotal = 0, bestName = 0;
   for (const c of candidates || []) {
     const nScore = nameScore(tmdb, c);
     const yScore = yearScore(tmdb.year, c.year);
-    const total = 0.7 * nScore + 0.3 * yScore;
+    let total = 0.7 * nScore + 0.3 * yScore;
+    // 季号不一致重罚：避免把「赛博朋克边缘行者2」匹配到「赛博朋克边缘行者」
+    if (seasonOf([c.name, c.name_cn]) !== tmdbSeason) total -= 0.5;
     if (total > bestTotal) { bestTotal = total; bestName = nScore; best = c; }
   }
   if (best && bestTotal >= ACCEPT_TOTAL && bestName >= ACCEPT_NAME) return best;

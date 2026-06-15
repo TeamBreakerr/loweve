@@ -109,6 +109,29 @@ describe('matchAnime', () => {
     assert.equal(best.bangumi_id, 1);  // 选中年份/名称都最贴的正作
   });
 
+  it('续作未播（year=null，名称更贴）也不误配到正作 —— 复现「赛博朋克边缘行者→2」', () => {
+    const candidates = [
+      cand({ bangumi_id: 10, name: 'サイバーパンク: エッジランナーズ２', name_cn: '赛博朋克：边缘行者 2', year: null, score: 9.3 }),
+      cand({ bangumi_id: 11, name: 'Cyberpunk: Edgerunners', name_cn: '赛博浪客', year: 2022, score: 8.3 }),
+    ];
+    const best = matchAnime(
+      { title: '赛博朋克：边缘行者', original_title: 'サイバーパンク: エッジランナーズ', year: 2022 },
+      candidates
+    );
+    assert.notEqual(best?.bangumi_id, 10);  // 绝不能选中「2」续作
+  });
+
+  it('真要找续作 2 时，季号对上才命中', () => {
+    const candidates = [
+      cand({ bangumi_id: 10, name: 'サイバーパンク: エッジランナーズ２', name_cn: '赛博朋克：边缘行者 2', year: null }),
+    ];
+    const best = matchAnime(
+      { title: '赛博朋克：边缘行者2', original_title: 'サイバーパンク: エッジランナーズ2', year: 2026 },
+      candidates
+    );
+    assert.equal(best?.bangumi_id, 10);
+  });
+
   it('名称差太远（蒙年份）→ null', () => {
     const best = matchAnime(
       { title: '完全不同的番', original_title: 'totally different', year: 2022 },
