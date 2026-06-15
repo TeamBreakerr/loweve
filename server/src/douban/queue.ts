@@ -1,5 +1,7 @@
 // server/src/douban/queue.js
-const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, year, overview, genres,
+import { workNames } from '../routes/works.js';
+
+const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, aka_titles, year, overview, genres,
   runtime, is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source,
   bangumi_id, douban_id, douban_url, imdb_id, fetched_at, updated_at, douban_raw`;
 
@@ -28,7 +30,7 @@ export function enqueueDoubanUpgrade(db: any, douban: any, workId: any) {
 }
 
 export async function upgradeWithDouban(db: any, douban: any, work: any) {
-  const matched = await matchWithRetry(douban, { title: work.title, year: work.year });
+  const matched = await matchWithRetry(douban, { title: work.title, year: work.year, names: workNames(work) });
   if (!matched) return work;
 
   // 海报保持 TMDB（不抓/缓存豆瓣海报：差别不大，且豆瓣图床防盗链脆）；只升级评分与来源。

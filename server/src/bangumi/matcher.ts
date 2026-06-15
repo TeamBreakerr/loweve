@@ -23,8 +23,8 @@ export function similarity(a: any, b: any) {
 }
 
 function nameScore(tmdb: any, cand: any) {
-  // TMDB 的 original_title / title 对 候选 name / name_cn 取最高相似度
-  const tmdbNames = [tmdb.original_title, tmdb.title].filter(Boolean);
+  // TMDB 的全部名字（names：原名/中文名/英文名/AKA；缺省回退原名+中文名）对候选 name/name_cn 取最高相似度
+  const tmdbNames = ((tmdb.names && tmdb.names.length) ? tmdb.names : [tmdb.original_title, tmdb.title]).filter(Boolean);
   const candNames = [cand.name, cand.name_cn].filter(Boolean);
   let best = 0;
   for (const t of tmdbNames) for (const c of candNames) best = Math.max(best, similarity(t, c));

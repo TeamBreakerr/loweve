@@ -4,9 +4,21 @@ import { mapMovie, mapTv } from '../tmdb/mapper.js';
 import { matchAnime } from '../bangumi/matcher.js';
 import { enqueueDoubanUpgrade } from '../douban/queue.js';
 
-const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, year, overview, genres,
+const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, aka_titles, year, overview, genres,
   runtime, is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source,
   bangumi_id, douban_id, douban_url, imdb_id, fetched_at, updated_at`;
+
+// 作品的全部可比名字：原标题 + 中文名 + 英文名/AKA（aka_titles），去重去空。
+// 豆瓣（中文库）/Bangumi（日文库）匹配时都拿这一套去比候选名，统一逻辑、提高命中。
+export function workNames(work: any): string[] {
+  let akas: string[] = [];
+  try { akas = JSON.parse(work.aka_titles || '[]') || []; } catch { /* noop */ }
+  const set = new Set<string>();
+  for (const n of [work.original_title, work.title, ...akas]) {
+    if (n && String(n).trim()) set.add(String(n).trim());
+  }
+  return [...set];
+}
 
 // upsertWork：work 不存在则调 tmdb 拉详情入库；存在直接返回。番剧再尝试 Bangumi 升级。
 // 暴露为函数，便于 marks/sessions/plan 复用。
@@ -34,12 +46,12 @@ export async function upsertWork(db: any, tmdb: any, bangumi: any, douban: any, 
 
   const insert = db.prepare(`
     INSERT INTO works (
-      tmdb_id, tmdb_type, title, original_title, year, overview, genres, runtime,
+      tmdb_id, tmdb_type, title, original_title, aka_titles, year, overview, genres, runtime,
       is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source,
       bangumi_id, douban_id, douban_url, imdb_id, tmdb_raw, bangumi_raw, douban_raw,
       fetched_at, updated_at
     ) VALUES (
-      @tmdb_id, @tmdb_type, @title, @original_title, @year, @overview, @genres, @runtime,
+      @tmdb_id, @tmdb_type, @title, @original_title, @aka_titles, @year, @overview, @genres, @runtime,
       @is_anime, @primary_rating, @primary_rating_count, @primary_poster_url, @rating_source,
       @bangumi_id, @douban_id, @douban_url, @imdb_id, @tmdb_raw, @bangumi_raw, @douban_raw,
       @fetched_at, @updated_at
@@ -68,8 +80,9 @@ export async function upsertWork(db: any, tmdb: any, bangumi: any, douban: any, 
 async function upgradeWithBangumi(db: any, bangumi: any, work: any) {
   const keyword = work.original_title || work.title;
   const candidates = await bangumi.searchAnime(keyword);
+  // 匹配时用「全部名字集合」：原标题 + 中文名 + 英文名/AKA（aka_titles）
   const best = matchAnime(
-    { title: work.title, original_title: work.original_title, year: work.year },
+    { title: work.title, original_title: work.original_title, names: workNames(work), year: work.year },
     candidates
   );
   if (!best) return work;  // 无可信匹配，保持 tmdb

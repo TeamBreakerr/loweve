@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS works (
   tmdb_type TEXT NOT NULL CHECK(tmdb_type IN ('movie', 'tv')),
   title TEXT NOT NULL,
   original_title TEXT,
+  aka_titles TEXT,            -- JSON 数组：TMDB 英文名 + 各国 AKA，给豆瓣/Bangumi 匹配多比一道
   year INTEGER,
   overview TEXT,
   genres TEXT,

@@ -13,11 +13,29 @@ function posterUrl(path: any) {
   return path ? `https://image.tmdb.org/t/p/w500${path}` : null;
 }
 
+// 收集"别名"：英文官方名（translations.en）+ 英语区 AKA（alternative_titles US/GB）。
+// 给豆瓣/Bangumi 匹配多比一道，避免「赛博朋克边缘行者」这类中/日文都对不上、但英文名能对上的情况。
+function extractAkas(payload: any, type: any) {
+  const out = new Set<string>();
+  for (const t of payload.translations?.translations || []) {
+    if (t.iso_639_1 === 'en') {
+      const n = type === 'tv' ? t.data?.name : t.data?.title;
+      if (n && n.trim()) out.add(n.trim());
+    }
+  }
+  const alt = type === 'tv' ? (payload.alternative_titles?.results || []) : (payload.alternative_titles?.titles || []);
+  for (const a of alt) {
+    if (['US', 'GB'].includes(a.iso_3166_1) && a.title && a.title.trim()) out.add(a.title.trim());
+  }
+  return [...out].slice(0, 8);
+}
+
 function commonFields(payload: any, tmdb_type: any) {
   return {
     tmdb_id: payload.id,
     tmdb_type,
     overview: payload.overview || null,
+    aka_titles: JSON.stringify(extractAkas(payload, tmdb_type)),
     genres: JSON.stringify((payload.genres || []).map((g: any) => g.name)),
     is_anime: isAnime(payload),
     primary_rating: typeof payload.vote_average === 'number' ? payload.vote_average : null,

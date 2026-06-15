@@ -43,11 +43,14 @@ function yearScore(qy: any, cy: any) {
   return d <= 1 ? 1 : d <= 3 ? 0.5 : 0; // 豆瓣年份常与 TMDB 差 1
 }
 
-// 从 subject_suggest 候选里选最佳；标题对不上（score 太低）返回 null，避免错配同名
-export function pickBest(cands: any, { title, year }: any) {
+// 从 subject_suggest 候选里选最佳；标题对不上（score 太低）返回 null，避免错配同名。
+// names = 作品全部名字（中文名/原标题/英文名/AKA）；缺省回退 [title]。
+export function pickBest(cands: any, { title, year, names }: any) {
+  const nameList = ((names && names.length) ? names : [title]).filter(Boolean);
   let best: any = null, bestScore = 0;
   for (const c of cands) {
-    const ts = Math.max(titleScore(title, c.title), titleScore(title, c.sub_title));
+    let ts = 0;
+    for (const n of nameList) ts = Math.max(ts, titleScore(n, c.title), titleScore(n, c.sub_title));
     if (ts <= 0) continue;
     const score = ts * 0.65 + yearScore(year, parseInt(c.year, 10) || null) * 0.35;
     if (score > bestScore) { bestScore = score; best = c; }
@@ -78,12 +81,13 @@ export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAU
     return Array.isArray(sug) ? sug.filter(s => s && s.id && (s.type === 'movie' || s.type === 'tv')) : [];
   }
 
-  async function match({ title, year }: any) {
-    let best = pickBest(await suggest(title), { title, year });
+  async function match({ title, year, names }: any) {
+    // 检索仍用中文 title（豆瓣中文库召回最好）；匹配打分用全部名字集合
+    let best = pickBest(await suggest(title), { title, year, names });
     if (!best) {
       // 全名搜不到（常见于"片名+年份+特别篇/季"这类冗长标题）→ 退成"片名 年份"再搜一次
       const simplified = title.replace(/\s*(\d{4})\D.*$/, ' $1').trim();
-      if (simplified && simplified !== title) best = pickBest(await suggest(simplified), { title, year });
+      if (simplified && simplified !== title) best = pickBest(await suggest(simplified), { title, year, names });
     }
     if (!best) return null;
 

@@ -55,10 +55,21 @@ export function migrateNullableWatchedAt(db: any) {
 }
 
 /**
+ * 给 works 表补 aka_titles 列（老库迁移）。幂等：列已存在则跳过。
+ */
+export function migrateAddAkaTitles(db: any) {
+  const has = db.prepare(`SELECT 1 FROM pragma_table_info('works') WHERE name = 'aka_titles'`).get();
+  if (has) return false;
+  db.exec(`ALTER TABLE works ADD COLUMN aka_titles TEXT`);
+  return true;
+}
+
+/**
  * 完整迁移：创表 + 列迁移 + 种子。idempotent。
  */
 export function migrate(db: any, { userA, userB }: any) {
   applySchema(db);
   migrateNullableWatchedAt(db);
+  migrateAddAkaTitles(db);
   seedUsers(db, { userA, userB });
 }

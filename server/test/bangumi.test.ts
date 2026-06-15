@@ -121,6 +121,20 @@ describe('matchAnime', () => {
     assert.notEqual(best?.bangumi_id, 10);  // 绝不能选中「2」续作
   });
 
+  it('靠英文名/AKA 命中：中/日文都对不上、但英文名能对上（边缘行者拿到正作）', () => {
+    const candidates = [
+      cand({ bangumi_id: 20, name: 'Cyberpunk: Edgerunners', name_cn: '赛博浪客', year: 2022, score: 8.3 }),
+    ];
+    // 只有 title/original_title 时名称分太低 → 不会命中；names 里带上英文名后命中
+    const noNames = matchAnime({ title: '赛博朋克：边缘行者', original_title: 'サイバーパンク: エッジランナーズ', year: 2022 }, candidates);
+    assert.equal(noNames, null);
+    const withNames = matchAnime({
+      title: '赛博朋克：边缘行者', original_title: 'サイバーパンク: エッジランナーズ',
+      names: ['サイバーパンク: エッジランナーズ', '赛博朋克：边缘行者', 'Cyberpunk: Edgerunners'], year: 2022,
+    }, candidates);
+    assert.equal(withNames?.bangumi_id, 20);
+  });
+
   it('真要找续作 2 时，季号对上才命中', () => {
     const candidates = [
       cand({ bangumi_id: 10, name: 'サイバーパンク: エッジランナーズ２', name_cn: '赛博朋克：边缘行者 2', year: null }),
