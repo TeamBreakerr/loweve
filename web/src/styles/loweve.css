@@ -443,7 +443,11 @@ a.rating--link:active{ transform:none; }
   background:var(--surface); border:1px solid var(--line);
   border-radius:var(--r-xl); box-shadow:var(--shadow-pop);
   animation:pop .3s var(--ease);
+  scrollbar-width:thin; scrollbar-color:var(--surface-3) transparent;
 }
+.modal::-webkit-scrollbar{ width:8px; }
+.modal::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
+.modal::-webkit-scrollbar-track{ background:transparent; }
 @keyframes pop{ from{ opacity:0; transform:translateY(14px) scale(.98); } to{ opacity:1; transform:none; } }
 .modal__head{
   display:flex; align-items:center; gap:var(--s-3);
@@ -499,8 +503,19 @@ a.rating--link:active{ transform:none; }
   width:100%; background:var(--surface-2); border:1px solid var(--line);
   border-radius:var(--r-md); padding:11px var(--s-4); color:var(--text);
   font-size:var(--fs-body); outline:none; resize:vertical; min-height:64px; line-height:1.6;
+  scrollbar-width:thin; scrollbar-color:var(--surface-3) transparent;
 }
 .review-input::placeholder{ color:var(--text-faint); }
+.review-input::-webkit-scrollbar{ width:8px; }
+.review-input::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
+.review-input::-webkit-scrollbar-track{ background:transparent; }
+/* 拖拽手柄：自定义滚动条会让它变成突兀的方框，改绘成两道主题色细斜纹（拖拽功能不受影响） */
+.review-input::-webkit-resizer{
+  background:linear-gradient(135deg,
+    transparent 0 50%, var(--text-faint) 50% 62%,
+    transparent 62% 74%, var(--text-faint) 74% 86%, transparent 86%);
+}
+.review-input::-webkit-scrollbar-corner{ background:transparent; }
 .modal__foot{
   display:flex; gap:var(--s-3); padding:var(--s-4) var(--s-5) var(--s-5);
   border-top:1px solid var(--line-soft);
