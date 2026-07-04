@@ -12,3 +12,6 @@ docs/
 
 # 本机实际用的 compose（生产配置，因机器而异）；仓库用 docker-compose.example.yml
 docker-compose.yml
+
+# Claude Code worktrees（重构等隔离工作区）
+.claude/worktrees/
