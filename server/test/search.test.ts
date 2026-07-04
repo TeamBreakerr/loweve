@@ -10,6 +10,7 @@ describe('GET /api/search', () => {
 
   it('正常 → 200 + results', async () => {
     const tmdb = makeFakeTmdb({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 测试桩占位参数，本用例不关心查询词，非死代码
       search: async (q: any) => ({
         results: [
           { tmdb_id: 1, tmdb_type: 'movie', title: '花束般的恋爱', year: 2022, poster_path: '/a.jpg', overview: '', vote_average: 8.2, original_title: null },

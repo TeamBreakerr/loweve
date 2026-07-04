@@ -1,5 +1,6 @@
 // server/test/recos-service.test.js
 import assert from 'node:assert/strict';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 死代码，延后统一删除
 import { makeTestDb, makeFakeTmdb, makeFakeBangumi, makeFakeDouban, makeFakeLlm } from './helpers.js';
 import { generateStanding, getCurrentRecos, gatherContext } from '../src/recos/service.js';
 import { markRecosStale, isRecosStale, getStandingBatchId } from '../src/recos/state.js';

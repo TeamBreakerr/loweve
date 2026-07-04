@@ -38,6 +38,7 @@ export function createLlmClient({ baseUrl, apiKey, model, resolve, fetch = globa
     const body = JSON.stringify({ model: cfg.model, messages });
     const attempts = [0, 1];
     let lastErr: any;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 循环仅用于控制重试次数，不需要下标，非死代码
     for (const i of attempts) {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), timeoutMs);

@@ -18,6 +18,7 @@ export class DoubanError extends Error {
   }
 }
 
+// eslint-disable-next-line no-useless-escape -- 字符组内的 \[ 转义多余（[ 在字符组内无需转义，\] 需要保留），不改行为，暂留待清理
 const norm = (s: any) => String(s || '').toLowerCase().replace(/[\s·:：!！?？.,。、…\-—_()（）\[\]【】"'""'']/g, '');
 
 // 候选标题与查询标题的字符集重合比例（占查询标题）
