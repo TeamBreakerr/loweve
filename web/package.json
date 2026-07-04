@@ -8,7 +8,9 @@
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
-    "lint": "eslint . --max-warnings=0"
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "pinia": "^2.2.4",
@@ -25,6 +27,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1",
     "vite": "^5.4.8",
+    "vitest": "^4.1.9",
     "vue-tsc": "^3.3.3"
   }
 }
