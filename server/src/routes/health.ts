@@ -6,6 +6,7 @@ export function healthRoutes() {
 
   router.get('/', async (req, res) => {
     const db = req.app.locals.db;
+    // eslint-disable-next-line no-useless-assignment -- 初始值必被下面 try/catch 两分支覆盖后才会被读取，非 bug，暂留待清理
     let dbStatus = 'unknown';
     try {
       db.prepare('SELECT 1').get();

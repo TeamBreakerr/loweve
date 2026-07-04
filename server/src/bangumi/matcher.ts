@@ -51,6 +51,7 @@ function seasonNum(name: any) {
   if ((m = s.match(/\b([0-9]+)(?:st|nd|rd|th)\b/i))) return parseInt(m[1], 10);
   if ((m = s.match(/(?:^|\s)(Ⅱ|Ⅲ|Ⅳ|Ⅴ|II|III|IV|V)\s*$/))) return ROMAN[m[1]] || 1;
   // 结尾独立小数字（前面是空格 / 标点 / 字母 / 假名 / 汉字），如「… 2」「Edgerunners２」
+  // eslint-disable-next-line no-useless-escape -- 字符组末尾的 \- 转义多余（等价字面量 -），不改行为，暂留待清理
   if ((m = s.match(/(?:[\s:：·・\-]|[a-z぀-ヿ一-鿿])([2-9])$/i))) return parseInt(m[1], 10);
   return 1;
 }

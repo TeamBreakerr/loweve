@@ -69,6 +69,7 @@ export function mergeDedupe(...lists: any[]) {
   for (const list of lists) {
     for (const r of (list || [])) {
       const k = r.tmdb_type + ':' + r.tmdb_id;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 解构用于从 rest 中排除 popularity 字段（见上方注释），非死代码
       if (!seen.has(k)) { seen.add(k); const { popularity, ...rest } = r; out.push(rest); }
     }
   }
