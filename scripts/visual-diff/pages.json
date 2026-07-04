@@ -1,0 +1,15 @@
+{
+  "viewports": { "desktop": [1280, 900], "mobile": [390, 844] },
+  "states": [
+    { "name": "home",      "path": "/",         "viewports": ["desktop", "mobile"] },
+    { "name": "together",  "path": "/together", "viewports": ["desktop", "mobile"] },
+    { "name": "plan",      "path": "/plan",     "viewports": ["desktop", "mobile"] },
+    { "name": "me",        "path": "/me",       "viewports": ["desktop", "mobile"] },
+    { "name": "work",      "path": "__WORK__",  "viewports": ["desktop", "mobile"] },
+    { "name": "settings",  "path": "/settings", "viewports": ["desktop", "mobile"] },
+    { "name": "modal-add",  "path": "/",         "viewports": ["desktop"],
+      "actions": [{ "click": "#together .section__actions .btn--rose" }, { "waitMs": 600 }] },
+    { "name": "modal-edit", "path": "/together", "viewports": ["desktop"],
+      "actions": [{ "click": ".card-edit" }, { "waitMs": 600 }] }
+  ]
+}
