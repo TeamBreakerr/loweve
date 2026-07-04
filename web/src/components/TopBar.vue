@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 const identity = useIdentity();
 const route = useRoute();
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 死代码，随 Task 13 一并删除
 const router = useRouter();
 
 function pickWho(id: any) {

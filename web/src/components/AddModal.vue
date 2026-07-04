@@ -59,6 +59,7 @@ const watchedAt = ref<number | null>(null);     // 默认空：有时忘了哪�
 const planNote = ref('');
 const planPriority = ref(0);
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- 死代码，Task 13 删除 */
 function todayInt() {
   const d = new Date();
   return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
@@ -72,6 +73,7 @@ function dateInputToInt(s: any) {
   const [y,m,d] = s.split('-').map(Number);
   return y*10000 + m*100 + d;
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 // —— from_plan 模式：预填（提取成函数，reset 时也要重新套用，否则开窗会被清空）——
 function prefillFromPlan() {
