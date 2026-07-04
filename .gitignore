@@ -15,3 +15,8 @@ docker-compose.yml
 
 # Claude Code worktrees（重构等隔离工作区）
 .claude/worktrees/
+
+# 截图对比验证器的本地产物
+scripts/visual-diff/.tmp/
+scripts/visual-diff/baselines/
+__pycache__/
