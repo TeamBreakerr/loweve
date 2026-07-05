@@ -1,0 +1,19 @@
+/* ============================================================ Reset */
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--font-sans);
+  font-weight:400;
+  font-size:var(--fs-body);
+  line-height:1.6;
+  color:var(--text);
+  background:var(--bg);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+img{ display:block; max-width:100%; }
+button{ font-family:inherit; cursor:pointer; color:inherit; background:none; border:none; }
+input{ font-family:inherit; }
+a{ color:inherit; text-decoration:none; }
+::selection{ background:var(--rose-line); }

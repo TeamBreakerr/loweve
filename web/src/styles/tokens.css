@@ -1,0 +1,67 @@
+/* ============================================================
+   loweve · 小放映厅  —  设计 token
+   深色暖调"放映厅"：让彩色海报成为视觉主角，框架克制、温柔。
+   ============================================================ */
+:root{
+  /* —— 背景与表面：带暖味的炭黑，绝非纯黑 —— */
+  --bg:            oklch(0.165 0.008 45);   /* 最底层，调暗的房间 */
+  --bg-grad-top:   oklch(0.205 0.012 38);   /* 顶部一丝暖光 */
+  --surface:       oklch(0.215 0.010 45);   /* 卡片 */
+  --surface-2:     oklch(0.255 0.012 46);   /* 卡片内嵌 / 悬浮 */
+  --surface-3:     oklch(0.305 0.013 48);   /* 输入框 / chip */
+  --line:          oklch(0.32 0.012 46);    /* 描边 */
+  --line-soft:     oklch(0.27 0.010 46);
+
+  /* —— 文字：暖白阶梯 —— */
+  --text:          oklch(0.945 0.008 70);
+  --text-dim:      oklch(0.74 0.012 60);
+  --text-faint:    oklch(0.56 0.010 55);
+
+  /* —— 主点缀：珊瑚玫瑰（亲密、温暖、克制）—— */
+  --rose:          oklch(0.72 0.135 22);
+  --rose-bright:   oklch(0.78 0.145 25);
+  --rose-dim:      oklch(0.62 0.110 20);
+  --rose-tint:     oklch(0.72 0.135 22 / 0.14);
+  --rose-line:     oklch(0.72 0.135 22 / 0.35);
+
+  /* —— 评分来源色彩编码（压低彩度融进暖调）—— */
+  --gold:          oklch(0.82 0.115 78);    /* 评分数字：影院金 */
+  --douban:        oklch(0.74 0.085 150);   /* 豆瓣：苔绿 */
+  --douban-tint:   oklch(0.74 0.085 150 / 0.16);
+  --bangumi:       oklch(0.76 0.090 350);   /* Bangumi：藕粉 */
+  --bangumi-tint:  oklch(0.76 0.090 350 / 0.16);
+
+  /* —— 双人色（身份）—— */
+  --user-a:            oklch(0.74 0.090 230);   /* 用户A：静蓝 */
+  --user-a-tint:       oklch(0.74 0.090 230 / 0.16);
+  --user-b:           oklch(0.77 0.115 8);     /* 用户B：暖玫 */
+  --user-b-tint:      oklch(0.77 0.115 8 / 0.16);
+
+  /* —— 间距阶梯 —— */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+  --s-12: 48px; --s-16: 64px;
+
+  /* —— 圆角 —— */
+  --r-xs: 6px; --r-sm: 9px; --r-md: 12px; --r-lg: 16px;
+  --r-xl: 22px; --r-poster: 10px; --r-pill: 999px;
+
+  /* —— 字号阶梯 —— */
+  --fs-cap: 12px;   --fs-sm: 13px;  --fs-body: 15px;
+  --fs-md: 17px;    --fs-lg: 20px;  --fs-xl: 26px;
+  --fs-2xl: 34px;   --fs-3xl: 44px;
+
+  /* —— 阴影：深而柔，模拟暗房 —— */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-card: 0 6px 20px -8px oklch(0 0 0 / 0.55);
+  --shadow-pop: 0 18px 50px -14px oklch(0 0 0 / 0.7);
+  --shadow-poster: 0 10px 26px -10px oklch(0 0 0 / 0.65);
+
+  /* —— 字体 —— */
+  --font-serif: "Noto Serif SC", "Songti SC", serif;
+  --font-sans: "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+  --font-brand: "Cormorant", "Noto Serif SC", serif;
+
+  --maxw: 1200px;
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
