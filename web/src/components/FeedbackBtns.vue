@@ -17,3 +17,20 @@ defineEmits(['want', 'no', 'seen']);
     <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
   </button>
 </template>
+
+<style scoped>
+.feedback{
+  flex:1; font-size:var(--fs-sm); padding:5px 4px; border-radius:var(--r-sm);
+  border:1px solid var(--line); color:var(--text-dim); background:var(--surface-2);
+  display:flex; align-items:center; justify-content:center; gap:5px;
+  transition:all .18s var(--ease);
+}
+.feedback svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; }
+.feedback:hover{ color:var(--text); transform:translateY(-1px); }
+.feedback--want:hover{ background:var(--rose); border-color:var(--rose); color:oklch(0.16 0.02 30); }
+.feedback--seen:hover{ background:var(--douban); border-color:var(--douban); color:oklch(0.16 0.04 150); }
+.feedback--no:hover{ background:var(--surface-3); border-color:var(--line); color:var(--text); }
+
+/* 反馈按钮：纯图标、实心、带描边 */
+.feedback{ width:46px; height:42px; flex:0 0 auto; }
+</style>
