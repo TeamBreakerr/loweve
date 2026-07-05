@@ -23,7 +23,9 @@
 - **前端**：TypeScript · Vue 3 · Vite · Pinia · vue-router
 - **部署**：Docker（多阶段构建：先编译前端，再拷进后端镜像，由后端统一托管 SPA + API）
 
-> 类型检查：`cd server && npm run typecheck`、`cd web && npm run typecheck`（web `npm run build` 已含）。
+> 校验：`scripts/check.sh` 一键跑两端 lint + typecheck + 测试（本机无 node 也可，全程 docker）。
+> 视觉回归：`scripts/visual-diff/run.sh baseline|verify`——隔离实例 + 截图像素对比（改样式前采基线、改完 verify 零差异；单轮约 8-10 分钟）。
+> Docker 构建即门槛：两端 lint/测试不过则镜像构建失败。
 
 ## 🚀 快速开始
 
@@ -95,13 +97,19 @@ environment:
 ## 📁 项目结构
 
 ```
+shared/   前后端共享的 API 数据形状（types.ts 单一来源）
 server/   Node + Express + SQLite —— REST API + 托管前端构建产物
   src/
     routes/      search / works / marks / sessions / plan / recos / settings / img …
     tmdb|douban|bangumi|llm/   各数据源 client
     recos/       AI 推荐：gather → prompt → 校验 → 缓存
-    settings.js  运行时配置（DB 覆盖 env）
+    settings.ts  运行时配置（DB 覆盖 env）
 web/      Vue 3 SPA（Home / Together / Plan / Me / Work / Settings）
+  src/
+    styles/      tokens（设计令牌）/ base / primitives（跨页原语）；页面样式在各组件 scoped
+    composables/ useReelDrum（放映机滚筒引擎）
+    utils/       watchedDate / reelGroups（带 Vitest 行为锁定测试）
+scripts/  check.sh（一键 lint+typecheck+测试，docker 化）· visual-diff/（截图对比验证器）
 docker-compose.yml
 ```
 
