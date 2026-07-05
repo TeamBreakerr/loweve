@@ -152,4 +152,15 @@ onBeforeUnmount(() => { clearTimeout(hideTimer); window.removeEventListener('res
 }
 .htl-sb__thumb:hover { background: var(--rose); }
 .htl-sb__thumb:active { background: var(--rose-bright); cursor: grabbing; }
+
+/* .hcard__corner/.hcard__date(+svg)/.hcard__edit(+:hover/+svg) 从 styles/loweve.css「首页
+   改版」段搬入（T10 批 6，纯剪切，未改声明）。三者只在本组件出现，.hcard 基类及其余共用
+   子类（__body/__pw/__row/__title）留在 styles/primitives.css（Home.vue「想看就一起看」
+   横向小卡与本组件共用）。*/
+.hcard__corner{ position:absolute; top:8px; right:8px; display:flex; gap:5px; }
+.hcard__edit{ width:30px; height:30px; border-radius:50%; display:grid; place-items:center; background:oklch(0.16 0.02 30 / 0.8); border:1px solid oklch(1 0 0 / 0.2); color:oklch(0.95 0 0 / 0.92); }
+.hcard__edit svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; }
+.hcard__edit:hover{ background:var(--rose); color:oklch(0.16 0.02 30); border-color:var(--rose); }
+.hcard__date{ display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-sm); color:var(--text-faint); }
+.hcard__date svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.6; }
 </style>
