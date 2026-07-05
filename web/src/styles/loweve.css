@@ -125,13 +125,10 @@ body.viewing-partner .proxy-banner{ display:block; }
 /* .watched-card(+:hover，含响应式段同名 @media 规则) → components/TogetherReel.vue（T10
    批 4 顺手归位：响应式段清点命中的单文件 scoped 类；批 1-3 未把这段样式排进任何一批，
    本次借响应式清点顺带补上，见该文件 <style scoped> 块尾部，报 DONE_WITH_CONCERNS）*/
+/* .watched-card__body/.watched-card__title(+.year)/.watched-card__date(+svg)/
+   .watched-card__scores → components/TogetherReel.vue（T10 批 6，纯剪切，未改声明，放在该
+   文件既有 :deep(.tl2 ...) 局部覆盖规则之前，见该文件 <style scoped> 块）*/
 .watched-card .poster{ width:84px; }
-.watched-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-2); }
-.watched-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
-.watched-card__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
-.watched-card__date{ display:flex; align-items:center; gap:6px; font-size:var(--fs-sm); color:var(--text-faint); }
-.watched-card__date svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.6; }
-.watched-card__scores{ display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap; }
 .watched-card__note{
   font-size:var(--fs-sm); line-height:1.6; color:var(--text-dim);
   background:var(--surface-2); border:1px solid var(--line-soft); border-radius:var(--r-md); padding:9px 12px;
@@ -390,10 +387,10 @@ footer .brand__mark{ font-size:20px; }
   -webkit-mask:linear-gradient(90deg, transparent 55%, #000 90%);
   mask:linear-gradient(90deg, transparent 55%, #000 90%);
 }
-.rk-hero__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-md); }
+/* .rk-hero__title .year / .rk-mid__title .year → views/Home.vue（T10 批 6，纯剪切，未改
+   声明，见该文件 <style scoped> 块，紧随各自的 .rk-hero__title/.rk-mid__title 基类之后）*/
 .rk-reason .quote{ color:var(--rose); font-weight:600; }
 .rk-mid .poster{ align-self:stretch; width:auto; border:none; border-radius:0; }   /* 贴紧卡片上下左，宽度按 2:3 自动算 */
-.rk-mid__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
 .rk-mid .feedback{ width:40px; height:36px; }
 
 .rk-mini .poster{ width:100%; border:none; border-radius:0; }
@@ -401,23 +398,24 @@ footer .brand__mark{ font-size:20px; }
 .rk-mini__foot .feedback{ flex:1; width:auto; height:34px; }
 .rk-mini__foot .feedback svg{ width:15px; height:15px; }
 
-.hcard{ scroll-snap-align:start; flex:0 0 205px; background:var(--surface); border-radius:var(--r-lg); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
-.hcard:hover{ transform:translateY(-4px); }
-.hcard__pw{ position:relative; }
+/* .hcard/.hcard__body/.hcard__pw/.hcard__row/.hcard__title(+.year) → primitives.css 尾部
+   （T10 批 6，纯剪切，未改声明；Home.vue「想看就一起看」横向小卡与 WatchedTimeline.vue
+   共用）*/
+/* .hcard .poster 跨组件选择器（.poster 属于子组件 components/Poster.vue），处理方式同上方
+   body.viewing-partner 先例，暂留在此。*/
 .hcard .poster{ width:100%; border:none; border-radius:0; }
-.hcard__corner{ position:absolute; top:8px; right:8px; display:flex; gap:5px; }
-.hcard__edit{ width:30px; height:30px; border-radius:50%; display:grid; place-items:center; background:oklch(0.16 0.02 30 / 0.8); border:1px solid oklch(1 0 0 / 0.2); color:oklch(0.95 0 0 / 0.92); }
-.hcard__edit svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; }
-.hcard__edit:hover{ background:var(--rose); color:oklch(0.16 0.02 30); border-color:var(--rose); }
-.hcard__body{ padding:var(--s-3) var(--s-4) var(--s-4); display:flex; flex-direction:column; gap:var(--s-2); }
-.hcard__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.25; }
-.hcard__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
-.hcard__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
+/* .hcard__corner/.hcard__date(+svg)/.hcard__edit(+:hover/+svg) → components/WatchedTimeline.vue
+   （T10 批 6，纯剪切，未改声明；仅本组件使用，见该文件 <style scoped> 块尾部）*/
+/* .hcard__note 真死：Home.vue/WatchedTimeline.vue 的 hcard 都没有备注区（见
+   css-usage-report.txt 人工复核），T11 删，本批不动。*/
 .hcard__note{ font-size:var(--fs-sm); color:var(--text-dim); line-height:1.5; }
-.hcard__date{ display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-sm); color:var(--text-faint); }
-.hcard__date svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.6; }
+/* .hcard__foot(+.feedback) 真死：Home.vue/WatchedTimeline.vue 的 hcard 都没有渲染 foot 区
+   （见 css-usage-report.txt 人工复核），T11 删，本批不动。*/
 .hcard__foot{ display:flex; align-items:center; gap:6px; margin-top:auto; padding-top:var(--s-1); }
 .hcard__foot .feedback{ width:38px; height:34px; }
+/* .hcard.is-hidden 真死：Home.vue「想看就一起看」清单靠 JS computed 过滤隐藏项，不是切
+   CSS 类（同 .plan-card.is-hidden/.is-hidden 邻近死类，见 css-usage-report.txt 人工复核），
+   T11 删，本批不动。*/
 .hcard.is-hidden{ display:none; }
 
 @media (max-width:860px){

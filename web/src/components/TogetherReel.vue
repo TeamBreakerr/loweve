@@ -359,6 +359,16 @@ onBeforeUnmount(() => {
   transition:transform .22s var(--ease);
 }
 .watched-card:hover{ transform:translateY(-3px); }
+/* .watched-card__body/.watched-card__title(+.year)/.watched-card__date(+svg)/
+   .watched-card__scores 从 styles/loweve.css「② 一起看过卡片」段搬入（T10 批 6，纯剪切，
+   未改声明）。放在下方 :deep(.tl2 ...) 局部覆盖规则之前——同文件内源顺序即层叠顺序，保持
+   原「全局基础 → 组件局部覆盖」的胜负方向不变。*/
+.watched-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-2); }
+.watched-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
+.watched-card__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
+.watched-card__date{ display:flex; align-items:center; gap:6px; font-size:var(--fs-sm); color:var(--text-faint); }
+.watched-card__date svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.6; }
+.watched-card__scores{ display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap; }
 
 .watched-layout { display: grid; grid-template-columns: 256px 1fr; gap: var(--s-8); align-items: start; position: relative; }
 .reel-rail { position: relative; z-index: 3; position: sticky; top: 88px; display: flex; flex-direction: column; align-items: center; }

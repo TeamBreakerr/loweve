@@ -329,6 +329,10 @@ const planModalOpen = ref(false);
 .rk-hero .rk-num{ top:18px; right:24px; font-size:90px; }
 .rk-hero__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-3); padding:var(--s-5); }
 .rk-hero__title{ font-family:var(--font-serif); font-weight:700; font-size:var(--fs-xl); line-height:1.15; padding-right:70px; }
+/* .rk-hero__title .year / .rk-mid__title .year 从 styles/loweve.css 搬入（T10 批 6，纯剪切，
+   未改声明）。.year 本身是 primitives 类，但这两条复合选择器最右侧的宿主 .rk-hero__title/
+   .rk-mid__title 都只在本文件出现，同批 5 第 6 项同构处理。*/
+.rk-hero__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-md); }
 .rk-meta{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
 .rk-reason{ font-size:var(--fs-body); line-height:1.6; color:var(--text-dim); }
 .rk-reason .label{ display:inline-flex; align-items:center; gap:6px; color:var(--rose); font-size:var(--fs-sm); margin-bottom:6px; }
@@ -340,6 +344,7 @@ const planModalOpen = ref(false);
 .rk-mid .rk-num{ top:12px; right:16px; font-size:40px; }
 .rk-mid__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; padding:var(--s-4); }
 .rk-mid__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); line-height:1.2; padding-right:36px; }
+.rk-mid__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
 .rk-mid .rk-reason{ font-size:var(--fs-sm); line-height:1.5; }
 .rk-mid .rk-actions{ gap:6px; }
 
