@@ -410,9 +410,9 @@ def lsb_equivalent(png_b64_a, png_b64_b, max_delta=1, max_px=128):
     return n_px <= max_px
 
 def shoot(cdp, base, out_dir, state, vp_name, size, work_path, majority_of=3, max_load_attempts=7):
-    """截一个 state。整个"新开 page → 导航 → 截图"要重来最多 max_load_attempts 次，直到连续
-       stable_streak 次相互独立的加载结果 **LSB 等价**（见 lsb_equivalent——不是字节全同，
-       字节全同在跨加载的 ±1 LSB 抗锯齿噪声下对繁忙页面不可达成）才采信落盘。
+    """截一个 state。整个"新开 page → 导航 → 截图"最多重来 max_load_attempts 次，把每次独立
+       加载按 **LSB 等价**（见 lsb_equivalent——不是字节全同，字节全同在跨加载 ±1 LSB 抗锯齿
+       噪声下对繁忙页面不可达成）归入等价类，某类率先攒到 majority_of 票即采信其代表帧落盘。
        为什么不能只靠 capture_stable() 就够：capture_stable() 反复截的是同一次已经渲染完的
        页面——如果 swiftshader 并发解码的数据竞争已经把某张图的合成结果写花了，那个花掉的结果
        本身是稳定的（GPU 共享内存已经被那次读坏了，不会自己变回来），反复截图只会一遍遍截到
