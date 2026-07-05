@@ -161,3 +161,32 @@ function goBack() {
     <AddModal v-model="finishOpen" :from-plan="fromPlanObj" @added="loadWork" />
   </main>
 </template>
+
+<style scoped>
+/* 从 styles/loweve.css「二级页面专用样式」段搬入（T10 批 3，纯剪切，未改声明）。
+   .record 原判 primitives，经 css-usage-report.txt 人工复核改判为 scoped: Work.vue，
+   一并按改判结果搬迁。.work-top .poster 留在 loweve.css（跨组件选择器，.poster 属于子组件
+   components/Poster.vue，见该文件注释）；.record__who/.record__role 也留在 loweve.css
+   （与 Settings.vue 语义无关复用，见该文件注释，暂不搬迁）。*/
+.work-top{ display:grid; grid-template-columns:220px 1fr; gap:var(--s-8); margin-bottom:var(--s-10); }
+.work-meta__title{ font-family:var(--font-serif); font-weight:700; font-size:var(--fs-2xl); line-height:1.1; }
+.work-meta__sub{ color:var(--text-dim); margin:var(--s-2) 0 var(--s-4); }
+.work-meta__tags{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:var(--s-5); }
+.record-grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-4); margin-bottom:var(--s-4); }
+.record{ background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--r-lg); padding:var(--s-5); }
+.record__head{ display:flex; align-items:center; gap:var(--s-3); margin-bottom:var(--s-4); }
+.record__avatar{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-family:var(--font-brand); font-style:italic; font-weight:700; color:var(--bg); }
+.record[data-who="a"] .record__avatar{ background:var(--user-a); }
+.record[data-who="b"] .record__avatar{ background:var(--user-b); }
+.record__score{ margin-left:auto; margin-right:26px; font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:var(--fs-2xl); color:var(--gold); line-height:1; }   /* 留出右上角编辑按钮的位置，避免重合 */
+.record__review{ color:var(--text-dim); line-height:1.7; font-size:var(--fs-body); }
+.joint{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--s-5) var(--s-6); }
+.joint__label{ display:flex; align-items:center; gap:7px; font-size:var(--fs-sm); color:var(--rose-bright); letter-spacing:.04em; margin-bottom:var(--s-3); }
+.joint__label svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.7; }
+
+@media (max-width:680px){
+  .work-top{ grid-template-columns:120px 1fr; gap:var(--s-5); }
+  .work-meta__title{ font-size:var(--fs-xl); }
+  .record-grid{ grid-template-columns:1fr; }
+}
+</style>

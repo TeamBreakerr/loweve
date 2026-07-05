@@ -68,3 +68,20 @@ onMounted(async () => {
     <EditModal v-model="editOpen" type="mark" :record="editRecord" @changed="marks.load" />
   </main>
 </template>
+
+<style scoped>
+/* 从 styles/loweve.css「二级页面专用样式」段搬入（T10 批 3，纯剪切，未改声明）。
+   .title-card .poster / .title-card:hover .poster 留在 loweve.css（跨组件选择器，
+   .poster 属于子组件 components/Poster.vue，见该文件注释）。*/
+.tabpane{ display:none; }
+.tabpane.is-active{ display:block; animation:fade .35s var(--ease); }
+@keyframes fade{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none; } }
+
+.grid--me{ grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:var(--s-5); }
+.title-card{ display:flex; flex-direction:column; gap:var(--s-2); }
+.title-card__name{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; }
+.title-card__name .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
+.title-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
+.mini-score{ font-family:var(--font-brand); font-style:italic; font-weight:600; color:var(--gold); font-size:var(--fs-md); }
+.mini-score .lab{ font-family:var(--font-sans); font-style:normal; font-size:11px; color:var(--text-faint); margin-right:3px; }
+</style>

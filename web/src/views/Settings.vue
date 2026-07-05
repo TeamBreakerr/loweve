@@ -204,4 +204,29 @@ async function saveServices() {
 .cfg-group__title { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--text-dim); margin-bottom: 8px; }
 .cfg-group .input { width: 100%; margin-bottom: 6px; }
 .badge-off { font-size: 11px; color: var(--text-faint); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 1px 9px; }
+
+/* 从 styles/loweve.css「二级页面专用样式」段搬入（T10 批 3，纯剪切，未改声明）。
+   .input(+:focus) 留在 loweve.css（primitives，DatePicker.vue 共用，见该文件注释）；
+   .record__who/.record__role 也留在 loweve.css（与 Work.vue 语义无关复用，见该文件注释，
+   暂不搬迁）。*/
+.settings-list{ display:flex; flex-direction:column; gap:var(--s-4); max-width:640px; }
+.setting{ background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--r-lg); padding:var(--s-5) var(--s-6); }
+.setting__head{ display:flex; align-items:center; gap:var(--s-3); margin-bottom:var(--s-3); }
+.setting__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
+.setting__title .ic{ color:var(--rose); }
+.setting__desc{ font-size:var(--fs-sm); color:var(--text-faint); line-height:1.6; margin-bottom:var(--s-4); }
+.setting__row{ display:flex; gap:var(--s-3); align-items:center; flex-wrap:wrap; }
+.badge-ok{ display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-sm); color:var(--douban); }
+.badge-ok svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; }
+.identity-pick{ display:flex; gap:var(--s-3); }
+.identity-card{ flex:1; display:flex; align-items:center; gap:var(--s-3); padding:var(--s-4); border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface-2); transition:all .2s; }
+.identity-card.is-active[data-who="a"]{ border-color:var(--user-a); background:var(--user-a-tint); }
+.identity-card.is-active[data-who="b"]{ border-color:var(--user-b); background:var(--user-b-tint); }
+.identity-card__avatar{ width:40px; height:40px; border-radius:50%; display:grid; place-items:center; font-family:var(--font-brand); font-style:italic; font-weight:700; color:var(--bg); font-size:var(--fs-md); }
+.identity-card[data-who="a"] .identity-card__avatar{ background:var(--user-a); }
+.identity-card[data-who="b"] .identity-card__avatar{ background:var(--user-b); }
+
+@media (max-width:680px){
+  .identity-pick{ flex-direction:column; }
+}
 </style>

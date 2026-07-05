@@ -319,6 +319,9 @@ footer .brand__mark{ font-size:20px; }
 /* ============================================================
    二级页面专用样式（/me /together /plan /work/:id /settings）
    ============================================================ */
+/* .page-hero/.page-hero__kicker/.page-hero__title/.page-hero__lead/.back-link(+:hover/+svg)
+   是 primitives 类（Me/Plan/Settings/Together 共用，见 css-usage-report.txt），本批（T10
+   批 3）不动，留给未来 primitives 抽取任务。*/
 .page-hero{ margin-bottom:var(--s-8); }
 .page-hero__kicker{ font-family:var(--font-brand); font-style:italic; font-size:var(--fs-lg); color:var(--rose); letter-spacing:.02em; }
 .page-hero__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-2xl); line-height:1.12; margin:6px 0 var(--s-3); }
@@ -327,25 +330,26 @@ footer .brand__mark{ font-size:20px; }
 .back-link:hover{ color:var(--text); gap:9px; }
 .back-link svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; }
 
+/* .tabs/.tab(+:hover/+.is-active)/.tab .count 真死：Me.vue 只剩 .tabpane 包裹层，切换条
+   UI 未实现/已移除（见 css-usage-report.txt 人工复核），T11 删，本批不动。*/
 .tabs{ display:flex; gap:var(--s-1); background:var(--surface-2); padding:5px; border-radius:var(--r-pill); border:1px solid var(--line-soft); width:max-content; max-width:100%; }
 .tab{ font-size:var(--fs-sm); color:var(--text-dim); padding:8px 20px; border-radius:var(--r-pill); transition:all .2s var(--ease); white-space:nowrap; }
 .tab:hover{ color:var(--text); }
 .tab.is-active{ color:var(--text); background:var(--surface-3); box-shadow:var(--shadow-sm); }
 .tab .count{ color:var(--text-faint); font-size:11px; margin-left:5px; }
-.tabpane{ display:none; }
-.tabpane.is-active{ display:block; animation:fade .35s var(--ease); }
-@keyframes fade{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none; } }
+/* .tabpane/.tabpane.is-active/@keyframes fade → views/Me.vue（scoped）*/
 
-.grid--me{ grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:var(--s-5); }
-.title-card{ display:flex; flex-direction:column; gap:var(--s-2); }
+/* .grid--me/.title-card/.title-card__name(+.year)/.title-card__row/.mini-score(+.lab)
+   → views/Me.vue（scoped）*/
+/* .title-card .poster / .title-card:hover .poster 跨组件选择器（.poster 是子组件
+   components/Poster.vue 自身根类），处理方式同上方 body.viewing-partner／.rk-mid .feedback
+   先例，暂留在此。*/
 .title-card .poster{ width:100%; transition:transform .25s var(--ease); }
 .title-card:hover .poster{ transform:translateY(-4px); }
-.title-card__name{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; }
-.title-card__name .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
-.title-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
-.mini-score{ font-family:var(--font-brand); font-style:italic; font-weight:600; color:var(--gold); font-size:var(--fs-md); }
-.mini-score .lab{ font-family:var(--font-sans); font-style:normal; font-size:11px; color:var(--text-faint); margin-right:3px; }
 
+/* .timeline(+::before)/.tl-group/.tl-year(+::before)/.tl-item(+::before) 真死：Me.vue
+   未用这套通用竖排时间轴，TogetherReel.vue/WatchedTimeline.vue 各自重写了独立 scoped
+   版本（见 css-usage-report.txt），T11 删，本批不动。*/
 .timeline{ position:relative; padding-left:var(--s-8); }
 .timeline::before{ content:""; position:absolute; left:11px; top:8px; bottom:8px; width:2px; background:var(--line); }
 .tl-group{ margin-bottom:var(--s-10); }
@@ -354,57 +358,47 @@ footer .brand__mark{ font-size:20px; }
 .tl-item{ position:relative; margin-bottom:var(--s-5); }
 .tl-item::before{ content:""; position:absolute; left:calc(-1 * var(--s-8) + 7px); top:26px; width:10px; height:10px; border-radius:50%; background:var(--surface-3); border:2px solid var(--bg); box-shadow:0 0 0 3px var(--surface); }
 
-.work-top{ display:grid; grid-template-columns:220px 1fr; gap:var(--s-8); margin-bottom:var(--s-10); }
+/* .work-top/.work-meta__title/.work-meta__sub/.work-meta__tags/.record-grid/.record
+   （含 [data-who] 头像配色覆盖）/.record__head/.record__avatar/.record__score/
+   .record__review/.joint/.joint__label(+svg) → views/Work.vue（scoped）。.record 原判
+   primitives（5 文件），经 css-usage-report.txt 人工复核改判为 scoped: Work.vue（其余 4 处
+   命中都是 prop 绑定/字段名巧合，非类名），按改判结果一并搬迁。*/
+/* .work-top .poster 跨组件选择器（.poster 属于子组件 Poster.vue），处理方式同上，暂留在此。*/
 .work-top .poster{ width:100%; }
-.work-meta__title{ font-family:var(--font-serif); font-weight:700; font-size:var(--fs-2xl); line-height:1.1; }
-.work-meta__sub{ color:var(--text-dim); margin:var(--s-2) 0 var(--s-4); }
-.work-meta__tags{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:var(--s-5); }
+/* .work-meta__actions/.ext-link(+:hover/+svg) 真死：Work.vue 按钮走行内 style / 没有独立
+   外链元素（见 css-usage-report.txt），T11 删，本批不动。*/
 .work-meta__actions{ display:flex; gap:var(--s-2); flex-wrap:wrap; }
 .ext-link{ display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-sm); color:var(--text-dim); padding:8px 14px; border-radius:var(--r-pill); border:1px solid var(--line); background:var(--surface-2); transition:all .2s; }
 .ext-link:hover{ color:var(--text); transform:translateY(-1px); }
 .ext-link svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.7; }
-.record-grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-4); margin-bottom:var(--s-4); }
-.record{ background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--r-lg); padding:var(--s-5); }
-.record__head{ display:flex; align-items:center; gap:var(--s-3); margin-bottom:var(--s-4); }
-.record__avatar{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-family:var(--font-brand); font-style:italic; font-weight:700; color:var(--bg); }
-.record[data-who="a"] .record__avatar{ background:var(--user-a); }
-.record[data-who="b"] .record__avatar{ background:var(--user-b); }
+/* .record__who/.record__role 不动：Work.vue（谁看的/什么身份）与 Settings.vue（用户列表项
+   名字/角色）两处语义无关复用，留给后续统一裁决（见 css-usage-report.txt「.record」条旁注，
+   本任务纪律第 2 条明确要求不动）。*/
 .record__who{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
 .record__role{ font-size:var(--fs-sm); color:var(--text-faint); }
-.record__score{ margin-left:auto; margin-right:26px; font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:var(--fs-2xl); color:var(--gold); line-height:1; }   /* 留出右上角编辑按钮的位置，避免重合 */
-.record__review{ color:var(--text-dim); line-height:1.7; font-size:var(--fs-body); }
+/* .record__date 真死：Work.vue 的 .record 卡片不展示日期（见 css-usage-report.txt），
+   T11 删，本批不动。*/
 .record__date{ font-size:var(--fs-sm); color:var(--text-faint); margin-top:var(--s-3); }
-.joint{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--s-5) var(--s-6); }
-.joint__label{ display:flex; align-items:center; gap:7px; font-size:var(--fs-sm); color:var(--rose-bright); letter-spacing:.04em; margin-bottom:var(--s-3); }
-.joint__label svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.7; }
+/* .joint__text 真死：Work.vue 的 .joint 卡片直接渲染 review_a/review_b 文本，没有
+   .joint__text 包裹层（见 css-usage-report.txt），T11 删，本批不动。*/
 .joint__text{ font-family:var(--font-serif); font-size:var(--fs-lg); line-height:1.7; color:var(--text); }
 
-.settings-list{ display:flex; flex-direction:column; gap:var(--s-4); max-width:640px; }
-.setting{ background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--r-lg); padding:var(--s-5) var(--s-6); }
-.setting__head{ display:flex; align-items:center; gap:var(--s-3); margin-bottom:var(--s-3); }
-.setting__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
-.setting__title .ic{ color:var(--rose); }
-.setting__desc{ font-size:var(--fs-sm); color:var(--text-faint); line-height:1.6; margin-bottom:var(--s-4); }
-.setting__row{ display:flex; gap:var(--s-3); align-items:center; flex-wrap:wrap; }
+/* .settings-list/.setting(+__head/__title(+.ic)/__desc/__row)/.badge-ok(+svg)/
+   .identity-pick/.identity-card(+.is-active[data-who]/+__avatar(+[data-who]))
+   → views/Settings.vue（scoped）*/
+/* .input(+:focus) 是 primitives 类（DatePicker.vue/Settings.vue 共用，见
+   css-usage-report.txt），本批不动。*/
 .input{ background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md); padding:10px 14px; color:var(--text); font-size:var(--fs-body); outline:none; flex:1; min-width:160px; }
 .input:focus{ border-color:var(--rose-line); }
+/* .input--mono 真死：Settings.vue 密钥输入框都用普通 .input，没有等宽字体变体（见
+   css-usage-report.txt），T11 删，本批不动。*/
 .input--mono{ font-family:ui-monospace,monospace; font-size:var(--fs-sm); }
-.badge-ok{ display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-sm); color:var(--douban); }
-.badge-ok svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; }
-.identity-pick{ display:flex; gap:var(--s-3); }
-.identity-card{ flex:1; display:flex; align-items:center; gap:var(--s-3); padding:var(--s-4); border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface-2); transition:all .2s; }
-.identity-card.is-active[data-who="a"]{ border-color:var(--user-a); background:var(--user-a-tint); }
-.identity-card.is-active[data-who="b"]{ border-color:var(--user-b); background:var(--user-b-tint); }
-.identity-card__avatar{ width:40px; height:40px; border-radius:50%; display:grid; place-items:center; font-family:var(--font-brand); font-style:italic; font-weight:700; color:var(--bg); font-size:var(--fs-md); }
-.identity-card[data-who="a"] .identity-card__avatar{ background:var(--user-a); }
-.identity-card[data-who="b"] .identity-card__avatar{ background:var(--user-b); }
 
 @media (max-width:680px){
-  .work-top{ grid-template-columns:120px 1fr; gap:var(--s-5); }
-  .work-meta__title{ font-size:var(--fs-xl); }
-  .record-grid{ grid-template-columns:1fr; }
+/* .work-top/.work-meta__title/.record-grid → views/Work.vue（scoped，同 @media 块尾部）*/
+/* .page-hero__title 是 primitives 类，本批不动 */
   .page-hero__title{ font-size:var(--fs-xl); }
-  .identity-pick{ flex-direction:column; }
+/* .identity-pick → views/Settings.vue（scoped，同 @media 块尾部）*/
 }
 
 /* ============================================================
