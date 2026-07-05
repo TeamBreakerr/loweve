@@ -1,0 +1,191 @@
+/* 从 loweve.css 拆出：跨组件复用的基础样式（primitives）。 */
+/* 段落顺序与 loweve.css 原文保持一致；段内已按 scripts/refactor/css-usage-report.txt 的复核后 */
+/* 归属剔除单组件 scoped / 死样式规则（原样留在 loweve.css，交 T10/T11 处理）。 */
+
+/* ============================================================ 布局骨架 */
+.page{ max-width:var(--maxw); margin:0 auto; padding:var(--s-8) var(--s-5) var(--s-16); }
+.section{ margin-bottom:var(--s-12); }
+.section__head{
+  display:flex; align-items:flex-end; gap:var(--s-3);
+  margin-bottom:var(--s-5); padding-bottom:var(--s-3);
+  border-bottom:1px solid var(--line);
+}
+.section__title{
+  font-family:var(--font-serif); font-weight:600;
+  font-size:var(--fs-xl); letter-spacing:.02em; line-height:1.1;
+}
+
+.section__hint{ font-size:var(--fs-sm); color:var(--text-faint); padding-bottom:3px; }
+.section__actions{ margin-left:auto; display:flex; align-items:center; gap:var(--s-2); }
+
+/* 通用按钮 */
+.btn{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:var(--fs-sm); font-weight:500;
+  padding:8px 15px; border-radius:var(--r-pill);
+  border:1px solid var(--line); color:var(--text-dim);
+  background:var(--surface-2); transition:all .2s var(--ease);
+  white-space:nowrap;
+}
+.btn:hover{ color:var(--text); border-color:var(--line); background:var(--surface-3); transform:translateY(-1px); }
+.btn--ghost{ background:var(--surface-2); border-color:var(--line); }
+.btn--ghost:hover{ background:var(--surface-3); }
+.btn--rose{ color:oklch(0.16 0.02 30); border-color:var(--rose); background:var(--rose); font-weight:600; }
+.btn--rose:hover{ background:var(--rose-bright); border-color:var(--rose-bright); color:oklch(0.14 0.02 30); }
+.btn--icon{ padding:8px; width:38px; height:38px; justify-content:center; }
+.btn__ic{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.7; }
+
+/* ============================================================ 海报（占位：中央胶片图标，上线替换为真实海报图）*/
+.poster{
+  position:relative; aspect-ratio:2/3; border-radius:var(--r-poster);
+  overflow:hidden; background:var(--p1,#3a3633);
+  border:1px solid var(--line);
+  flex-shrink:0; align-self:flex-start; display:grid; place-items:center;
+  color:oklch(1 0 0 / 0.3);
+}
+.poster::after{
+  content:""; width:30%; aspect-ratio:1; opacity:.32;
+  background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23ffffff'%20stroke-width='1.4'%3E%3Crect%20x='3'%20y='4'%20width='18'%20height='16'%20rx='1.5'/%3E%3Cpath%20d='M7%204v16M17%204v16M3%209h4M17%209h4M3%2015h4M17%2015h4'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* ============================================================ 评分徽标 */
+
+/* tag */
+.tag{
+  font-size:11px; color:var(--text-dim); padding:2px 9px;
+  border-radius:var(--r-pill); background:var(--surface-3); border:1px solid var(--line-soft);
+  white-space:nowrap;
+}
+
+/* ============================================================ 卡片网格 */
+.grid{ display:grid; gap:var(--s-4); }
+
+.adder{ display:inline-flex; align-items:center; gap:5px; }
+.adder__dot{ width:16px; height:16px; border-radius:50%; display:grid; place-items:center; font-size:8px; font-weight:700; color:var(--bg); font-family:var(--font-brand); font-style:italic; }
+.adder[data-who="a"] .adder__dot{ background:var(--user-a); }
+.adder[data-who="b"] .adder__dot{ background:var(--user-b); }
+
+/* ============================================================ Modal */
+
+.modal-overlay{
+  position:fixed; inset:0; z-index:80;
+  background:oklch(0.1 0.01 40 / 0.7); backdrop-filter:blur(6px);
+  display:none; align-items:center; justify-content:center; padding:var(--s-5);
+}
+.modal-overlay.is-open{ display:flex; }
+.modal{
+  width:100%; max-width:560px; max-height:88vh; overflow:auto;
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r-xl); box-shadow:var(--shadow-pop);
+  animation:pop .3s var(--ease);
+  scrollbar-width:thin; scrollbar-color:var(--surface-3) transparent;
+}
+.modal::-webkit-scrollbar{ width:8px; }
+.modal::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
+.modal::-webkit-scrollbar-track{ background:transparent; }
+@keyframes pop{ from{ opacity:0; transform:translateY(14px) scale(.98); } to{ opacity:1; transform:none; } }
+.modal__head{
+  display:flex; align-items:center; gap:var(--s-3);
+  padding:var(--s-5) var(--s-5) var(--s-4); border-bottom:1px solid var(--line-soft);
+  position:sticky; top:0; background:var(--surface); z-index:1;
+}
+.modal__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-lg); }
+.modal__close{ margin-left:auto; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; color:var(--text-dim); transition:background .2s; }
+.modal__close:hover{ background:var(--surface-2); color:var(--text); }
+.modal__close svg{ width:18px; height:18px; stroke:currentColor; stroke-width:2; }
+.modal__body{ padding:var(--s-5); display:flex; flex-direction:column; gap:var(--s-5); }
+.field{ display:flex; flex-direction:column; gap:var(--s-2); }
+.field__label{ font-size:var(--fs-sm); color:var(--text-dim); display:flex; align-items:center; gap:6px; }
+
+.target{
+  padding:var(--s-3); border-radius:var(--r-md); border:1px solid var(--line);
+  background:var(--surface-2); font-size:var(--fs-sm); text-align:center;
+  transition:all .18s; color:var(--text-dim);
+}
+.target:hover{ color:var(--text); border-color:var(--line); }
+.target.is-active{ background:var(--rose); border-color:var(--rose); color:oklch(0.16 0.02 30); font-weight:600; }
+.rate-row{ display:flex; gap:var(--s-5); }
+
+.review-input{
+  width:100%; background:var(--surface-2); border:1px solid var(--line);
+  border-radius:var(--r-md); padding:11px var(--s-4); color:var(--text);
+  font-size:var(--fs-body); outline:none; resize:vertical; min-height:64px; line-height:1.6;
+  scrollbar-width:thin; scrollbar-color:var(--surface-3) transparent;
+}
+.review-input::placeholder{ color:var(--text-faint); }
+.review-input::-webkit-scrollbar{ width:8px; }
+.review-input::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
+.review-input::-webkit-scrollbar-track{ background:transparent; }
+/* 拖拽手柄：自定义滚动条会让它变成突兀的方框，改绘成两道主题色细斜纹（拖拽功能不受影响） */
+.review-input::-webkit-resizer{
+  background:linear-gradient(135deg,
+    transparent 0 50%, var(--text-faint) 50% 62%,
+    transparent 62% 74%, var(--text-faint) 74% 86%, transparent 86%);
+}
+.review-input::-webkit-scrollbar-corner{ background:transparent; }
+.modal__foot{
+  display:flex; gap:var(--s-3); padding:var(--s-4) var(--s-5) var(--s-5);
+  border-top:1px solid var(--line-soft);
+  position:sticky; bottom:0; background:var(--surface); z-index:1;   /* 始终吸底，保存按钮无需滚动 */
+}
+.modal__foot .btn{ padding:11px 20px; }
+.btn--primary{
+  background:var(--rose); color:oklch(0.16 0.02 30); border:1px solid var(--rose); font-weight:600;
+}
+.btn--primary:hover{ background:var(--rose-bright); border-color:var(--rose-bright); }
+
+/* ============================================================ 卡片角标编辑按钮（Me/Together/Plan 复用） */
+
+.card-edit{
+  position:absolute; top:7px; right:7px; z-index:2;
+  width:30px; height:30px; border-radius:50%;
+  display:grid; place-items:center;
+  background:oklch(0.16 0.02 30 / 0.7); backdrop-filter:blur(6px);
+  border:1px solid oklch(1 0 0 / 0.18); color:oklch(0.95 0 0 / 0.92);
+  opacity:0; transition:opacity .18s var(--ease), background .18s;
+}
+
+.card-edit:hover{ background:var(--rose); border-color:var(--rose); color:oklch(0.16 0.02 30); }
+.card-edit svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.9; }
+/* 触屏没有 hover：窄屏常驻显示 */
+@media (max-width:680px){ .card-edit{ opacity:.85; } }
+
+/* ============================================================ 片名后的年份
+   统一浅色 + 不同字体（sans）+ 比片名略小；各卡可用 .X__title .year 覆盖字号 */
+.year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:0.84em; }
+
+/* ============================================================ 快速悬浮提示
+   取代浏览器默认 title（约 2s 才弹）。用法：给元素加 data-tip="文字"；
+   想朝下弹（如卡片顶角按钮，免被 overflow 裁切）再加 data-tip-pos="below" */
+[data-tip]{ position:relative; }
+[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute; left:50%; bottom:calc(100% + 7px);
+  transform:translateX(-50%) translateY(3px);
+  z-index:90; white-space:nowrap; pointer-events:none;
+  background:oklch(0.14 0.015 40 / 0.97); color:var(--text);
+  font-size:11px; line-height:1; font-weight:500; letter-spacing:.01em;
+  padding:6px 9px; border-radius:var(--r-sm); border:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+  opacity:0; transition:opacity .14s ease, transform .14s ease; transition-delay:.16s;
+}
+[data-tip][data-tip-pos="below"]::after{
+  bottom:auto; top:calc(100% + 7px); transform:translateX(-50%) translateY(-3px);
+}
+[data-tip]:hover::after, [data-tip]:focus-visible::after{
+  opacity:1; transform:translateX(-50%) translateY(0);
+}
+/* [data-tip] 的 position:relative 与 .card-edit 同特异性、且在后面，会盖掉它的绝对定位
+   （导致编辑按钮掉进文档流、压住头像）。这里用更高特异性补回绝对定位。 */
+.card-edit[data-tip]{ position: absolute; }
+
+/* 优先级选择按钮：心形图标居中 */
+.prio-opt{ display:flex; align-items:center; justify-content:center; min-height:1.4em; }
+
+
+/* ============================================================ 响应式（原「响应式」段内命中 primitives 类的规则；其余单页/死类规则暂留 loweve.css，随 T10/T11 走） */
+@media (max-width:680px){
+  .page{ padding:var(--s-6) var(--s-4) var(--s-12); }
+  .section__title{ font-size:var(--fs-lg); }
+  .section__head{ flex-wrap:wrap; }
+}

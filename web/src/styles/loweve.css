@@ -1,90 +1,7 @@
-/* ============================================================
-   loweve · 小放映厅  —  设计 token
-   深色暖调"放映厅"：让彩色海报成为视觉主角，框架克制、温柔。
-   ============================================================ */
-:root{
-  /* —— 背景与表面：带暖味的炭黑，绝非纯黑 —— */
-  --bg:            oklch(0.165 0.008 45);   /* 最底层，调暗的房间 */
-  --bg-grad-top:   oklch(0.205 0.012 38);   /* 顶部一丝暖光 */
-  --surface:       oklch(0.215 0.010 45);   /* 卡片 */
-  --surface-2:     oklch(0.255 0.012 46);   /* 卡片内嵌 / 悬浮 */
-  --surface-3:     oklch(0.305 0.013 48);   /* 输入框 / chip */
-  --line:          oklch(0.32 0.012 46);    /* 描边 */
-  --line-soft:     oklch(0.27 0.010 46);
-
-  /* —— 文字：暖白阶梯 —— */
-  --text:          oklch(0.945 0.008 70);
-  --text-dim:      oklch(0.74 0.012 60);
-  --text-faint:    oklch(0.56 0.010 55);
-
-  /* —— 主点缀：珊瑚玫瑰（亲密、温暖、克制）—— */
-  --rose:          oklch(0.72 0.135 22);
-  --rose-bright:   oklch(0.78 0.145 25);
-  --rose-dim:      oklch(0.62 0.110 20);
-  --rose-tint:     oklch(0.72 0.135 22 / 0.14);
-  --rose-line:     oklch(0.72 0.135 22 / 0.35);
-
-  /* —— 评分来源色彩编码（压低彩度融进暖调）—— */
-  --gold:          oklch(0.82 0.115 78);    /* 评分数字：影院金 */
-  --douban:        oklch(0.74 0.085 150);   /* 豆瓣：苔绿 */
-  --douban-tint:   oklch(0.74 0.085 150 / 0.16);
-  --bangumi:       oklch(0.76 0.090 350);   /* Bangumi：藕粉 */
-  --bangumi-tint:  oklch(0.76 0.090 350 / 0.16);
-
-  /* —— 双人色（身份）—— */
-  --user-a:            oklch(0.74 0.090 230);   /* 用户A：静蓝 */
-  --user-a-tint:       oklch(0.74 0.090 230 / 0.16);
-  --user-b:           oklch(0.77 0.115 8);     /* 用户B：暖玫 */
-  --user-b-tint:      oklch(0.77 0.115 8 / 0.16);
-
-  /* —— 间距阶梯 —— */
-  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
-  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
-  --s-12: 48px; --s-16: 64px;
-
-  /* —— 圆角 —— */
-  --r-xs: 6px; --r-sm: 9px; --r-md: 12px; --r-lg: 16px;
-  --r-xl: 22px; --r-poster: 10px; --r-pill: 999px;
-
-  /* —— 字号阶梯 —— */
-  --fs-cap: 12px;   --fs-sm: 13px;  --fs-body: 15px;
-  --fs-md: 17px;    --fs-lg: 20px;  --fs-xl: 26px;
-  --fs-2xl: 34px;   --fs-3xl: 44px;
-
-  /* —— 阴影：深而柔，模拟暗房 —— */
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
-  --shadow-card: 0 6px 20px -8px oklch(0 0 0 / 0.55);
-  --shadow-pop: 0 18px 50px -14px oklch(0 0 0 / 0.7);
-  --shadow-poster: 0 10px 26px -10px oklch(0 0 0 / 0.65);
-
-  /* —— 字体 —— */
-  --font-serif: "Noto Serif SC", "Songti SC", serif;
-  --font-sans: "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
-  --font-brand: "Cormorant", "Noto Serif SC", serif;
-
-  --maxw: 1200px;
-  --ease: cubic-bezier(.22,.61,.36,1);
-}
+/* → tokens.css（原文件头注释 + :root 设计 token 变量） */
 
 /* ============================================================ Reset */
-*{ box-sizing:border-box; margin:0; padding:0; }
-html{ -webkit-text-size-adjust:100%; }
-body{
-  font-family:var(--font-sans);
-  font-weight:400;
-  font-size:var(--fs-body);
-  line-height:1.6;
-  color:var(--text);
-  background:var(--bg);
-  min-height:100vh;
-  -webkit-font-smoothing:antialiased;
-  text-rendering:optimizeLegibility;
-}
-img{ display:block; max-width:100%; }
-button{ font-family:inherit; cursor:pointer; color:inherit; background:none; border:none; }
-input{ font-family:inherit; }
-a{ color:inherit; text-decoration:none; }
-::selection{ background:var(--rose-line); }
+/* → base.css */
 
 /* nice scrollbar for the horizontal rail */
 .rail::-webkit-scrollbar{ height:8px; }
@@ -185,53 +102,15 @@ body.viewing-partner .proxy-banner{ display:block; }
 .proxy-banner__exit:hover{ background:oklch(0.18 0.02 30 / 0.14); }
 
 /* ============================================================ 布局骨架 */
-.page{ max-width:var(--maxw); margin:0 auto; padding:var(--s-8) var(--s-5) var(--s-16); }
-.section{ margin-bottom:var(--s-12); }
-.section__head{
-  display:flex; align-items:flex-end; gap:var(--s-3);
-  margin-bottom:var(--s-5); padding-bottom:var(--s-3);
-  border-bottom:1px solid var(--line);
-}
-.section__title{
-  font-family:var(--font-serif); font-weight:600;
-  font-size:var(--fs-xl); letter-spacing:.02em; line-height:1.1;
-}
+/* .page/.section 系列/.btn 系列 → primitives.css */
 .section__title .accent{ color:var(--rose); }
-.section__hint{ font-size:var(--fs-sm); color:var(--text-faint); padding-bottom:3px; }
-.section__actions{ margin-left:auto; display:flex; align-items:center; gap:var(--s-2); }
-
-/* 通用按钮 */
-.btn{
-  display:inline-flex; align-items:center; gap:6px;
-  font-size:var(--fs-sm); font-weight:500;
-  padding:8px 15px; border-radius:var(--r-pill);
-  border:1px solid var(--line); color:var(--text-dim);
-  background:var(--surface-2); transition:all .2s var(--ease);
-  white-space:nowrap;
-}
-.btn:hover{ color:var(--text); border-color:var(--line); background:var(--surface-3); transform:translateY(-1px); }
-.btn--ghost{ background:var(--surface-2); border-color:var(--line); }
-.btn--ghost:hover{ background:var(--surface-3); }
-.btn--rose{ color:oklch(0.16 0.02 30); border-color:var(--rose); background:var(--rose); font-weight:600; }
-.btn--rose:hover{ background:var(--rose-bright); border-color:var(--rose-bright); color:oklch(0.14 0.02 30); }
-.btn--icon{ padding:8px; width:38px; height:38px; justify-content:center; }
-.btn__ic{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.7; }
+/* 通用按钮：.btn/.btn--ghost/.btn--rose/.btn--icon/.btn__ic → primitives.css */
 .link-more{ font-size:var(--fs-sm); color:var(--rose); display:inline-flex; align-items:center; justify-content:center; gap:4px; width:34px; height:34px; border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface-2); transition:all .2s; }
 .link-more:hover{ color:oklch(0.16 0.02 30); background:var(--rose); border-color:var(--rose); }
 .link-more svg{ width:16px; height:16px; }
 
 /* ============================================================ 海报（占位：中央胶片图标，上线替换为真实海报图）*/
-.poster{
-  position:relative; aspect-ratio:2/3; border-radius:var(--r-poster);
-  overflow:hidden; background:var(--p1,#3a3633);
-  border:1px solid var(--line);
-  flex-shrink:0; align-self:flex-start; display:grid; place-items:center;
-  color:oklch(1 0 0 / 0.3);
-}
-.poster::after{
-  content:""; width:30%; aspect-ratio:1; opacity:.32;
-  background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23ffffff'%20stroke-width='1.4'%3E%3Crect%20x='3'%20y='4'%20width='18'%20height='16'%20rx='1.5'/%3E%3Cpath%20d='M7%204v16M17%204v16M3%209h4M17%209h4M3%2015h4M17%2015h4'/%3E%3C/svg%3E") center / contain no-repeat;
-}
+/* .poster 基础样式 → primitives.css */
 .poster__title{ display:none; }
 .poster__kind{
   position:absolute; top:7px; left:7px; z-index:1;
@@ -284,12 +163,7 @@ a.rating--link:active{ transform:none; }
 .dual__score{ font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:var(--fs-md); color:var(--text); }
 .dual__sep{ width:1px; height:18px; background:var(--line); }
 
-/* tag */
-.tag{
-  font-size:11px; color:var(--text-dim); padding:2px 9px;
-  border-radius:var(--r-pill); background:var(--surface-3); border:1px solid var(--line-soft);
-  white-space:nowrap;
-}
+/* .tag → primitives.css */
 
 /* ============================================================ ① AI 推荐 */
 .intent{
@@ -359,7 +233,7 @@ a.rating--link:active{ transform:none; }
 .feedback--no:hover{ background:var(--surface-3); border-color:var(--line); color:var(--text); }
 
 /* ============================================================ 卡片网格 */
-.grid{ display:grid; gap:var(--s-4); }
+/* .grid → primitives.css */
 .grid--together{ grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); }
 .grid--plan{ grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); }
 
@@ -414,10 +288,7 @@ a.rating--link:active{ transform:none; }
 .stars .on{ fill:var(--gold); stroke:var(--gold); }
 .stars .off{ fill:none; stroke:var(--line); }
 .plan-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; font-size:var(--fs-sm); color:var(--text-faint); }
-.adder{ display:inline-flex; align-items:center; gap:5px; }
-.adder__dot{ width:16px; height:16px; border-radius:50%; display:grid; place-items:center; font-size:8px; font-weight:700; color:var(--bg); font-family:var(--font-brand); font-style:italic; }
-.adder[data-who="a"] .adder__dot{ background:var(--user-a); }
-.adder[data-who="b"] .adder__dot{ background:var(--user-b); }
+/* .adder/.adder__dot → primitives.css */
 .plan-card__note{ font-size:var(--fs-sm); color:var(--text-dim); line-height:1.5; }
 .status{
   font-size:11px; padding:3px 10px; border-radius:var(--r-pill);
@@ -432,35 +303,7 @@ a.rating--link:active{ transform:none; }
 .plan-card.is-hidden{ display:none; }
 
 /* ============================================================ Modal */
-.modal-overlay{
-  position:fixed; inset:0; z-index:80;
-  background:oklch(0.1 0.01 40 / 0.7); backdrop-filter:blur(6px);
-  display:none; align-items:center; justify-content:center; padding:var(--s-5);
-}
-.modal-overlay.is-open{ display:flex; }
-.modal{
-  width:100%; max-width:560px; max-height:88vh; overflow:auto;
-  background:var(--surface); border:1px solid var(--line);
-  border-radius:var(--r-xl); box-shadow:var(--shadow-pop);
-  animation:pop .3s var(--ease);
-  scrollbar-width:thin; scrollbar-color:var(--surface-3) transparent;
-}
-.modal::-webkit-scrollbar{ width:8px; }
-.modal::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
-.modal::-webkit-scrollbar-track{ background:transparent; }
-@keyframes pop{ from{ opacity:0; transform:translateY(14px) scale(.98); } to{ opacity:1; transform:none; } }
-.modal__head{
-  display:flex; align-items:center; gap:var(--s-3);
-  padding:var(--s-5) var(--s-5) var(--s-4); border-bottom:1px solid var(--line-soft);
-  position:sticky; top:0; background:var(--surface); z-index:1;
-}
-.modal__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-lg); }
-.modal__close{ margin-left:auto; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; color:var(--text-dim); transition:background .2s; }
-.modal__close:hover{ background:var(--surface-2); color:var(--text); }
-.modal__close svg{ width:18px; height:18px; stroke:currentColor; stroke-width:2; }
-.modal__body{ padding:var(--s-5); display:flex; flex-direction:column; gap:var(--s-5); }
-.field{ display:flex; flex-direction:column; gap:var(--s-2); }
-.field__label{ font-size:var(--fs-sm); color:var(--text-dim); display:flex; align-items:center; gap:6px; }
+/* .modal-overlay/.modal/.modal__head/.modal__title/.modal__close/.modal__body/.field/.field__label → primitives.css */
 .field__label .step{ width:18px; height:18px; border-radius:50%; background:var(--rose); color:oklch(0.16 0.02 30); display:grid; place-items:center; font-size:11px; font-weight:700; }
 .search-box{
   display:flex; align-items:center; gap:var(--s-2);
@@ -485,47 +328,14 @@ a.rating--link:active{ transform:none; }
 .result.is-selected .result__check svg{ width:12px; height:12px; stroke:var(--bg); stroke-width:3; opacity:1; }
 .result__check svg{ opacity:0; }
 .target-list{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-2); }
-.target{
-  padding:var(--s-3); border-radius:var(--r-md); border:1px solid var(--line);
-  background:var(--surface-2); font-size:var(--fs-sm); text-align:center;
-  transition:all .18s; color:var(--text-dim);
-}
-.target:hover{ color:var(--text); border-color:var(--line); }
-.target.is-active{ background:var(--rose); border-color:var(--rose); color:oklch(0.16 0.02 30); font-weight:600; }
-.rate-row{ display:flex; gap:var(--s-5); }
+/* .target/.rate-row → primitives.css */
 .score-input{ display:flex; flex-direction:column; gap:6px; }
 .score-input input{
   width:88px; background:var(--surface-2); border:1px solid var(--line);
   border-radius:var(--r-md); padding:10px 14px; color:var(--text); font-size:var(--fs-lg);
   font-family:var(--font-brand); font-style:italic; outline:none;
 }
-.review-input{
-  width:100%; background:var(--surface-2); border:1px solid var(--line);
-  border-radius:var(--r-md); padding:11px var(--s-4); color:var(--text);
-  font-size:var(--fs-body); outline:none; resize:vertical; min-height:64px; line-height:1.6;
-  scrollbar-width:thin; scrollbar-color:var(--surface-3) transparent;
-}
-.review-input::placeholder{ color:var(--text-faint); }
-.review-input::-webkit-scrollbar{ width:8px; }
-.review-input::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
-.review-input::-webkit-scrollbar-track{ background:transparent; }
-/* 拖拽手柄：自定义滚动条会让它变成突兀的方框，改绘成两道主题色细斜纹（拖拽功能不受影响） */
-.review-input::-webkit-resizer{
-  background:linear-gradient(135deg,
-    transparent 0 50%, var(--text-faint) 50% 62%,
-    transparent 62% 74%, var(--text-faint) 74% 86%, transparent 86%);
-}
-.review-input::-webkit-scrollbar-corner{ background:transparent; }
-.modal__foot{
-  display:flex; gap:var(--s-3); padding:var(--s-4) var(--s-5) var(--s-5);
-  border-top:1px solid var(--line-soft);
-  position:sticky; bottom:0; background:var(--surface); z-index:1;   /* 始终吸底，保存按钮无需滚动 */
-}
-.modal__foot .btn{ padding:11px 20px; }
-.btn--primary{
-  background:var(--rose); color:oklch(0.16 0.02 30); border:1px solid var(--rose); font-weight:600;
-}
-.btn--primary:hover{ background:var(--rose-bright); border-color:var(--rose-bright); }
+/* .review-input/.modal__foot/.btn--primary → primitives.css */
 
 /* ============================================================ 组件画廊 & 其他页面示意 */
 .gallery{ background:var(--bg); border-top:1px solid var(--line); }
@@ -593,8 +403,7 @@ footer .brand__mark{ font-size:20px; }
   .who{ padding:5px; }
 }
 @media (max-width:680px){
-  .page{ padding:var(--s-6) var(--s-4) var(--s-12); }
-  .section__title{ font-size:var(--fs-lg); }
+/* .page/.section__title → primitives.css 尾部同 @media 块 */
   .gallery__title{ font-size:var(--fs-xl); }
   .topbar__inner{ padding:var(--s-3) var(--s-4); gap:var(--s-3); }
   .brand__mark{ font-size:24px; }
@@ -605,7 +414,7 @@ footer .brand__mark{ font-size:20px; }
   .watched-card{ flex-direction:column; }
   .watched-card .poster{ width:100%; aspect-ratio:16/9; }
   .watched-card .poster .poster__title{ font-size:var(--fs-body); }
-  .section__head{ flex-wrap:wrap; }
+/* .section__head → primitives.css 尾部同 @media 块 */
   .filters{ width:100%; overflow-x:auto; padding-bottom:4px; }
   .target-list{ grid-template-columns:1fr; }
 }
@@ -848,51 +657,18 @@ footer .brand__mark{ font-size:20px; }
 
 /* ============================================================ 卡片角标编辑按钮（Me/Together/Plan 复用） */
 .title-card__pw{ position:relative; }
-.card-edit{
-  position:absolute; top:7px; right:7px; z-index:2;
-  width:30px; height:30px; border-radius:50%;
-  display:grid; place-items:center;
-  background:oklch(0.16 0.02 30 / 0.7); backdrop-filter:blur(6px);
-  border:1px solid oklch(1 0 0 / 0.18); color:oklch(0.95 0 0 / 0.92);
-  opacity:0; transition:opacity .18s var(--ease), background .18s;
-}
+/* .card-edit 基础态 → primitives.css */
 .title-card:hover .card-edit, .hcard:hover .card-edit, .watched-card:hover .card-edit, .vcard:hover .card-edit, .card-edit:focus{ opacity:1; }
 /* 查看页（Work）的记录卡 .record/.joint 不在上面的 hover 列表里——编辑按钮常驻可见 */
 .record .card-edit, .joint .card-edit{ opacity:.82; }
 .record:hover .card-edit, .joint:hover .card-edit{ opacity:1; }
-.card-edit:hover{ background:var(--rose); border-color:var(--rose); color:oklch(0.16 0.02 30); }
-.card-edit svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.9; }
-/* 触屏没有 hover：窄屏常驻显示 */
-@media (max-width:680px){ .card-edit{ opacity:.85; } }
+/* .card-edit:hover/svg/触屏媒体查询 → primitives.css */
 
 /* ============================================================ 片名后的年份
    统一浅色 + 不同字体（sans）+ 比片名略小；各卡可用 .X__title .year 覆盖字号 */
-.year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:0.84em; }
+/* → primitives.css */
 
 /* ============================================================ 快速悬浮提示
    取代浏览器默认 title（约 2s 才弹）。用法：给元素加 data-tip="文字"；
    想朝下弹（如卡片顶角按钮，免被 overflow 裁切）再加 data-tip-pos="below" */
-[data-tip]{ position:relative; }
-[data-tip]::after{
-  content:attr(data-tip);
-  position:absolute; left:50%; bottom:calc(100% + 7px);
-  transform:translateX(-50%) translateY(3px);
-  z-index:90; white-space:nowrap; pointer-events:none;
-  background:oklch(0.14 0.015 40 / 0.97); color:var(--text);
-  font-size:11px; line-height:1; font-weight:500; letter-spacing:.01em;
-  padding:6px 9px; border-radius:var(--r-sm); border:1px solid var(--line);
-  box-shadow:var(--shadow-sm);
-  opacity:0; transition:opacity .14s ease, transform .14s ease; transition-delay:.16s;
-}
-[data-tip][data-tip-pos="below"]::after{
-  bottom:auto; top:calc(100% + 7px); transform:translateX(-50%) translateY(-3px);
-}
-[data-tip]:hover::after, [data-tip]:focus-visible::after{
-  opacity:1; transform:translateX(-50%) translateY(0);
-}
-/* [data-tip] 的 position:relative 与 .card-edit 同特异性、且在后面，会盖掉它的绝对定位
-   （导致编辑按钮掉进文档流、压住头像）。这里用更高特异性补回绝对定位。 */
-.card-edit[data-tip]{ position: absolute; }
-
-/* 优先级选择按钮：心形图标居中 */
-.prio-opt{ display:flex; align-items:center; justify-content:center; min-height:1.4em; }
+/* → primitives.css（含 .prio-opt） */
