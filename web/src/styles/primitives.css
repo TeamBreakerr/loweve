@@ -200,8 +200,8 @@
    WatchedTimeline.vue 共用，从 styles/loweve.css 搬入，T10 批 6，纯移动，未改声明）。
    .hcard__title .year 最右侧 .year 是 primitives 类，但宿主 .hcard__title 本身在 Home.vue
    与 WatchedTimeline.vue 两个文件都出现，随基类一并搬入本文件，未随任一组件搬走。
-   .hcard .poster（跨组件选择器，.poster 属于子组件 Poster.vue）与死类
-   .hcard__note/.hcard__foot(+.feedback)/.hcard.is-hidden 仍留在 loweve.css，未搬。
+   .hcard .poster（跨组件选择器，.poster 属于子组件 Poster.vue）仍留在 loweve.css，未搬
+   （死类 .hcard__note/.hcard__foot(+.feedback)/.hcard.is-hidden 已随 T11 删除）。
    .hcard__corner/.hcard__date(+svg)/.hcard__edit(+:hover/+svg) 只在 WatchedTimeline.vue
    出现，随该组件一并搬入其 <style scoped> 块。*/
 .hcard{ scroll-snap-align:start; flex:0 0 205px; background:var(--surface); border-radius:var(--r-lg); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
@@ -213,7 +213,7 @@
 .hcard__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
 
 
-/* ============================================================ 响应式（原「响应式」段内命中 primitives 类的规则；其余单页/死类规则暂留 loweve.css，随 T10/T11 走） */
+/* ============================================================ 响应式（原「响应式」段内命中 primitives 类的规则；单页规则已随 T10 归位各组件、死类规则已随 T11 删除） */
 @media (max-width:680px){
   .page{ padding:var(--s-6) var(--s-4) var(--s-12); }
   .section__title{ font-size:var(--fs-lg); }
