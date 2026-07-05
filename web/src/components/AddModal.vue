@@ -272,3 +272,32 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 从 styles/loweve.css「Modal」段搬入（T10 批 5，纯剪切，未改声明）。.result .poster 是本
+   组件模板里的原生 <div class="poster">（非 <Poster> 子组件根节点），不算跨组件选择器，
+   一并搬入。*/
+.field__label .step{ width:18px; height:18px; border-radius:50%; background:var(--rose); color:oklch(0.16 0.02 30); display:grid; place-items:center; font-size:11px; font-weight:700; }
+.search-box{
+  display:flex; align-items:center; gap:var(--s-2);
+  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md); padding:11px var(--s-4);
+}
+.search-box svg{ width:18px; height:18px; stroke:var(--text-faint); fill:none; stroke-width:1.7; }
+.search-box input{ flex:1; background:none; border:none; outline:none; color:var(--text); font-size:var(--fs-body); }
+.search-box input::placeholder{ color:var(--text-faint); }
+.results{ display:flex; flex-direction:column; gap:6px; }
+.result{
+  display:flex; align-items:center; gap:var(--s-3); padding:var(--s-2);
+  border-radius:var(--r-md); border:1px solid transparent; transition:all .18s;
+}
+.result:hover{ background:var(--surface-2); }
+.result.is-selected{ background:var(--surface-3); border-color:var(--rose); }
+.result .poster{ width:40px; border-radius:var(--r-xs); }
+.result__info{ flex:1; }
+.result__name{ font-family:var(--font-serif); font-weight:500; font-size:var(--fs-body); }
+.result__sub{ font-size:var(--fs-sm); color:var(--text-faint); }
+.result__check{ width:20px; height:20px; border-radius:50%; border:1.5px solid var(--line); display:grid; place-items:center; }
+.result.is-selected .result__check{ background:var(--rose); border-color:var(--rose); }
+.result.is-selected .result__check svg{ width:12px; height:12px; stroke:var(--bg); stroke-width:3; opacity:1; }
+.result__check svg{ opacity:0; }
+</style>

@@ -39,45 +39,26 @@ body.viewing-partner .proxy-banner{ display:block; }
 
 /* ============================================================ 布局骨架 */
 /* .page/.section 系列/.btn 系列 → primitives.css */
-.section__title .accent{ color:var(--rose); }
+/* .section__title 本身是 primitives 类（views/Home.vue、views/Work.vue 共用），但
+   `.section__title .accent` 这条复合选择器最右侧 .accent 单文件（views/Home.vue），随
+   .link-more(+:hover/svg) 一起 → views/Home.vue（T10 批 5，纯剪切，未改声明，见该文件
+   <style scoped> 块尾部）*/
 /* 通用按钮：.btn/.btn--ghost/.btn--rose/.btn--icon/.btn__ic → primitives.css */
-.link-more{ font-size:var(--fs-sm); color:var(--rose); display:inline-flex; align-items:center; justify-content:center; gap:4px; width:34px; height:34px; border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface-2); transition:all .2s; }
-.link-more:hover{ color:oklch(0.16 0.02 30); background:var(--rose); border-color:var(--rose); }
-.link-more svg{ width:16px; height:16px; }
 
 /* ============================================================ 海报（占位：中央胶片图标，上线替换为真实海报图）*/
 /* .poster 基础样式 → primitives.css */
+/* .poster__title 真死：规则本身写死 display:none，且没有任何模板渲染过 class="poster__title"
+   的元素（见 css-usage-report.txt 人工复核），T11 删，本批不动。*/
 .poster__title{ display:none; }
-.poster__kind{
-  position:absolute; top:7px; left:7px; z-index:1;
-  font-size:10px; letter-spacing:.04em; padding:2px 7px;
-  border-radius:var(--r-pill);
-  background:oklch(0.16 0.02 30 / 0.78); color:oklch(0.96 0 0 / 0.95);
-  border:1px solid oklch(1 0 0 / 0.22);
-}
+/* .poster__kind → components/Poster.vue（T10 批 5，纯剪切，未改声明）*/
 
 /* ============================================================ 评分徽标 */
-.rating{
-  display:inline-flex; align-items:center; gap:6px;
-  background:var(--surface-2); border:1px solid var(--line-soft);
-  border-radius:var(--r-pill); padding:3px 10px 3px 4px;
-}
-/* 可点击的评分（链到豆瓣/Bangumi 条目）*/
-a.rating--link{ text-decoration:none; cursor:pointer; transition:border-color .15s, transform .12s; }
-a.rating--link:hover{ border-color:var(--line); transform:translateY(-1px); }
-a.rating--link:active{ transform:none; }
-.rating__src{
-  font-size:10px; letter-spacing:.02em; font-weight:500;
-  padding:2px 6px; border-radius:var(--r-pill);
-}
-.rating--douban .rating__src{ color:oklch(0.16 0.04 150); background:var(--douban); font-weight:600; }
-.rating--bangumi .rating__src{ color:oklch(0.16 0.04 350); background:var(--bangumi); font-weight:600; }
-.rating__num{
-  font-family:var(--font-brand); font-weight:600; font-style:italic;
-  font-size:var(--fs-md); line-height:1; color:var(--gold);
-  letter-spacing:.02em;
-}
-/* 圆环评分（详情/画廊用） */
+/* .rating(+a.rating--link/:hover/:active)/.rating__src(+.rating--douban/.rating--bangumi 覆盖)/
+   .rating__num → components/Rating.vue（T10 批 5，纯剪切，未改声明；rating--douban/
+   rating--bangumi 由 Rating.vue `:class="`rating--${source}`"` 动态拼出，scoped 对动态类名
+   同样生效，见 css-usage-report.txt 人工复核）*/
+/* 圆环评分（详情/画廊用）真死：旧「圆环评分」已被 Rating.vue 的徽标样式取代（见
+   css-usage-report.txt 人工复核），T11 删，本批不动。*/
 .ring{ position:relative; width:64px; height:64px; flex-shrink:0; }
 .ring svg{ transform:rotate(-90deg); }
 .ring__track{ stroke:var(--surface-3); }
@@ -87,17 +68,7 @@ a.rating--link:active{ transform:none; }
 .ring__num{ font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:20px; color:var(--text); }
 .ring__src{ font-size:9px; color:var(--text-faint); letter-spacing:.04em; margin-top:1px; }
 
-/* 双人评分并排 */
-.dual{ display:flex; align-items:center; gap:var(--s-2); }
-.dual__one{ display:flex; align-items:center; gap:6px; font-size:var(--fs-sm); }
-.dual__who{
-  width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
-  font-family:var(--font-brand); font-style:italic; font-weight:700; font-size:10px; color:var(--bg);
-}
-.dual__one[data-who="a"] .dual__who{ background:var(--user-a); }
-.dual__one[data-who="b"] .dual__who{ background:var(--user-b); }
-.dual__score{ font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:var(--fs-md); color:var(--text); }
-.dual__sep{ width:1px; height:18px; background:var(--line); }
+/* 双人评分并排 → components/Dual.vue（T10 批 5，纯剪切，未改声明）*/
 
 /* .tag → primitives.css */
 
@@ -180,23 +151,15 @@ a.rating--link:active{ transform:none; }
 .chip.is-active{ color:var(--text); background:var(--surface-3); border-color:var(--line); box-shadow:var(--shadow-sm); }
 .chip .count{ color:var(--text-faint); font-size:11px; margin-left:3px; }
 
-.plan-card{
-  display:flex; gap:var(--s-3); padding:var(--s-3);
-  background:var(--surface);
-  border-radius:var(--r-lg); box-shadow:var(--shadow-card);
-  transition:transform .22s var(--ease);
-}
-.plan-card:hover{ transform:translateY(-3px); }
+/* .plan-card(+:hover)/__body/__head/__title(+.year)/__row → views/Plan.vue（T10 批 5，纯剪切，
+   未改声明，见该文件 <style scoped> 块尾部）*/
+/* .plan-card .poster 跨组件选择器（.poster 属于子组件 components/Poster.vue），处理方式同
+   上方 body.viewing-partner 先例，暂留在此。*/
 .plan-card .poster{ width:72px; }
-.plan-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
-.plan-card__head{ display:flex; align-items:flex-start; gap:var(--s-2); }
-.plan-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; flex:1; }
-.plan-card__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
 .stars{ display:flex; gap:1px; flex-shrink:0; }
 .stars svg{ width:14px; height:14px; }
 .stars .on{ fill:var(--gold); stroke:var(--gold); }
 .stars .off{ fill:none; stroke:var(--line); }
-.plan-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; font-size:var(--fs-sm); color:var(--text-faint); }
 /* .adder/.adder__dot → primitives.css */
 .plan-card__note{ font-size:var(--fs-sm); color:var(--text-dim); line-height:1.5; }
 .status{
@@ -213,29 +176,12 @@ a.rating--link:active{ transform:none; }
 
 /* ============================================================ Modal */
 /* .modal-overlay/.modal/.modal__head/.modal__title/.modal__close/.modal__body/.field/.field__label → primitives.css */
-.field__label .step{ width:18px; height:18px; border-radius:50%; background:var(--rose); color:oklch(0.16 0.02 30); display:grid; place-items:center; font-size:11px; font-weight:700; }
-.search-box{
-  display:flex; align-items:center; gap:var(--s-2);
-  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md); padding:11px var(--s-4);
-}
-.search-box svg{ width:18px; height:18px; stroke:var(--text-faint); fill:none; stroke-width:1.7; }
-.search-box input{ flex:1; background:none; border:none; outline:none; color:var(--text); font-size:var(--fs-body); }
-.search-box input::placeholder{ color:var(--text-faint); }
-.results{ display:flex; flex-direction:column; gap:6px; }
-.result{
-  display:flex; align-items:center; gap:var(--s-3); padding:var(--s-2);
-  border-radius:var(--r-md); border:1px solid transparent; transition:all .18s;
-}
-.result:hover{ background:var(--surface-2); }
-.result.is-selected{ background:var(--surface-3); border-color:var(--rose); }
-.result .poster{ width:40px; border-radius:var(--r-xs); }
-.result__info{ flex:1; }
-.result__name{ font-family:var(--font-serif); font-weight:500; font-size:var(--fs-body); }
-.result__sub{ font-size:var(--fs-sm); color:var(--text-faint); }
-.result__check{ width:20px; height:20px; border-radius:50%; border:1.5px solid var(--line); display:grid; place-items:center; }
-.result.is-selected .result__check{ background:var(--rose); border-color:var(--rose); }
-.result.is-selected .result__check svg{ width:12px; height:12px; stroke:var(--bg); stroke-width:3; opacity:1; }
-.result__check svg{ opacity:0; }
+/* .field__label 本身是 primitives 类（AddModal.vue/EditModal.vue 共用），但 `.field__label
+   .step` 这条复合选择器最右侧 .step 单文件（components/AddModal.vue），随 .search-box
+   (+svg/input/placeholder)/.results/.result(+:hover/.is-selected 全族) 一起
+   → components/AddModal.vue（T10 批 5，纯剪切，未改声明；`.result .poster` 是 AddModal.vue
+   自己模板里的原生 `<div class="poster">`（非 <Poster> 子组件根节点），不算跨组件选择器，
+   一并搬入，见该文件 <style scoped> 块尾部）*/
 /* .target-list（含响应式段同名 @media 规则）→ components/EditModal.vue（T10 批 4 顺手归位：
    响应式段清点命中的单文件 scoped 类；批 1-3 未把「Modal」这段样式排进任何一批，本次借
    响应式清点顺带补上，见该文件 <style scoped> 块尾部，报 DONE_WITH_CONCERNS）*/
@@ -424,8 +370,11 @@ footer .brand__mark{ font-size:20px; }
    .rk-mini__reason-hd(+svg)/.rk-mini__reason p/.rk-mini .rk-num/.rk-mini__body/
    .rk-mini__title/.rk-mini__foot/.hrail(+滚动条) → views/Home.vue（响应式段同名 @media
    规则随类一并搬走，见该文件 <style scoped> 块尾部）*/
+/* .avatar-ring 真死：从未被任何模板引用；下一条规则把同款描边直接摊到了各头像类上，这条
+   辅助类应是重构中间态遗留（见 css-usage-report.txt 人工复核），T11 删，本批不动。*/
 .avatar-ring{ border:1px solid oklch(0 0 0 / 0.3); }
-.who__avatar, .dual__who, .adder__dot, .record__avatar, .identity-card__avatar{ border:1px solid oklch(0 0 0 / 0.28); }
+/* .who__avatar, .dual__who, .adder__dot, .record__avatar, .identity-card__avatar 共享头像
+   描边规则 → primitives.css 尾部（T10 批 5，纯移动，真正的跨组件 primitive）*/
 
 /* .feedback 基础尺寸覆盖（纯图标、实心、带描边）→ components/FeedbackBtns.vue。
    下面几条按祖先卡片类型（.rk-mid/.rk-mini__foot，均为 views/Home.vue 自身类）覆盖
@@ -483,15 +432,8 @@ footer .brand__mark{ font-size:20px; }
   .rk-hero .poster{ width:130px; }
 }
 
-/* Phase 2: 真实海报图覆盖纯色 + 胶片占位 */
-.poster img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 1;
-}
+/* Phase 2: 真实海报图覆盖纯色 + 胶片占位（.poster img）→ primitives.css 的 .poster 规则
+   附近（T10 批 5，纯移动，含注释一并带走）*/
 
 /* ============================================================ 评分选择器（1–10 数字按钮，替代 number input） */
 /* .score-pick/.score-pick__label/.score-pick__row/.score-pick__n(+:hover/+.is-active)
@@ -499,7 +441,8 @@ footer .brand__mark{ font-size:20px; }
    .score-input 真死已被本组件取代，见该文件旁注）*/
 
 /* ============================================================ 卡片角标编辑按钮（Me/Together/Plan 复用） */
-.title-card__pw{ position:relative; }
+/* .title-card__pw → views/Me.vue（T10 批 5，纯剪切，未改声明；批 3 建 Me.vue scoped 块时的
+   漏项，本批补上，见该文件 <style scoped> 块尾部）*/
 /* .card-edit 基础态 → primitives.css */
 .title-card:hover .card-edit, .hcard:hover .card-edit, .watched-card:hover .card-edit, .vcard:hover .card-edit, .card-edit:focus{ opacity:1; }
 /* 查看页（Work）的记录卡 .record/.joint 不在上面的 hover 列表里——编辑按钮常驻可见 */
