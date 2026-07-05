@@ -316,13 +316,13 @@ onBeforeUnmount(() => {
         <section v-for="mo in y.months" :key="mo.gid" class="mg" :id="mo.gid" :data-year="y.year" :data-month="mo.m">
           <div class="mg__head"><span class="mark"></span>{{ mo.mLabel }}</div>
           <div class="mg__cards">
-            <article v-for="s in mo.sessions" :key="s.id" class="watched-card" style="position:relative">
+            <article v-for="s in mo.sessions" :key="s.id" class="watched-card">
               <button class="card-edit" data-tip="编辑" data-tip-pos="below" @click.stop="emit('edit', s)">
                 <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
               </button>
-              <Poster :color="'#2a2a30'" :url="s.work?.primary_poster_url" :kind="s.work?.is_anime ? '番剧' : ''" style="width:84px;cursor:pointer" @click="goWork(s)" />
+              <Poster :color="'#2a2a30'" :url="s.work?.primary_poster_url" :kind="s.work?.is_anime ? '番剧' : ''" class="watched-card__poster" @click="goWork(s)" />
               <div class="watched-card__body">
-                <h3 class="watched-card__title" style="cursor:pointer" @click="goWork(s)">{{ s.work?.title }} <span class="year">{{ s.work?.year }}</span></h3>
+                <h3 class="watched-card__title watched-card__title--clickable" @click="goWork(s)">{{ s.work?.title }} <span class="year">{{ s.work?.year }}</span></h3>
                 <div v-if="s.watched_at" class="watched-card__date">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 9h18" /></svg>
                   {{ fmtDate(s.watched_at) }}
@@ -351,12 +351,17 @@ onBeforeUnmount(() => {
 /* .watched-card(+:hover) 基础样式，从 styles/loweve.css「② 一起看过卡片」段搬入（T10 批 4，
    响应式段清点顺手归位：批 1-3 未覆盖这块样式，本次借响应式清点补上，纯剪切未改声明，报
    DONE_WITH_CONCERNS）。.watched-card .poster 是跨组件选择器（.poster 是子组件 Poster.vue
-   自身根类），仍留在 loweve.css，不搬。*/
+   自身根类），仍留在 loweve.css，不搬。
+   T12 批 4：<article> 原内联 position:relative 声明直接并入本条已有的 scoped 规则
+   （.watched-card 只在本文件模板出现，无跨文件同名规则冲突，属于「并入已有覆盖块」分支）
+   ——position:relative 是 .card-edit[data-tip]{position:absolute} 编辑按钮的定位上下文，
+   随基础样式一起声明语义更顺。*/
 .watched-card{
   display:flex; gap:var(--s-4); padding:var(--s-4);
   background:var(--surface);
   border-radius:var(--r-lg); box-shadow:var(--shadow-card);
   transition:transform .22s var(--ease);
+  position:relative;
 }
 .watched-card:hover{ transform:translateY(-3px); }
 /* .watched-card__body/.watched-card__title(+.year)/.watched-card__date(+svg)/
@@ -369,6 +374,24 @@ onBeforeUnmount(() => {
 .watched-card__date{ display:flex; align-items:center; gap:6px; font-size:var(--fs-sm); color:var(--text-faint); }
 .watched-card__date svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.6; }
 .watched-card__scores{ display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap; }
+
+/* ============================================================ 内联样式收编（T12 批 4）
+   <Poster> 原内联 width:84px;cursor:pointer 曾误判 width:84px 可直接丢弃（以为与
+   loweve.css 的 .watched-card .poster{width:84px} 数值重复、外层规则会接管）——跑
+   visual-diff 才发现漏了 loweve.css 响应式段里同选择器、同特异性 (0,2,0) 的
+   @media(max-width:680px){ .watched-card .poster{width:100%;aspect-ratio:16/9} }：
+   两条规则特异性相同，胜负落到源码顺序，移动端命中的其实是后一条，width 会跳成
+   100%（inline 原先能不分视口地恒赢两条，才把这条移动端规则一直盖住）。现改用
+   .watched-card .watched-card__poster 两层类选择器，scoped 编译后 (0,4,0)，稳赢
+   loweve.css 那两条 (0,2,0)，不论视口/源序，宽度恒为 84px，与内联迁移前像素一致；
+   aspect-ratio 未被内联设过，仍走原级联（16/9 由移动端规则接管，桌面走 .poster 基类
+   2/3），未受影响。cursor:pointer 是新增语义，手法沿用 Home.vue .hcard__poster /
+   Plan.vue .plan-card__poster：落到 <Poster> 子组件根节点（单根组件，fallthrough
+   attrs 携带本文件 scoped id）。
+   .watched-card__title--clickable 同理沿用 Home.vue .hcard__title--clickable 手法，
+   本文件内 .watched-card__title 无其它 cursor 声明，无冲突。*/
+.watched-card .watched-card__poster{ width:84px; cursor:pointer; }
+.watched-card__title--clickable{ cursor:pointer; }
 
 .watched-layout { display: grid; grid-template-columns: 256px 1fr; gap: var(--s-8); align-items: start; position: relative; }
 .reel-rail { position: relative; z-index: 3; position: sticky; top: 88px; display: flex; flex-direction: column; align-items: center; }

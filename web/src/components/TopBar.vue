@@ -26,7 +26,7 @@ function pickWho(id: any) {
         <router-link class="nav__item" to="/me" :class="{ 'is-active': route.path === '/me' }">我的</router-link>
       </nav>
       <div class="topbar__spacer"></div>
-      <router-link class="btn btn--icon btn--ghost" to="/settings" data-tip="设置" aria-label="设置" style="margin-right:var(--s-2)">
+      <router-link class="btn btn--icon btn--ghost btn--topbar-settings" to="/settings" data-tip="设置" aria-label="设置">
         <svg class="btn__ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg>
       </router-link>
       <div class="switcher" role="group" aria-label="切换身份">
@@ -126,4 +126,10 @@ function pickWho(id: any) {
 @media (max-width:680px){
   .topbar__inner{ padding:var(--s-3) var(--s-4); gap:var(--s-3); }
 }
+
+/* ============================================================ 内联样式收编（T12 批 4）
+   .btn/.btn--icon/.btn--ghost 是跨文件共用类（primitives.css），基类均未设置
+   margin-right，本文件专属修饰类 .btn--topbar-settings 新增该属性，与基类属性无交集，
+   无需比特异性；scoped 编译后选择器为 (0,2,0)。*/
+.btn--topbar-settings{ margin-right:var(--s-2); }
 </style>
