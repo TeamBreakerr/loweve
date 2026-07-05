@@ -34,3 +34,10 @@ watchEffect(() => {
     <p style="margin-top:8px">小放映厅 · 只属于 {{ identity.userById(1)?.display_name || 'A' }} &amp; {{ identity.userById(2)?.display_name || 'B' }} 的两个人</p>
   </footer>
 </template>
+
+<style scoped>
+/* 从 loweve.css 迁入（T10 批 6 完工检查项）。footer .brand__mark 特异性 (0,1,1) 恒胜
+   残余文件里的 .brand__mark 基类与 mobile override，层叠关系与迁移前一致。 */
+footer{ text-align:center; padding:var(--s-12) var(--s-5) var(--s-16); color:var(--text-faint); font-size:var(--fs-sm); }
+footer .brand__mark{ font-size:20px; }
+</style>
