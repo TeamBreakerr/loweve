@@ -1,6 +1,7 @@
 // server/src/routes/plan.js
 import { Router } from 'express';
 import { upsertWork } from './works.js';
+import type { PlanItem } from '../../../shared/types.js';
 
 const PLAN_COLS = 'id, work_id, added_by, note, priority, status, created_at, updated_at';
 const VALID_STATUS = ['pending', 'watching', 'done', 'dropped'];
@@ -23,7 +24,7 @@ export function planRoutes() {
       ? db.prepare(`SELECT * FROM works WHERE id IN (${workIds.map(() => '?').join(',')})`).all(...workIds)
       : [];
     const workMap = new Map(works.map((w: any) => [w.id, w]));
-    res.json({ items: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) });
+    res.json({ items: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) satisfies PlanItem[] });
   });
 
   router.post('/', async (req, res) => {
@@ -52,7 +53,7 @@ export function planRoutes() {
       const info = db.prepare(`INSERT INTO plan_items (work_id, added_by, note, priority, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'pending', ?, ?)`)
         .run(finalWorkId, req.viewing_user_id, note ?? null, prio, now, now);
       const row = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items WHERE id = ?`).get(info.lastInsertRowid);
-      res.json(row);
+      res.json(row satisfies PlanItem);
     } catch (e) {
       if (String(e).includes('UNIQUE')) return res.status(409).json({ error: 'plan_exists' });
       throw e;

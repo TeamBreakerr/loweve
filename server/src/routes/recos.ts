@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { getCurrentRecos, generateStanding } from '../recos/service.js';
 import { markRecosStale } from '../recos/state.js';
 import { upsertWork } from './works.js';
+import type { Mark, PlanItem } from '../../../shared/types.js';
 
 const ACTIONS = { want: 'interested', not_interested: 'not_interested', already_seen: 'already_seen' };
 
@@ -57,7 +58,7 @@ export function recosRoutes() {
     db.prepare(`UPDATE recommendations SET feedback = @feedback, feedback_by = @by, feedback_at = @now WHERE id = @id`)
       .run({ feedback, by: req.viewing_user_id, now, id });
 
-    let plan = null, mark = null;
+    let plan: PlanItem | null = null, mark: Mark | null = null;
     if (action === 'already_seen' && rec.work_id) {
       // 「看过」→ 直接加入当前视角用户的「我已观看」（已在列表则忽略）
       try {

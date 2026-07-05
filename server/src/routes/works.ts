@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { mapMovie, mapTv } from '../tmdb/mapper.js';
 import { matchAnime } from '../bangumi/matcher.js';
 import { enqueueDoubanUpgrade } from '../douban/queue.js';
+import type { Work } from '../../../shared/types.js';
 
 const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, aka_titles, year, overview, genres,
   runtime, is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source,
@@ -119,7 +120,7 @@ export function worksRoutes() {
 
     try {
       const work = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type });
-      res.json(work);
+      res.json(work satisfies Work);
     } catch (e) {
       const code = e.code || 'tmdb_unknown';
       res.status(502).json({ error: code, message: e.message });
@@ -139,7 +140,7 @@ export function worksRoutes() {
     const sessions = db.prepare('SELECT id, work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at FROM couple_sessions WHERE work_id = ? ORDER BY watched_at DESC').all(id);
     const plan = db.prepare('SELECT id, work_id, added_by, note, priority, status, created_at, updated_at FROM plan_items WHERE work_id = ?').get(id) || null;
 
-    res.json({ ...work, my_mark, all_marks, sessions, plan });
+    res.json({ ...work, my_mark, all_marks, sessions, plan } satisfies Work);
   });
 
   return router;
