@@ -79,6 +79,9 @@ onMounted(async () => {
 
 .grid--me{ grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:var(--s-5); }
 .title-card{ display:flex; flex-direction:column; gap:var(--s-2); }
+/* .title-card__pw 从 styles/loweve.css「卡片角标编辑按钮」段搬入（T10 批 5，纯剪切，未改
+   声明；批 3 建本 <style scoped> 块时的漏项，本批补上）。*/
+.title-card__pw{ position:relative; }
 .title-card__name{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; }
 .title-card__name .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
 .title-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }

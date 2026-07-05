@@ -75,4 +75,20 @@ onMounted(() => plan.load());
 @media (max-width:680px){
   .grid--plan{ grid-template-columns:1fr; }
 }
+
+/* .plan-card(+:hover)/__body/__head/__title(+.year)/__row 从 styles/loweve.css「一起想看 /
+   计划卡片」段搬入（T10 批 5，纯剪切，未改声明）。.plan-card .poster 留在 loweve.css（跨
+   组件选择器，.poster 属于子组件 components/Poster.vue，见该文件注释）。*/
+.plan-card{
+  display:flex; gap:var(--s-3); padding:var(--s-3);
+  background:var(--surface);
+  border-radius:var(--r-lg); box-shadow:var(--shadow-card);
+  transition:transform .22s var(--ease);
+}
+.plan-card:hover{ transform:translateY(-3px); }
+.plan-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
+.plan-card__head{ display:flex; align-items:flex-start; gap:var(--s-2); }
+.plan-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; flex:1; }
+.plan-card__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
+.plan-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; font-size:var(--fs-sm); color:var(--text-faint); }
 </style>

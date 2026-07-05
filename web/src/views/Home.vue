@@ -287,6 +287,14 @@ const planModalOpen = ref(false);
 }
 @keyframes thinkShimmer { from { background-position: 220% 0; } to { background-position: -220% 0; } }
 
+/* ============================================================ 布局骨架（Home.vue 专属部分） */
+/* 从 styles/loweve.css「布局骨架」段搬入（T10 批 5，纯剪切，未改声明）。.section__title
+   本身是 primitives 类，但 .section__title .accent 最右侧 .accent 只在本文件出现。*/
+.section__title .accent{ color:var(--rose); }
+.link-more{ font-size:var(--fs-sm); color:var(--rose); display:inline-flex; align-items:center; justify-content:center; gap:4px; width:34px; height:34px; border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface-2); transition:all .2s; }
+.link-more:hover{ color:oklch(0.16 0.02 30); background:var(--rose); border-color:var(--rose); }
+.link-more svg{ width:16px; height:16px; }
+
 /* ============================================================ ① AI 推荐 */
 .intent{
   display:flex; gap:var(--s-2); margin-bottom:var(--s-5);
