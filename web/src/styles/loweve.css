@@ -241,8 +241,7 @@ body.viewing-partner .proxy-banner{ display:block; }
 .wf--dot{ width:10px; height:10px; border-radius:50%; background:var(--rose); margin-top:3px; flex-shrink:0; box-shadow:0 0 0 3px var(--rose-tint); }
 .wf--track{ width:2px; background:var(--line); flex-shrink:0; }
 
-footer{ text-align:center; padding:var(--s-12) var(--s-5) var(--s-16); color:var(--text-faint); font-size:var(--fs-sm); }
-footer .brand__mark{ font-size:20px; }
+/* footer / footer .brand__mark → moved to App.vue（批 6 完工检查发现的活规则）*/
 
 /* ============================================================ 响应式 */
 /* 原 @media (max-width:860px){ .brand__sub/.switcher__label/.nav } 整块，以及
