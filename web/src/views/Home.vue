@@ -286,4 +286,104 @@ const planModalOpen = ref(false);
   animation: thinkShimmer 2s linear infinite;
 }
 @keyframes thinkShimmer { from { background-position: 220% 0; } to { background-position: -220% 0; } }
+
+/* ============================================================ ① AI 推荐 */
+.intent{
+  display:flex; gap:var(--s-2); margin-bottom:var(--s-5);
+  background:var(--surface); border:1px solid var(--line-soft);
+  border-radius:var(--r-pill); padding:2px 4px 2px var(--s-5);
+  align-items:center; box-shadow:var(--shadow-sm);
+  max-width:680px;
+}
+.intent__ic{ width:18px; height:18px; stroke:var(--rose); fill:none; stroke-width:1.7; flex-shrink:0; }
+.intent__input{
+  flex:1; background:none; border:none; outline:none;
+  color:var(--text); font-size:var(--fs-body); min-width:0;
+}
+.intent__input::placeholder{ color:var(--text-faint); }
+.intent__btn{
+  background:var(--rose); border:1px solid var(--rose);
+  color:oklch(0.16 0.02 30); font-weight:600; font-size:var(--fs-sm);
+  padding:5px 16px; border-radius:var(--r-pill); white-space:nowrap;
+  transition:background .2s, transform .2s;
+}
+.intent__btn:hover{ background:var(--rose-bright); border-color:var(--rose-bright); transform:translateY(-1px); }
+
+/* ============================================================
+   首页改版：推荐「排片榜」（按名次定大小）+ 横向卡片轨道
+   ============================================================ */
+/* —— 推荐顶部：1 号大卡 + 2/3 号中卡 —— */
+.reco-top{ display:grid; grid-template-columns:1.55fr 1fr; gap:var(--s-4); margin-bottom:var(--s-4); }
+.rk{ position:relative; background:var(--surface); border-radius:var(--r-lg); overflow:hidden; }
+.rk-num{ position:absolute; z-index:2; font-family:var(--font-brand); font-style:italic; font-weight:600; line-height:.78; color:var(--rose); pointer-events:none; }
+
+.rk-hero{ display:flex; gap:0; height:100%; }
+.rk-hero .rk-num{ top:18px; right:24px; font-size:90px; }
+.rk-hero__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-3); padding:var(--s-5); }
+.rk-hero__title{ font-family:var(--font-serif); font-weight:700; font-size:var(--fs-xl); line-height:1.15; padding-right:70px; }
+.rk-meta{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
+.rk-reason{ font-size:var(--fs-body); line-height:1.6; color:var(--text-dim); }
+.rk-reason .label{ display:inline-flex; align-items:center; gap:6px; color:var(--rose); font-size:var(--fs-sm); margin-bottom:6px; }
+.rk-reason .label svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; }
+.rk-actions{ display:flex; gap:var(--s-2); margin-top:auto; justify-content:flex-end; }
+
+.rk-mids{ display:flex; flex-direction:column; gap:var(--s-4); }
+.rk-mid{ display:flex; gap:0; flex:1; }
+.rk-mid .rk-num{ top:12px; right:16px; font-size:40px; }
+.rk-mid__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; padding:var(--s-4); }
+.rk-mid__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); line-height:1.2; padding-right:36px; }
+.rk-mid .rk-reason{ font-size:var(--fs-sm); line-height:1.5; }
+.rk-mid .rk-actions{ gap:6px; }
+
+/* —— 推荐尾部 4–10：横向小卡轨道 —— */
+.reco-rail{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:var(--s-3); padding-bottom:var(--s-4); }
+.reco-rail::-webkit-scrollbar{ height:8px; }
+.reco-rail::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
+.rk-mini{ background:var(--surface); border-radius:var(--r-md); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
+.rk-mini:hover{ transform:translateY(-4px); }
+.rk-mini__pw{ position:relative; }
+/* 小卡推荐评语：悬浮 ~0.4s 后磨砂玻璃浮层上滑淡入，移开即收 */
+.rk-mini__reason{
+  position:absolute; inset:0; z-index:2; padding:13px 13px 14px;
+  display:flex; flex-direction:column; gap:8px;
+  background:linear-gradient(180deg, oklch(0.15 0.025 25 / 0.74), oklch(0.10 0.02 28 / 0.97) 58%);
+  backdrop-filter:blur(7px) saturate(1.05); -webkit-backdrop-filter:blur(7px) saturate(1.05);
+  opacity:0; pointer-events:none; transform:translateY(8px);
+  transition:opacity .28s ease, transform .28s ease;
+}
+.rk-mini:hover .rk-mini__reason{ opacity:1; transform:translateY(0); transition-delay:.4s; }
+.rk-mini__reason-hd{
+  display:inline-flex; align-items:center; gap:5px; flex:0 0 auto;
+  color:var(--rose); font-size:12px; font-weight:700; letter-spacing:.02em;
+}
+.rk-mini__reason-hd svg{ width:13px; height:13px; fill:var(--rose); stroke:none; }
+.rk-mini__reason p{
+  margin:0; color:oklch(0.93 0.012 60); font-size:var(--fs-sm); line-height:1.6;
+  overflow-y:auto; flex:1 1 auto;
+}
+.rk-mini .rk-num{ top:5px; left:9px; font-size:30px; color:oklch(0.98 0.06 25); }
+.rk-mini__body{ padding:var(--s-3); display:flex; flex-direction:column; gap:8px; }
+.rk-mini__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-sm); line-height:1.25; }
+.rk-mini__foot{ display:flex; gap:5px; margin-top:auto; }
+
+/* —— 横向卡片轨道：想看就一起看 —— */
+.hrail{ display:flex; gap:var(--s-4); overflow-x:auto; padding:4px 4px var(--s-4); margin:0 -4px; scroll-snap-type:x mandatory; scrollbar-width:thin; }
+.hrail::-webkit-scrollbar{ height:8px; }
+.hrail::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
+
+@media (max-width:680px){
+  .intent{ flex-wrap:wrap; border-radius:var(--r-lg); padding:var(--s-3); }
+  .intent__input{ flex-basis:100%; padding:4px 0; }
+  .intent__btn{ width:100%; justify-content:center; }
+}
+@media (max-width:860px){
+  .reco-top{ grid-template-columns:1fr; }
+  .rk-mid{ gap:var(--s-4); padding:var(--s-4); }
+  .rk-mid__body{ padding:0; }
+}
+@media (max-width:680px){
+  .rk-hero{ flex-direction:column; gap:var(--s-4); }
+  .rk-hero__title{ padding-right:0; }
+  .rk-hero .rk-num{ font-size:60px; top:12px; right:16px; }
+}
 </style>
