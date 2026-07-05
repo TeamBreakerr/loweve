@@ -1,17 +1,4 @@
-/* → tokens.css（原文件头注释 + :root 设计 token 变量） */
-
-/* ============================================================ Reset */
-/* → base.css */
-
-/* nice scrollbar for the horizontal rail */
-.rail::-webkit-scrollbar{ height:8px; }
-.rail::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
-.rail::-webkit-scrollbar-track{ background:transparent; }
-
 /* ============================================================ 顶栏 */
-/* .topbar/.topbar__inner/.topbar__spacer/.brand/.brand__sub/.nav/.nav__item/.switcher/
-   .switcher__label/.who/.who__avatar/.who__name → components/TopBar.vue（响应式段同名
-   @media 规则随类一并搬走，见该文件 <style scoped> 块尾部）*/
 /* .brand__mark 是 primitives 类（3 文件共用），但其 mobile override 依赖殿后加载的层叠序，
    故 base+override 一并暂留此文件——T10/T11 勿单独搬迁 base 而留下 override（T9 审查 Minor 1）。*/
 .brand__mark{
@@ -33,242 +20,26 @@ body.viewing-partner .topbar{
   background:oklch(0.30 0.045 18 / 0.92);
   border-bottom:1px solid var(--rose);
 }
-/* .proxy-banner/.proxy-banner__inner/.proxy-banner .dot/.proxy-banner strong/
-   .proxy-banner__exit → components/ProxyBanner.vue */
 body.viewing-partner .proxy-banner{ display:block; }
 
-/* ============================================================ 布局骨架 */
-/* .page/.section 系列/.btn 系列 → primitives.css */
-/* .section__title 本身是 primitives 类（views/Home.vue、views/Work.vue 共用），但
-   `.section__title .accent` 这条复合选择器最右侧 .accent 单文件（views/Home.vue），随
-   .link-more(+:hover/svg) 一起 → views/Home.vue（T10 批 5，纯剪切，未改声明，见该文件
-   <style scoped> 块尾部）*/
-/* 通用按钮：.btn/.btn--ghost/.btn--rose/.btn--icon/.btn__ic → primitives.css */
-
-/* ============================================================ 海报（占位：中央胶片图标，上线替换为真实海报图）*/
-/* .poster 基础样式 → primitives.css */
-/* .poster__title 真死：规则本身写死 display:none，且没有任何模板渲染过 class="poster__title"
-   的元素（见 css-usage-report.txt 人工复核），T11 删，本批不动。*/
-.poster__title{ display:none; }
-/* .poster__kind → components/Poster.vue（T10 批 5，纯剪切，未改声明）*/
-
-/* ============================================================ 评分徽标 */
-/* .rating(+a.rating--link/:hover/:active)/.rating__src(+.rating--douban/.rating--bangumi 覆盖)/
-   .rating__num → components/Rating.vue（T10 批 5，纯剪切，未改声明；rating--douban/
-   rating--bangumi 由 Rating.vue `:class="`rating--${source}`"` 动态拼出，scoped 对动态类名
-   同样生效，见 css-usage-report.txt 人工复核）*/
-/* 圆环评分（详情/画廊用）真死：旧「圆环评分」已被 Rating.vue 的徽标样式取代（见
-   css-usage-report.txt 人工复核），T11 删，本批不动。*/
-.ring{ position:relative; width:64px; height:64px; flex-shrink:0; }
-.ring svg{ transform:rotate(-90deg); }
-.ring__track{ stroke:var(--surface-3); }
-.ring__bar{ stroke:var(--gold); stroke-linecap:round; transition:stroke-dashoffset 1s var(--ease); }
-.ring__bar.is-bangumi{ stroke:var(--bangumi); }
-.ring__inner{ position:absolute; inset:0; display:grid; place-items:center; text-align:center; line-height:1; }
-.ring__num{ font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:20px; color:var(--text); }
-.ring__src{ font-size:9px; color:var(--text-faint); letter-spacing:.04em; margin-top:1px; }
-
-/* 双人评分并排 → components/Dual.vue（T10 批 5，纯剪切，未改声明）*/
-
-/* .tag → primitives.css */
-
-/* ============================================================ ① AI 推荐 */
-/* .intent/.intent__ic/.intent__input/.intent__btn → views/Home.vue（响应式段同名 @media
-   规则随类一并搬走，见该文件 <style scoped> 块尾部）*/
-
-.rail{
-  display:flex; gap:var(--s-4); overflow-x:auto;
-  padding:4px 4px var(--s-4); margin:-4px -4px 0;
-  scroll-snap-type:x mandatory;
-  scrollbar-width:thin;
-}
-.rec-card{
-  scroll-snap-align:start; flex:0 0 270px;
-  background:var(--surface); border:1px solid var(--line-soft);
-  border-radius:var(--r-lg); overflow:hidden;
-  display:flex; flex-direction:column;
-  box-shadow:var(--shadow-card); transition:transform .25s var(--ease), border-color .25s;
-}
-.rec-card:hover{ transform:translateY(-4px); border-color:var(--line); }
-.rec-card__top{ display:flex; gap:var(--s-3); padding:var(--s-3); }
-.rec-card .poster{ width:78px; }
-.rec-card__meta{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; padding-top:2px; }
-.rec-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); line-height:1.25; }
-.rec-card__year{ font-weight:400; color:var(--text-faint); font-size:var(--fs-sm); font-family:var(--font-sans); }
-.rec-card__tags{ display:flex; flex-wrap:wrap; gap:5px; }
-.rec-card__reason{
-  margin:0 var(--s-3); padding:var(--s-3);
-  background:var(--surface-2); border:1px solid var(--line-soft);
-  border-radius:var(--r-md); font-size:var(--fs-sm); line-height:1.55;
-  color:var(--text-dim);
-}
-.rec-card__reason .quote{ color:var(--rose); font-weight:500; }
-.rec-card__reason .label{
-  display:flex; align-items:center; gap:5px;
-  font-size:11px; color:var(--rose); letter-spacing:.04em; margin-bottom:5px;
-}
-.rec-card__reason .label svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.7; }
-.rec-card__actions{ display:flex; gap:6px; padding:var(--s-3); margin-top:auto; }
-/* .feedback/.feedback svg/.feedback:hover/.feedback--want:hover/.feedback--seen:hover/
-   .feedback--no:hover → components/FeedbackBtns.vue */
-
-/* ============================================================ 卡片网格 */
-/* .grid → primitives.css */
-/* .grid--together 真死：TogetherReel.vue 用自己的 .watched-layout 鼓轮时间轴，没有用通用
-   .grid/.grid--together 网格（见 css-usage-report.txt），T11 删，本批不动。*/
-.grid--together{ grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); }
-/* .grid--plan（含响应式段同名 @media 规则）→ views/Plan.vue（T10 批 4 顺手归位：响应式段
-   清点命中的单文件 scoped 类；批 1-3 未把「卡片网格/③一起想看计划卡片」这段样式排进任何
-   一批，本次借响应式清点顺带补上，见该文件 <style scoped> 块尾部，报 DONE_WITH_CONCERNS）*/
-
-/* ② 一起看过卡片 */
-/* .watched-card(+:hover，含响应式段同名 @media 规则) → components/TogetherReel.vue（T10
-   批 4 顺手归位：响应式段清点命中的单文件 scoped 类；批 1-3 未把这段样式排进任何一批，
-   本次借响应式清点顺带补上，见该文件 <style scoped> 块尾部，报 DONE_WITH_CONCERNS）*/
-/* .watched-card__body/.watched-card__title(+.year)/.watched-card__date(+svg)/
-   .watched-card__scores → components/TogetherReel.vue（T10 批 6，纯剪切，未改声明，放在该
-   文件既有 :deep(.tl2 ...) 局部覆盖规则之前，见该文件 <style scoped> 块）*/
+/* ============================================================ ② 一起看过卡片 */
+/* .watched-card .poster 跨组件选择器（.poster 属于子组件 components/Poster.vue），处理方式同
+   上方 body.viewing-partner 先例，暂留在此。（旁注：TogetherReel.vue 模板给 <Poster> 挂了
+   行内 style="width:84px"，本条 width 实际被行内样式覆盖，属冗余候选——但两个类均判活、
+   不在 T11 死清单内，按纪律不动，留给后续任务裁决。）*/
 .watched-card .poster{ width:84px; }
-.watched-card__note{
-  font-size:var(--fs-sm); line-height:1.6; color:var(--text-dim);
-  background:var(--surface-2); border:1px solid var(--line-soft); border-radius:var(--r-md); padding:9px 12px;
-}
-.watched-card__note .q{ color:var(--text-faint); font-family:var(--font-serif); }
-.watched-card__foot{ display:flex; align-items:center; gap:var(--s-3); margin-top:auto; }
 
-/* ③ 一起想看 / 计划卡片 */
-.filters{ display:flex; gap:var(--s-2); }
-.chip{
-  font-size:var(--fs-sm); color:var(--text-dim);
-  padding:6px 14px; border-radius:var(--r-pill);
-  border:1px solid var(--line-soft); background:var(--surface-2);
-  transition:all .18s var(--ease);
-}
-.chip:hover{ color:var(--text); }
-.chip.is-active{ color:var(--text); background:var(--surface-3); border-color:var(--line); box-shadow:var(--shadow-sm); }
-.chip .count{ color:var(--text-faint); font-size:11px; margin-left:3px; }
-
-/* .plan-card(+:hover)/__body/__head/__title(+.year)/__row → views/Plan.vue（T10 批 5，纯剪切，
-   未改声明，见该文件 <style scoped> 块尾部）*/
+/* ============================================================ ③ 一起想看 / 计划卡片 */
 /* .plan-card .poster 跨组件选择器（.poster 属于子组件 components/Poster.vue），处理方式同
    上方 body.viewing-partner 先例，暂留在此。*/
 .plan-card .poster{ width:72px; }
-.stars{ display:flex; gap:1px; flex-shrink:0; }
-.stars svg{ width:14px; height:14px; }
-.stars .on{ fill:var(--gold); stroke:var(--gold); }
-.stars .off{ fill:none; stroke:var(--line); }
-/* .adder/.adder__dot → primitives.css */
-.plan-card__note{ font-size:var(--fs-sm); color:var(--text-dim); line-height:1.5; }
-.status{
-  font-size:11px; padding:3px 10px; border-radius:var(--r-pill);
-  border:1px solid var(--line); font-weight:600;
-}
-.status[data-s="待看"]{ color:var(--text-dim); background:var(--surface-3); }
-.status[data-s="在看"]{ color:oklch(0.18 0.04 78); background:var(--gold); border-color:var(--gold); }
-.status[data-s="看完"]{ color:oklch(0.16 0.04 150); background:var(--douban); border-color:var(--douban); }
-.status[data-s="弃了"]{ color:var(--text-faint); background:var(--surface-2); }
-.plan-card__actions{ display:flex; gap:6px; margin-top:auto; padding-top:2px; }
-.plan-card__actions .btn{ padding:6px 12px; font-size:var(--fs-sm); }
-.plan-card.is-hidden{ display:none; }
-
-/* ============================================================ Modal */
-/* .modal-overlay/.modal/.modal__head/.modal__title/.modal__close/.modal__body/.field/.field__label → primitives.css */
-/* .field__label 本身是 primitives 类（AddModal.vue/EditModal.vue 共用），但 `.field__label
-   .step` 这条复合选择器最右侧 .step 单文件（components/AddModal.vue），随 .search-box
-   (+svg/input/placeholder)/.results/.result(+:hover/.is-selected 全族) 一起
-   → components/AddModal.vue（T10 批 5，纯剪切，未改声明；`.result .poster` 是 AddModal.vue
-   自己模板里的原生 `<div class="poster">`（非 <Poster> 子组件根节点），不算跨组件选择器，
-   一并搬入，见该文件 <style scoped> 块尾部）*/
-/* .target-list（含响应式段同名 @media 规则）→ components/EditModal.vue（T10 批 4 顺手归位：
-   响应式段清点命中的单文件 scoped 类；批 1-3 未把「Modal」这段样式排进任何一批，本次借
-   响应式清点顺带补上，见该文件 <style scoped> 块尾部，报 DONE_WITH_CONCERNS）*/
-/* .target/.rate-row → primitives.css */
-/* .score-input 真死：已被 .score-pick（components/ScorePicker.vue）取代（见
-   css-usage-report.txt「评分选择器」旁注），T11 删，本批不动。*/
-.score-input{ display:flex; flex-direction:column; gap:6px; }
-.score-input input{
-  width:88px; background:var(--surface-2); border:1px solid var(--line);
-  border-radius:var(--r-md); padding:10px 14px; color:var(--text); font-size:var(--fs-lg);
-  font-family:var(--font-brand); font-style:italic; outline:none;
-}
-/* .review-input/.modal__foot/.btn--primary → primitives.css */
-
-/* ============================================================ 组件画廊 & 其他页面示意 */
-.gallery{ background:var(--bg); border-top:1px solid var(--line); }
-.gallery .page{ padding-top:var(--s-12); }
-.gallery__intro{ max-width:680px; margin-bottom:var(--s-10); }
-.gallery__kicker{ font-family:var(--font-brand); font-style:italic; font-size:var(--fs-lg); color:var(--rose); letter-spacing:.02em; }
-.gallery__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-2xl); margin:var(--s-2) 0 var(--s-4); line-height:1.15; }
-.gallery__lead{ color:var(--text-dim); line-height:1.7; }
-.specimen{ margin-bottom:var(--s-10); }
-.specimen__label{
-  font-size:var(--fs-sm); color:var(--text-faint); letter-spacing:.06em;
-  text-transform:uppercase; margin-bottom:var(--s-4);
-  padding-bottom:var(--s-2); border-bottom:1px solid var(--line-soft);
-  display:flex; align-items:center; gap:var(--s-3);
-}
-.specimen__label .n{ font-family:var(--font-brand); font-style:italic; color:var(--rose); font-size:var(--fs-md); }
-.specimen__row{ display:flex; flex-wrap:wrap; gap:var(--s-5); align-items:flex-start; }
-
-/* token swatches */
-.tokens{ display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:var(--s-3); }
-.swatch{ border-radius:var(--r-md); overflow:hidden; border:1px solid var(--line-soft); background:var(--surface); }
-.swatch__chip{ height:56px; }
-.swatch__meta{ padding:8px 10px; }
-.swatch__name{ font-size:var(--fs-sm); color:var(--text); }
-.swatch__val{ font-size:11px; color:var(--text-faint); font-family:ui-monospace,monospace; }
-
-/* 其他页面 wireframe 框 */
-.frames{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:var(--s-5); }
-.frame{
-  background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--r-lg);
-  overflow:hidden; box-shadow:var(--shadow-card);
-}
-.frame__bar{ display:flex; align-items:center; gap:8px; padding:10px var(--s-4); border-bottom:1px solid var(--line-soft); background:var(--surface-2); }
-.frame__route{ font-family:ui-monospace,monospace; font-size:11px; color:var(--rose); }
-.frame__name{ font-size:var(--fs-sm); color:var(--text-dim); }
-.frame__body{ padding:var(--s-4); display:flex; flex-direction:column; gap:10px; min-height:200px; }
-.wf{ background:var(--surface-2); border:1px solid var(--line-soft); border-radius:var(--r-sm); }
-.wf--bar{ height:34px; display:flex; align-items:center; padding:0 12px; font-size:var(--fs-sm); color:var(--text-dim); gap:8px; }
-.wf--tabs{ display:flex; gap:6px; background:transparent; border:none; }
-.wf--tab{ flex:1; height:32px; border-radius:var(--r-sm); background:var(--surface-2); border:1px solid var(--line-soft); display:grid; place-items:center; font-size:var(--fs-sm); color:var(--text-faint); }
-.wf--tab.on{ background:var(--rose); border-color:var(--rose); color:oklch(0.16 0.02 30); }
-.wf--poster{ width:40px; aspect-ratio:2/3; border-radius:var(--r-xs); background:var(--surface-3); border:1px solid var(--line-soft); flex-shrink:0; }
-.wf--row{ display:flex; gap:10px; background:transparent; border:none; align-items:center; }
-.wf--lines{ flex:1; display:flex; flex-direction:column; gap:6px; }
-.wf--line{ height:9px; border-radius:4px; background:var(--surface-3); }
-.wf--timeline{ display:flex; gap:10px; }
-.wf--dot{ width:10px; height:10px; border-radius:50%; background:var(--rose); margin-top:3px; flex-shrink:0; box-shadow:0 0 0 3px var(--rose-tint); }
-.wf--track{ width:2px; background:var(--line); flex-shrink:0; }
-
-/* footer / footer .brand__mark → moved to App.vue（批 6 完工检查发现的活规则）*/
 
 /* ============================================================ 响应式 */
-/* 原 @media (max-width:860px){ .brand__sub/.switcher__label/.nav } 整块，以及
-   @media (max-width:560px){ .topbar__inner/.nav/.nav__item/.who__name/.who } 整块
-   （含原有说明注释）→ components/TopBar.vue（<style scoped> 块尾部） */
 @media (max-width:680px){
-/* .page/.section__title → primitives.css 尾部同 @media 块 */
-/* .gallery__title 真死：组件画廊死区（见上方「组件画廊」段注），T11 删，本批不动 */
-  .gallery__title{ font-size:var(--fs-xl); }
-/* .topbar__inner → components/TopBar.vue（scoped，同 @media 块尾部）*/
   .brand__mark{ font-size:24px; }
-/* .intent/.intent__input/.intent__btn → views/Home.vue（scoped，同 @media 块尾部）*/
-/* .grid--together 真死，同上方「卡片网格」段注，本批不动 */
-  .grid--together{ grid-template-columns:1fr; }
-/* .grid--plan → views/Plan.vue（scoped，同 @media 块尾部，见该段落顶部 DONE_WITH_CONCERNS 注）*/
-/* .watched-card → components/TogetherReel.vue（scoped，同 @media 块尾部，见该段落顶部
-   DONE_WITH_CONCERNS 注）*/
-/* .watched-card .poster / .watched-card .poster .poster__title 跨组件选择器（.poster 是
-   子组件 Poster.vue 自身根类；.poster__title 另真死），处理方式同上方 body.viewing-partner
-   先例，暂留在此 */
+/* .watched-card .poster 跨组件选择器（.poster 是子组件 Poster.vue 自身根类），处理方式同
+   上方 body.viewing-partner 先例，暂留在此 */
   .watched-card .poster{ width:100%; aspect-ratio:16/9; }
-  .watched-card .poster .poster__title{ font-size:var(--fs-body); }
-/* .section__head → primitives.css 尾部同 @media 块 */
-/* .filters 真死：Plan.vue 想看清单没有筛选 UI（见 css-usage-report.txt），T11 删，本批不动 */
-  .filters{ width:100%; overflow-x:auto; padding-bottom:4px; }
-/* .target-list → components/EditModal.vue（scoped，同 @media 块尾部，见该段落顶部
-   DONE_WITH_CONCERNS 注）*/
 }
 
 /* ============================================================
@@ -285,93 +56,33 @@ body.viewing-partner .proxy-banner{ display:block; }
 .back-link:hover{ color:var(--text); gap:9px; }
 .back-link svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; }
 
-/* .tabs/.tab(+:hover/+.is-active)/.tab .count 真死：Me.vue 只剩 .tabpane 包裹层，切换条
-   UI 未实现/已移除（见 css-usage-report.txt 人工复核），T11 删，本批不动。*/
-.tabs{ display:flex; gap:var(--s-1); background:var(--surface-2); padding:5px; border-radius:var(--r-pill); border:1px solid var(--line-soft); width:max-content; max-width:100%; }
-.tab{ font-size:var(--fs-sm); color:var(--text-dim); padding:8px 20px; border-radius:var(--r-pill); transition:all .2s var(--ease); white-space:nowrap; }
-.tab:hover{ color:var(--text); }
-.tab.is-active{ color:var(--text); background:var(--surface-3); box-shadow:var(--shadow-sm); }
-.tab .count{ color:var(--text-faint); font-size:11px; margin-left:5px; }
-/* .tabpane/.tabpane.is-active/@keyframes fade → views/Me.vue（scoped）*/
-
-/* .grid--me/.title-card/.title-card__name(+.year)/.title-card__row/.mini-score(+.lab)
-   → views/Me.vue（scoped）*/
 /* .title-card .poster / .title-card:hover .poster 跨组件选择器（.poster 是子组件
    components/Poster.vue 自身根类），处理方式同上方 body.viewing-partner／.rk-mid .feedback
    先例，暂留在此。*/
 .title-card .poster{ width:100%; transition:transform .25s var(--ease); }
 .title-card:hover .poster{ transform:translateY(-4px); }
 
-/* .timeline(+::before)/.tl-group/.tl-year(+::before)/.tl-item(+::before) 真死：Me.vue
-   未用这套通用竖排时间轴，TogetherReel.vue/WatchedTimeline.vue 各自重写了独立 scoped
-   版本（见 css-usage-report.txt），T11 删，本批不动。*/
-.timeline{ position:relative; padding-left:var(--s-8); }
-.timeline::before{ content:""; position:absolute; left:11px; top:8px; bottom:8px; width:2px; background:var(--line); }
-.tl-group{ margin-bottom:var(--s-10); }
-.tl-year{ position:relative; font-family:var(--font-brand); font-style:italic; font-size:var(--fs-xl); color:var(--rose); margin-bottom:var(--s-5); }
-.tl-year::before{ content:""; position:absolute; left:calc(-1 * var(--s-8) + 4px); top:50%; transform:translateY(-50%); width:16px; height:16px; border-radius:50%; background:var(--rose); border:1px solid var(--rose); }
-.tl-item{ position:relative; margin-bottom:var(--s-5); }
-.tl-item::before{ content:""; position:absolute; left:calc(-1 * var(--s-8) + 7px); top:26px; width:10px; height:10px; border-radius:50%; background:var(--surface-3); border:2px solid var(--bg); box-shadow:0 0 0 3px var(--surface); }
-
-/* .work-top/.work-meta__title/.work-meta__sub/.work-meta__tags/.record-grid/.record
-   （含 [data-who] 头像配色覆盖）/.record__head/.record__avatar/.record__score/
-   .record__review/.joint/.joint__label(+svg) → views/Work.vue（scoped）。.record 原判
-   primitives（5 文件），经 css-usage-report.txt 人工复核改判为 scoped: Work.vue（其余 4 处
-   命中都是 prop 绑定/字段名巧合，非类名），按改判结果一并搬迁。*/
 /* .work-top .poster 跨组件选择器（.poster 属于子组件 Poster.vue），处理方式同上，暂留在此。*/
 .work-top .poster{ width:100%; }
-/* .work-meta__actions/.ext-link(+:hover/+svg) 真死：Work.vue 按钮走行内 style / 没有独立
-   外链元素（见 css-usage-report.txt），T11 删，本批不动。*/
-.work-meta__actions{ display:flex; gap:var(--s-2); flex-wrap:wrap; }
-.ext-link{ display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-sm); color:var(--text-dim); padding:8px 14px; border-radius:var(--r-pill); border:1px solid var(--line); background:var(--surface-2); transition:all .2s; }
-.ext-link:hover{ color:var(--text); transform:translateY(-1px); }
-.ext-link svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.7; }
 /* .record__who/.record__role 不动：Work.vue（谁看的/什么身份）与 Settings.vue（用户列表项
    名字/角色）两处语义无关复用，留给后续统一裁决（见 css-usage-report.txt「.record」条旁注，
    本任务纪律第 2 条明确要求不动）。*/
 .record__who{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
 .record__role{ font-size:var(--fs-sm); color:var(--text-faint); }
-/* .record__date 真死：Work.vue 的 .record 卡片不展示日期（见 css-usage-report.txt），
-   T11 删，本批不动。*/
-.record__date{ font-size:var(--fs-sm); color:var(--text-faint); margin-top:var(--s-3); }
-/* .joint__text 真死：Work.vue 的 .joint 卡片直接渲染 review_a/review_b 文本，没有
-   .joint__text 包裹层（见 css-usage-report.txt），T11 删，本批不动。*/
-.joint__text{ font-family:var(--font-serif); font-size:var(--fs-lg); line-height:1.7; color:var(--text); }
 
-/* .settings-list/.setting(+__head/__title(+.ic)/__desc/__row)/.badge-ok(+svg)/
-   .identity-pick/.identity-card(+.is-active[data-who]/+__avatar(+[data-who]))
-   → views/Settings.vue（scoped）*/
 /* .input(+:focus) 是 primitives 类（DatePicker.vue/Settings.vue 共用，见
    css-usage-report.txt），本批不动。*/
 .input{ background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md); padding:10px 14px; color:var(--text); font-size:var(--fs-body); outline:none; flex:1; min-width:160px; }
 .input:focus{ border-color:var(--rose-line); }
-/* .input--mono 真死：Settings.vue 密钥输入框都用普通 .input，没有等宽字体变体（见
-   css-usage-report.txt），T11 删，本批不动。*/
-.input--mono{ font-family:ui-monospace,monospace; font-size:var(--fs-sm); }
 
 @media (max-width:680px){
-/* .work-top/.work-meta__title/.record-grid → views/Work.vue（scoped，同 @media 块尾部）*/
 /* .page-hero__title 是 primitives 类，本批不动 */
   .page-hero__title{ font-size:var(--fs-xl); }
-/* .identity-pick → views/Settings.vue（scoped，同 @media 块尾部）*/
 }
 
 /* ============================================================
    首页改版：推荐「排片榜」（按名次定大小）+ 横向卡片轨道
    ============================================================ */
-/* .reco-top/.rk/.rk-num/.rk-hero/.rk-hero .rk-num/.rk-hero__body/.rk-hero__title/
-   .rk-meta/.rk-reason/.rk-reason .label(+svg)/.rk-actions/.rk-mids/.rk-mid/
-   .rk-mid .rk-num/.rk-mid__body/.rk-mid__title/.rk-mid .rk-reason/.rk-mid .rk-actions/
-   .reco-rail(+滚动条)/.rk-mini(+:hover)/.rk-mini__pw/.rk-mini__reason(+:hover 态)/
-   .rk-mini__reason-hd(+svg)/.rk-mini__reason p/.rk-mini .rk-num/.rk-mini__body/
-   .rk-mini__title/.rk-mini__foot/.hrail(+滚动条) → views/Home.vue（响应式段同名 @media
-   规则随类一并搬走，见该文件 <style scoped> 块尾部）*/
-/* .avatar-ring 真死：从未被任何模板引用；下一条规则把同款描边直接摊到了各头像类上，这条
-   辅助类应是重构中间态遗留（见 css-usage-report.txt 人工复核），T11 删，本批不动。*/
-.avatar-ring{ border:1px solid oklch(0 0 0 / 0.3); }
-/* .who__avatar, .dual__who, .adder__dot, .record__avatar, .identity-card__avatar 共享头像
-   描边规则 → primitives.css 尾部（T10 批 5，纯移动，真正的跨组件 primitive）*/
-
 /* .feedback 基础尺寸覆盖（纯图标、实心、带描边）→ components/FeedbackBtns.vue。
    下面几条按祖先卡片类型（.rk-mid/.rk-mini__foot，均为 views/Home.vue 自身类）覆盖
    .feedback 尺寸的规则不随其搬迁：目标类 .feedback 属于子组件 FeedbackBtns.vue、
@@ -386,9 +97,6 @@ body.viewing-partner .proxy-banner{ display:block; }
   -webkit-mask:linear-gradient(90deg, transparent 55%, #000 90%);
   mask:linear-gradient(90deg, transparent 55%, #000 90%);
 }
-/* .rk-hero__title .year / .rk-mid__title .year → views/Home.vue（T10 批 6，纯剪切，未改
-   声明，见该文件 <style scoped> 块，紧随各自的 .rk-hero__title/.rk-mid__title 基类之后）*/
-.rk-reason .quote{ color:var(--rose); font-weight:600; }
 .rk-mid .poster{ align-self:stretch; width:auto; border:none; border-radius:0; }   /* 贴紧卡片上下左，宽度按 2:3 自动算 */
 .rk-mid .feedback{ width:40px; height:36px; }
 
@@ -397,25 +105,9 @@ body.viewing-partner .proxy-banner{ display:block; }
 .rk-mini__foot .feedback{ flex:1; width:auto; height:34px; }
 .rk-mini__foot .feedback svg{ width:15px; height:15px; }
 
-/* .hcard/.hcard__body/.hcard__pw/.hcard__row/.hcard__title(+.year) → primitives.css 尾部
-   （T10 批 6，纯剪切，未改声明；Home.vue「想看就一起看」横向小卡与 WatchedTimeline.vue
-   共用）*/
 /* .hcard .poster 跨组件选择器（.poster 属于子组件 components/Poster.vue），处理方式同上方
    body.viewing-partner 先例，暂留在此。*/
 .hcard .poster{ width:100%; border:none; border-radius:0; }
-/* .hcard__corner/.hcard__date(+svg)/.hcard__edit(+:hover/+svg) → components/WatchedTimeline.vue
-   （T10 批 6，纯剪切，未改声明；仅本组件使用，见该文件 <style scoped> 块尾部）*/
-/* .hcard__note 真死：Home.vue/WatchedTimeline.vue 的 hcard 都没有备注区（见
-   css-usage-report.txt 人工复核），T11 删，本批不动。*/
-.hcard__note{ font-size:var(--fs-sm); color:var(--text-dim); line-height:1.5; }
-/* .hcard__foot(+.feedback) 真死：Home.vue/WatchedTimeline.vue 的 hcard 都没有渲染 foot 区
-   （见 css-usage-report.txt 人工复核），T11 删，本批不动。*/
-.hcard__foot{ display:flex; align-items:center; gap:6px; margin-top:auto; padding-top:var(--s-1); }
-.hcard__foot .feedback{ width:38px; height:34px; }
-/* .hcard.is-hidden 真死：Home.vue「想看就一起看」清单靠 JS computed 过滤隐藏项，不是切
-   CSS 类（同 .plan-card.is-hidden/.is-hidden 邻近死类，见 css-usage-report.txt 人工复核），
-   T11 删，本批不动。*/
-.hcard.is-hidden{ display:none; }
 
 @media (max-width:860px){
   /* 窄屏大卡高度不再由栅格撑定，海报回退固定宽（仍 2:3），避免 stretch+auto 失效 */
@@ -429,29 +121,8 @@ body.viewing-partner .proxy-banner{ display:block; }
   .rk-hero .poster{ width:130px; }
 }
 
-/* Phase 2: 真实海报图覆盖纯色 + 胶片占位（.poster img）→ primitives.css 的 .poster 规则
-   附近（T10 批 5，纯移动，含注释一并带走）*/
-
-/* ============================================================ 评分选择器（1–10 数字按钮，替代 number input） */
-/* .score-pick/.score-pick__label/.score-pick__row/.score-pick__n(+:hover/+.is-active)
-   → components/ScorePicker.vue（scoped；css-usage-report.txt 确认无响应式覆盖，
-   .score-input 真死已被本组件取代，见该文件旁注）*/
-
 /* ============================================================ 卡片角标编辑按钮（Me/Together/Plan 复用） */
-/* .title-card__pw → views/Me.vue（T10 批 5，纯剪切，未改声明；批 3 建 Me.vue scoped 块时的
-   漏项，本批补上，见该文件 <style scoped> 块尾部）*/
-/* .card-edit 基础态 → primitives.css */
-.title-card:hover .card-edit, .hcard:hover .card-edit, .watched-card:hover .card-edit, .vcard:hover .card-edit, .card-edit:focus{ opacity:1; }
+.title-card:hover .card-edit, .hcard:hover .card-edit, .watched-card:hover .card-edit, .card-edit:focus{ opacity:1; }
 /* 查看页（Work）的记录卡 .record/.joint 不在上面的 hover 列表里——编辑按钮常驻可见 */
 .record .card-edit, .joint .card-edit{ opacity:.82; }
 .record:hover .card-edit, .joint:hover .card-edit{ opacity:1; }
-/* .card-edit:hover/svg/触屏媒体查询 → primitives.css */
-
-/* ============================================================ 片名后的年份
-   统一浅色 + 不同字体（sans）+ 比片名略小；各卡可用 .X__title .year 覆盖字号 */
-/* → primitives.css */
-
-/* ============================================================ 快速悬浮提示
-   取代浏览器默认 title（约 2s 才弹）。用法：给元素加 data-tip="文字"；
-   想朝下弹（如卡片顶角按钮，免被 overflow 裁切）再加 data-tip-pos="below" */
-/* → primitives.css（含 .prio-opt） */
