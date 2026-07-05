@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { upsertWork } from './works.js';
 import { markRecosStale } from '../recos/state.js';
+import type { Mark } from '../../../shared/types.js';
 
 const MARK_COLS = 'id, user_id, work_id, status, rating, comment, marked_at';
 
@@ -37,7 +38,7 @@ export function marksRoutes() {
       ? db.prepare(`SELECT * FROM works WHERE id IN (${workIds.map(() => '?').join(',')})`).all(...workIds)
       : [];
     const workMap = new Map(works.map((w: any) => [w.id, w]));
-    res.json({ marks: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) });
+    res.json({ marks: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) satisfies Mark[] });
   });
 
   router.post('/', async (req, res) => {
@@ -67,7 +68,7 @@ export function marksRoutes() {
         .run(req.viewing_user_id, finalWorkId, status, rating ?? null, comment ?? null, now);
       const row = db.prepare(`SELECT ${MARK_COLS} FROM user_marks WHERE id = ?`).get(info.lastInsertRowid);
       markRecosStale(db);
-      res.json(row);
+      res.json(row satisfies Mark);
     } catch (e) {
       if (String(e).includes('UNIQUE')) return res.status(409).json({ error: 'mark_exists' });
       throw e;

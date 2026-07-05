@@ -1,5 +1,6 @@
 // server/src/recos/service.js
 import { upsertWork } from '../routes/works.js';
+import type { Reco } from '../../../shared/types.js';
 import { buildMessages } from './prompt.js';
 import { resolveTmdb } from './validate.js';
 import { parseJsonArray } from '../llm/client.js';
@@ -19,7 +20,7 @@ const READ_SQL = `
   WHERE r.batch_id = @batch AND r.validated = 1 AND r.feedback IS NULL
   ORDER BY r.id ASC LIMIT ${SHOW}`;
 
-export function readBatch(db: any, batchId: any) {
+export function readBatch(db: any, batchId: any): Reco[] {
   if (!batchId) return [];
   return db.prepare(READ_SQL).all({ batch: batchId });
 }

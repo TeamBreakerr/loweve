@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { upsertWork } from './works.js';
 import { markRecosStale } from '../recos/state.js';
+import type { Session } from '../../../shared/types.js';
 
 const SESSION_COLS = 'id, work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at';
 
@@ -18,7 +19,7 @@ export function sessionsRoutes() {
       ? db.prepare(`SELECT * FROM works WHERE id IN (${workIds.map(() => '?').join(',')})`).all(...workIds)
       : [];
     const workMap = new Map(works.map((w: any) => [w.id, w]));
-    res.json({ sessions: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) });
+    res.json({ sessions: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) satisfies Session[] });
   });
 
   router.post('/', async (req, res) => {
@@ -52,7 +53,7 @@ export function sessionsRoutes() {
       });
       const id = tx();
       markRecosStale(db);
-      return res.json(db.prepare(`SELECT ${SESSION_COLS} FROM couple_sessions WHERE id = ?`).get(id));
+      return res.json(db.prepare(`SELECT ${SESSION_COLS} FROM couple_sessions WHERE id = ?`).get(id) satisfies Session);
     }
 
     // 普通模式：work_id 或 tmdb_id 二选一
@@ -80,7 +81,7 @@ export function sessionsRoutes() {
            joint_note ?? null, now);
     const row = db.prepare(`SELECT ${SESSION_COLS} FROM couple_sessions WHERE id = ?`).get(info.lastInsertRowid);
     markRecosStale(db);
-    res.json(row);
+    res.json(row satisfies Session);
   });
 
   router.put('/:id', (req, res) => {
@@ -116,7 +117,7 @@ export function sessionsRoutes() {
       (review_b != null && review_b !== existing.review_b) ||
       (joint_note != null && joint_note !== existing.joint_note);
     if (recoRelevantChanged) markRecosStale(db);
-    res.json(db.prepare(`SELECT ${SESSION_COLS} FROM couple_sessions WHERE id = ?`).get(id));
+    res.json(db.prepare(`SELECT ${SESSION_COLS} FROM couple_sessions WHERE id = ?`).get(id) satisfies Session);
   });
 
   router.delete('/:id', (req, res) => {
