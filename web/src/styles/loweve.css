@@ -23,6 +23,8 @@
   display:flex; align-items:center; gap:var(--s-5);
 }
 .brand{ display:flex; align-items:baseline; gap:var(--s-3); flex-shrink:0; }
+/* .brand__mark 是 primitives 类（3 文件共用），但其 mobile override 依赖殿后加载的层叠序，
+   故 base+override 一并暂留此文件——T10/T11 勿单独搬迁 base 而留下 override（T9 审查 Minor 1）。*/
 .brand__mark{
   font-family:var(--font-brand);
   font-size:28px; font-weight:600; font-style:italic;

@@ -1,4 +1,5 @@
 /* 从 loweve.css 拆出：跨组件复用的基础样式（primitives）。 */
+/* 注：个别 primitives 类（如 .brand__mark）因层叠序须殿后加载，暂留 loweve.css 残余文件。*/
 /* 段落顺序与 loweve.css 原文保持一致；段内已按 scripts/refactor/css-usage-report.txt 的复核后 */
 /* 归属剔除单组件 scoped / 死样式规则（原样留在 loweve.css，交 T10/T11 处理）。 */
 
