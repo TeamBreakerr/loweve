@@ -143,17 +143,17 @@ a.rating--link:active{ transform:none; }
 
 /* ============================================================ 卡片网格 */
 /* .grid → primitives.css */
+/* .grid--together 真死：TogetherReel.vue 用自己的 .watched-layout 鼓轮时间轴，没有用通用
+   .grid/.grid--together 网格（见 css-usage-report.txt），T11 删，本批不动。*/
 .grid--together{ grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); }
-.grid--plan{ grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); }
+/* .grid--plan（含响应式段同名 @media 规则）→ views/Plan.vue（T10 批 4 顺手归位：响应式段
+   清点命中的单文件 scoped 类；批 1-3 未把「卡片网格/③一起想看计划卡片」这段样式排进任何
+   一批，本次借响应式清点顺带补上，见该文件 <style scoped> 块尾部，报 DONE_WITH_CONCERNS）*/
 
 /* ② 一起看过卡片 */
-.watched-card{
-  display:flex; gap:var(--s-4); padding:var(--s-4);
-  background:var(--surface);
-  border-radius:var(--r-lg); box-shadow:var(--shadow-card);
-  transition:transform .22s var(--ease);
-}
-.watched-card:hover{ transform:translateY(-3px); }
+/* .watched-card(+:hover，含响应式段同名 @media 规则) → components/TogetherReel.vue（T10
+   批 4 顺手归位：响应式段清点命中的单文件 scoped 类；批 1-3 未把这段样式排进任何一批，
+   本次借响应式清点顺带补上，见该文件 <style scoped> 块尾部，报 DONE_WITH_CONCERNS）*/
 .watched-card .poster{ width:84px; }
 .watched-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-2); }
 .watched-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
@@ -236,8 +236,12 @@ a.rating--link:active{ transform:none; }
 .result.is-selected .result__check{ background:var(--rose); border-color:var(--rose); }
 .result.is-selected .result__check svg{ width:12px; height:12px; stroke:var(--bg); stroke-width:3; opacity:1; }
 .result__check svg{ opacity:0; }
-.target-list{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-2); }
+/* .target-list（含响应式段同名 @media 规则）→ components/EditModal.vue（T10 批 4 顺手归位：
+   响应式段清点命中的单文件 scoped 类；批 1-3 未把「Modal」这段样式排进任何一批，本次借
+   响应式清点顺带补上，见该文件 <style scoped> 块尾部，报 DONE_WITH_CONCERNS）*/
 /* .target/.rate-row → primitives.css */
+/* .score-input 真死：已被 .score-pick（components/ScorePicker.vue）取代（见
+   css-usage-report.txt「评分选择器」旁注），T11 删，本批不动。*/
 .score-input{ display:flex; flex-direction:column; gap:6px; }
 .score-input input{
   width:88px; background:var(--surface-2); border:1px solid var(--line);
@@ -303,17 +307,26 @@ footer .brand__mark{ font-size:20px; }
    （含原有说明注释）→ components/TopBar.vue（<style scoped> 块尾部） */
 @media (max-width:680px){
 /* .page/.section__title → primitives.css 尾部同 @media 块 */
+/* .gallery__title 真死：组件画廊死区（见上方「组件画廊」段注），T11 删，本批不动 */
   .gallery__title{ font-size:var(--fs-xl); }
 /* .topbar__inner → components/TopBar.vue（scoped，同 @media 块尾部）*/
   .brand__mark{ font-size:24px; }
 /* .intent/.intent__input/.intent__btn → views/Home.vue（scoped，同 @media 块尾部）*/
-  .grid--together, .grid--plan{ grid-template-columns:1fr; }
-  .watched-card{ flex-direction:column; }
+/* .grid--together 真死，同上方「卡片网格」段注，本批不动 */
+  .grid--together{ grid-template-columns:1fr; }
+/* .grid--plan → views/Plan.vue（scoped，同 @media 块尾部，见该段落顶部 DONE_WITH_CONCERNS 注）*/
+/* .watched-card → components/TogetherReel.vue（scoped，同 @media 块尾部，见该段落顶部
+   DONE_WITH_CONCERNS 注）*/
+/* .watched-card .poster / .watched-card .poster .poster__title 跨组件选择器（.poster 是
+   子组件 Poster.vue 自身根类；.poster__title 另真死），处理方式同上方 body.viewing-partner
+   先例，暂留在此 */
   .watched-card .poster{ width:100%; aspect-ratio:16/9; }
   .watched-card .poster .poster__title{ font-size:var(--fs-body); }
 /* .section__head → primitives.css 尾部同 @media 块 */
+/* .filters 真死：Plan.vue 想看清单没有筛选 UI（见 css-usage-report.txt），T11 删，本批不动 */
   .filters{ width:100%; overflow-x:auto; padding-bottom:4px; }
-  .target-list{ grid-template-columns:1fr; }
+/* .target-list → components/EditModal.vue（scoped，同 @media 块尾部，见该段落顶部
+   DONE_WITH_CONCERNS 注）*/
 }
 
 /* ============================================================
@@ -481,17 +494,9 @@ footer .brand__mark{ font-size:20px; }
 }
 
 /* ============================================================ 评分选择器（1–10 数字按钮，替代 number input） */
-.score-pick{ display:flex; flex-direction:column; gap:8px; }
-.score-pick__label{ font-size:13px; color:var(--text-faint); }
-.score-pick__row{ display:flex; flex-wrap:wrap; gap:6px; }
-.score-pick__n{
-  width:34px; height:34px; border-radius:var(--r-sm);
-  border:1px solid var(--line-soft); background:var(--surface-2);
-  color:var(--text-dim); font-family:var(--font-brand); font-style:italic;
-  font-size:var(--fs-md); line-height:1; transition:all .15s var(--ease);
-}
-.score-pick__n:hover{ color:var(--text); border-color:var(--line); transform:translateY(-1px); }
-.score-pick__n.is-active{ background:var(--gold); border-color:var(--gold); color:oklch(0.16 0.03 80); font-weight:700; }
+/* .score-pick/.score-pick__label/.score-pick__row/.score-pick__n(+:hover/+.is-active)
+   → components/ScorePicker.vue（scoped；css-usage-report.txt 确认无响应式覆盖，
+   .score-input 真死已被本组件取代，见该文件旁注）*/
 
 /* ============================================================ 卡片角标编辑按钮（Me/Together/Plan 复用） */
 .title-card__pw{ position:relative; }

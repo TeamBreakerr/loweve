@@ -22,3 +22,18 @@ function clear() { emit('update:modelValue', null); }
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 评分选择器样式，从 styles/loweve.css「评分选择器」段搬入（T10 批 4，纯剪切，未改声明）。*/
+.score-pick{ display:flex; flex-direction:column; gap:8px; }
+.score-pick__label{ font-size:13px; color:var(--text-faint); }
+.score-pick__row{ display:flex; flex-wrap:wrap; gap:6px; }
+.score-pick__n{
+  width:34px; height:34px; border-radius:var(--r-sm);
+  border:1px solid var(--line-soft); background:var(--surface-2);
+  color:var(--text-dim); font-family:var(--font-brand); font-style:italic;
+  font-size:var(--fs-md); line-height:1; transition:all .15s var(--ease);
+}
+.score-pick__n:hover{ color:var(--text); border-color:var(--line); transform:translateY(-1px); }
+.score-pick__n.is-active{ background:var(--gold); border-color:var(--gold); color:oklch(0.16 0.03 80); font-weight:700; }
+</style>

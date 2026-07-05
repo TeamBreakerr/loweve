@@ -66,3 +66,13 @@ onMounted(() => plan.load());
     <AddModal v-model="addModalOpen" initial-target="couple_plan" @added="plan.load" />
   </main>
 </template>
+
+<style scoped>
+/* .grid--plan 样式，从 styles/loweve.css「卡片网格」段搬入（T10 批 4，响应式段清点顺手
+   归位：批 1-3 未覆盖 Plan.vue 这块样式，本次借响应式清点补上，纯剪切未改声明，报
+   DONE_WITH_CONCERNS）。*/
+.grid--plan{ grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); }
+@media (max-width:680px){
+  .grid--plan{ grid-template-columns:1fr; }
+}
+</style>

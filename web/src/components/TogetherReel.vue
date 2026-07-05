@@ -348,6 +348,18 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* .watched-card(+:hover) 基础样式，从 styles/loweve.css「② 一起看过卡片」段搬入（T10 批 4，
+   响应式段清点顺手归位：批 1-3 未覆盖这块样式，本次借响应式清点补上，纯剪切未改声明，报
+   DONE_WITH_CONCERNS）。.watched-card .poster 是跨组件选择器（.poster 是子组件 Poster.vue
+   自身根类），仍留在 loweve.css，不搬。*/
+.watched-card{
+  display:flex; gap:var(--s-4); padding:var(--s-4);
+  background:var(--surface);
+  border-radius:var(--r-lg); box-shadow:var(--shadow-card);
+  transition:transform .22s var(--ease);
+}
+.watched-card:hover{ transform:translateY(-3px); }
+
 .watched-layout { display: grid; grid-template-columns: 256px 1fr; gap: var(--s-8); align-items: start; position: relative; }
 .reel-rail { position: relative; z-index: 3; position: sticky; top: 88px; display: flex; flex-direction: column; align-items: center; }
 .projector { position: relative; display: flex; flex-direction: column; align-items: center; }
@@ -469,5 +481,9 @@ onBeforeUnmount(() => {
   .wm { flex: 1 1 100%; border-left: none; border-top: 1px solid var(--line-soft); padding-left: 0; padding-top: var(--s-3); margin-top: var(--s-1); }
   .tl2.lit-mode :deep(.watched-card) { opacity: 1; filter: none; }
   .tl2.lit-mode :deep(.watched-card.is-lit) { box-shadow: none; }
+}
+/* .watched-card 响应式段同名 @media 规则，随基础样式一并搬入（T10 批 4，见上方旁注）*/
+@media (max-width:680px){
+  .watched-card{ flex-direction:column; }
 }
 </style>
