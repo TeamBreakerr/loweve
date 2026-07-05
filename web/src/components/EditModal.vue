@@ -169,3 +169,13 @@ function close() { emit('update:modelValue', false); }
     </div>
   </div>
 </template>
+
+<style scoped>
+/* .target-list 样式，从 styles/loweve.css「Modal」段搬入（T10 批 4，响应式段清点顺手
+   归位：批 1-3 未覆盖 EditModal.vue 这块样式，本次借响应式清点补上，纯剪切未改声明，报
+   DONE_WITH_CONCERNS）。*/
+.target-list{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-2); }
+@media (max-width:680px){
+  .target-list{ grid-template-columns:1fr; }
+}
+</style>
