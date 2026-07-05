@@ -12,3 +12,28 @@ const identity = useIdentity();
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 从 styles/loweve.css「顶栏」段搬入（T10 批 1，纯剪切，未改声明）。
+   body.viewing-partner .proxy-banner{ display:block; } 留在 loweve.css
+   （见该文件注释，DONE_WITH_CONCERNS），与下面的 display:none 配合生效。*/
+.proxy-banner{
+  display:none;
+  background:var(--rose);
+  border-bottom:1px solid var(--rose);
+}
+.proxy-banner__inner{
+  max-width:var(--maxw); margin:0 auto;
+  padding:var(--s-3) var(--s-5);
+  display:flex; align-items:center; gap:var(--s-3);
+  font-size:var(--fs-sm); color:oklch(0.18 0.02 30);
+}
+.proxy-banner .dot{ width:8px; height:8px; border-radius:50%; background:oklch(0.18 0.02 30); flex-shrink:0; }
+.proxy-banner strong{ color:oklch(0.12 0.02 30); font-weight:700; }
+.proxy-banner__exit{
+  margin-left:auto; font-size:var(--fs-sm); color:oklch(0.18 0.02 30); font-weight:500;
+  border:1px solid oklch(0.18 0.02 30 / 0.45); padding:4px 12px; border-radius:var(--r-pill);
+  transition:background .2s;
+}
+.proxy-banner__exit:hover{ background:oklch(0.18 0.02 30 / 0.14); }
+</style>

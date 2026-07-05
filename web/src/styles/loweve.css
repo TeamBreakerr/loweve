@@ -9,20 +9,9 @@
 .rail::-webkit-scrollbar-track{ background:transparent; }
 
 /* ============================================================ 顶栏 */
-.topbar{
-  position:sticky; top:0; z-index:40;
-  background:oklch(0.18 0.009 45 / 0.82);
-  backdrop-filter:blur(16px) saturate(1.2);
-  -webkit-backdrop-filter:blur(16px) saturate(1.2);
-  border-bottom:1px solid var(--line-soft);
-  transition:background .35s var(--ease), border-color .35s var(--ease);
-}
-.topbar__inner{
-  max-width:var(--maxw); margin:0 auto;
-  padding:var(--s-3) var(--s-5);
-  display:flex; align-items:center; gap:var(--s-5);
-}
-.brand{ display:flex; align-items:baseline; gap:var(--s-3); flex-shrink:0; }
+/* .topbar/.topbar__inner/.topbar__spacer/.brand/.brand__sub/.nav/.nav__item/.switcher/
+   .switcher__label/.who/.who__avatar/.who__name → components/TopBar.vue（响应式段同名
+   @media 规则随类一并搬走，见该文件 <style scoped> 块尾部）*/
 /* .brand__mark 是 primitives 类（3 文件共用），但其 mobile override 依赖殿后加载的层叠序，
    故 base+override 一并暂留此文件——T10/T11 勿单独搬迁 base 而留下 override（T9 审查 Minor 1）。*/
 .brand__mark{
@@ -32,76 +21,21 @@
   color:var(--rose);
   padding-right:.12em;
 }
-.brand__sub{
-  font-family:var(--font-serif); font-weight:500;
-  font-size:var(--fs-sm); color:var(--text-dim);
-  letter-spacing:.18em; padding-left:var(--s-3);
-  border-left:1px solid var(--line);
-}
-.nav{ display:flex; gap:var(--s-1); margin-left:var(--s-4); }
-.nav__item{
-  font-size:var(--fs-sm); color:var(--text-dim);
-  padding:var(--s-2) var(--s-3); border-radius:var(--r-pill);
-  transition:color .2s, background .2s;
-}
-.nav__item:hover{ color:var(--text); }
-.nav__item.is-active{ color:var(--text); background:var(--surface-2); }
 
-.topbar__spacer{ flex:1; }
-
-/* 身份切换器 */
-.switcher{
-  display:flex; align-items:center; gap:var(--s-2);
-  background:var(--surface-2); padding:4px;
-  border-radius:var(--r-pill); border:1px solid var(--line-soft);
-}
-.switcher__label{
-  font-size:11px; color:var(--text-faint);
-  padding-left:var(--s-2); letter-spacing:.05em;
-}
-.who{
-  display:flex; align-items:center; gap:var(--s-2);
-  padding:5px 13px 5px 5px; border-radius:var(--r-pill);
-  font-size:var(--fs-sm); color:var(--text-dim);
-  transition:all .22s var(--ease);
-}
-.who__avatar{
-  width:24px; height:24px; border-radius:50%;
-  display:grid; place-items:center;
-  font-size:11px; font-weight:700; color:var(--bg);
-  font-family:var(--font-brand); font-style:italic;
-}
-.who[data-who="a"] .who__avatar{ background:var(--user-a); }
-.who[data-who="b"] .who__avatar{ background:var(--user-b); }
-.who.is-active{ color:var(--text); background:var(--surface-3); box-shadow:var(--shadow-sm); }
-.who.is-active[data-who="a"]{ box-shadow:inset 0 0 0 1.5px var(--user-a); }
-.who.is-active[data-who="b"]{ box-shadow:inset 0 0 0 1.5px var(--user-b); }
-
-/* 切到对方视角：整条顶栏暖色高亮提示 */
+/* 切到对方视角：整条顶栏暖色高亮提示。body.viewing-partner 由 App.vue 的
+   document.body.classList.toggle 维护（App.vue 注释原话："让全局 CSS 选择器生效"），是刻意
+   设计的全局选择器钩子，不属于 TopBar/ProxyBanner 任一组件模板。下面两条规则的目标
+   （.topbar/.proxy-banner）虽已 scoped 化搬入对应组件，但祖先 body 是组件树之外的原生
+   元素——选择器混了非本组件的类（T10 任务规则 4 所指情形），未随 base 规则搬迁，暂留在
+   此并标记 DONE_WITH_CONCERNS 待裁决（已验算 specificity：两种归属对渲染像素均无影响，
+   纯属归属风格取舍，非正确性问题——详见 T10 批 1 报告）。*/
 body.viewing-partner .topbar{
   background:oklch(0.30 0.045 18 / 0.92);
   border-bottom:1px solid var(--rose);
 }
-.proxy-banner{
-  display:none;
-  background:var(--rose);
-  border-bottom:1px solid var(--rose);
-}
+/* .proxy-banner/.proxy-banner__inner/.proxy-banner .dot/.proxy-banner strong/
+   .proxy-banner__exit → components/ProxyBanner.vue */
 body.viewing-partner .proxy-banner{ display:block; }
-.proxy-banner__inner{
-  max-width:var(--maxw); margin:0 auto;
-  padding:var(--s-3) var(--s-5);
-  display:flex; align-items:center; gap:var(--s-3);
-  font-size:var(--fs-sm); color:oklch(0.18 0.02 30);
-}
-.proxy-banner .dot{ width:8px; height:8px; border-radius:50%; background:oklch(0.18 0.02 30); flex-shrink:0; }
-.proxy-banner strong{ color:oklch(0.12 0.02 30); font-weight:700; }
-.proxy-banner__exit{
-  margin-left:auto; font-size:var(--fs-sm); color:oklch(0.18 0.02 30); font-weight:500;
-  border:1px solid oklch(0.18 0.02 30 / 0.45); padding:4px 12px; border-radius:var(--r-pill);
-  transition:background .2s;
-}
-.proxy-banner__exit:hover{ background:oklch(0.18 0.02 30 / 0.14); }
 
 /* ============================================================ 布局骨架 */
 /* .page/.section 系列/.btn 系列 → primitives.css */
@@ -391,23 +325,13 @@ footer{ text-align:center; padding:var(--s-12) var(--s-5) var(--s-16); color:var
 footer .brand__mark{ font-size:20px; }
 
 /* ============================================================ 响应式 */
-@media (max-width:860px){
-  .brand__sub{ display:none; }
-  .switcher__label{ display:none; }
-  .nav{ margin-left:var(--s-2); }   /* 保留 首页/我的，仅缩边距 */
-}
-/* 手机：顶栏更紧凑，身份切换器只显头像不显名字，保证 首页/我的/设置/切换 都点得到 */
-@media (max-width:560px){
-  .topbar__inner{ gap:var(--s-2); padding:var(--s-3) var(--s-4); }
-  .nav{ margin-left:0; }
-  .nav__item{ padding:var(--s-2) var(--s-2); }
-  .who__name{ display:none; }
-  .who{ padding:5px; }
-}
+/* 原 @media (max-width:860px){ .brand__sub/.switcher__label/.nav } 整块，以及
+   @media (max-width:560px){ .topbar__inner/.nav/.nav__item/.who__name/.who } 整块
+   （含原有说明注释）→ components/TopBar.vue（<style scoped> 块尾部） */
 @media (max-width:680px){
 /* .page/.section__title → primitives.css 尾部同 @media 块 */
   .gallery__title{ font-size:var(--fs-xl); }
-  .topbar__inner{ padding:var(--s-3) var(--s-4); gap:var(--s-3); }
+/* .topbar__inner → components/TopBar.vue（scoped，同 @media 块尾部）*/
   .brand__mark{ font-size:24px; }
   .intent{ flex-wrap:wrap; border-radius:var(--r-lg); padding:var(--s-3); }
   .intent__input{ flex-basis:100%; padding:4px 0; }
