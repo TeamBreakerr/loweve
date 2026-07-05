@@ -1,0 +1,482 @@
+# 共 249 个类名  |  primitives(多文件) 55  scoped(单文件) 116  ❓(未匹配到任何文件) 78
+
+类名                           文件数  建议            使用处
+.accent                      1    → scoped                 views/Home.vue
+.adder                       2    → primitives             views/Home.vue, views/Plan.vue
+.adder__dot                  2    → primitives             views/Home.vue, views/Plan.vue
+.avatar-ring                 0    ❓死样式?                    
+.back-link                   4    → primitives             views/Plan.vue, views/Settings.vue, views/Together.vue, views/Work.vue
+.badge-ok                    1    → scoped                 views/Settings.vue
+.brand                       1    → scoped                 components/TopBar.vue
+.brand__mark                 3    → primitives             App.vue, components/TopBar.vue, views/Settings.vue
+.brand__sub                  1    → scoped                 components/TopBar.vue
+.btn                         9    → primitives             components/AddModal.vue, components/EditModal.vue, components/TopBar.vue, views/Home.vue
+.btn--ghost                  4    → primitives             components/EditModal.vue, components/TopBar.vue, views/Home.vue, views/Work.vue
+.btn--icon                   2    → primitives             components/TopBar.vue, views/Home.vue
+.btn--primary                3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.btn--rose                   5    → primitives             views/Home.vue, views/Me.vue, views/Plan.vue, views/Settings.vue
+.btn__ic                     5    → primitives             components/TopBar.vue, views/Home.vue, views/Me.vue, views/Plan.vue
+.card-edit                   3    → primitives             components/TogetherReel.vue, views/Me.vue, views/Work.vue
+.chip                        0    ❓死样式?                    
+.count                       0    ❓死样式?                    
+.dot                         1    → scoped                 components/ProxyBanner.vue
+.dual                        1    → scoped                 components/Dual.vue
+.dual__one                   1    → scoped                 components/Dual.vue
+.dual__score                 1    → scoped                 components/Dual.vue
+.dual__sep                   1    → scoped                 components/Dual.vue
+.dual__who                   1    → scoped                 components/Dual.vue
+.ext-link                    0    ❓死样式?                    
+.feedback                    3    → primitives             components/FeedbackBtns.vue, stores/recos.ts, views/Home.vue
+.feedback--no                1    → scoped                 components/FeedbackBtns.vue
+.feedback--seen              1    → scoped                 components/FeedbackBtns.vue
+.feedback--want              1    → scoped                 components/FeedbackBtns.vue
+.field                       2    → primitives             components/AddModal.vue, components/EditModal.vue
+.field__label                2    → primitives             components/AddModal.vue, components/EditModal.vue
+.filters                     0    ❓死样式?                    
+.frame                       0    ❓死样式?                    
+.frame__bar                  0    ❓死样式?                    
+.frame__body                 0    ❓死样式?                    
+.frame__name                 0    ❓死样式?                    
+.frame__route                0    ❓死样式?                    
+.frames                      0    ❓死样式?                    
+.gallery                     0    ❓死样式?                    
+.gallery__intro              0    ❓死样式?                    
+.gallery__kicker             0    ❓死样式?                    
+.gallery__lead               0    ❓死样式?                    
+.gallery__title              0    ❓死样式?                    
+.grid                        3    → primitives             components/TogetherReel.vue, views/Me.vue, views/Plan.vue
+.grid--me                    1    → scoped                 views/Me.vue
+.grid--plan                  1    → scoped                 views/Plan.vue
+.grid--together              0    ❓死样式?                    
+.hcard                       2    → primitives             components/WatchedTimeline.vue, views/Home.vue
+.hcard__body                 2    → primitives             components/WatchedTimeline.vue, views/Home.vue
+.hcard__corner               1    → scoped                 components/WatchedTimeline.vue
+.hcard__date                 1    → scoped                 components/WatchedTimeline.vue
+.hcard__edit                 1    → scoped                 components/WatchedTimeline.vue
+.hcard__foot                 0    ❓死样式?                    
+.hcard__note                 0    ❓死样式?                    
+.hcard__pw                   2    → primitives             components/WatchedTimeline.vue, views/Home.vue
+.hcard__row                  2    → primitives             components/WatchedTimeline.vue, views/Home.vue
+.hcard__title                2    → primitives             components/WatchedTimeline.vue, views/Home.vue
+.hrail                       1    → scoped                 views/Home.vue
+.ic                          1    → scoped                 views/Settings.vue
+.identity-card               1    → scoped                 views/Settings.vue
+.identity-card__avatar       1    → scoped                 views/Settings.vue
+.identity-pick               1    → scoped                 views/Settings.vue
+.input                       4    → primitives             components/AddModal.vue, components/DatePicker.vue, views/Home.vue, views/Settings.vue
+.input--mono                 0    ❓死样式?                    
+.intent                      1    → scoped                 views/Home.vue
+.intent__btn                 1    → scoped                 views/Home.vue
+.intent__ic                  1    → scoped                 views/Home.vue
+.intent__input               1    → scoped                 views/Home.vue
+.is-active                   9    → primitives             components/AddModal.vue, components/EditModal.vue, components/ScorePicker.vue, components/TogetherReel.vue
+.is-bangumi                  0    ❓死样式?                    
+.is-hidden                   0    ❓死样式?                    
+.is-open                     3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.is-selected                 1    → scoped                 components/AddModal.vue
+.joint                       1    → scoped                 views/Work.vue
+.joint__label                1    → scoped                 views/Work.vue
+.joint__text                 0    ❓死样式?                    
+.lab                         1    → scoped                 views/Me.vue
+.label                       4    → primitives             components/AddModal.vue, components/EditModal.vue, components/ScorePicker.vue, views/Home.vue
+.link-more                   1    → scoped                 views/Home.vue
+.mini-score                  1    → scoped                 views/Me.vue
+.modal                       3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.modal-overlay               3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.modal__body                 3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.modal__close                3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.modal__foot                 3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.modal__head                 3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.modal__title                3    → primitives             components/AddModal.vue, components/EditModal.vue, views/Home.vue
+.n                           9    → primitives             components/AddModal.vue, components/DatePicker.vue, components/EditModal.vue, components/ScorePicker.vue
+.nav                         1    → scoped                 components/TopBar.vue
+.nav__item                   1    → scoped                 components/TopBar.vue
+.off                         2    → primitives             components/Priority.vue, views/Settings.vue
+.on                          0    ❓死样式?                    
+.page                        6    → primitives             views/Home.vue, views/Me.vue, views/Plan.vue, views/Settings.vue
+.page-hero                   4    → primitives             views/Me.vue, views/Plan.vue, views/Settings.vue, views/Together.vue
+.page-hero__kicker           4    → primitives             views/Me.vue, views/Plan.vue, views/Settings.vue, views/Together.vue
+.page-hero__lead             4    → primitives             views/Me.vue, views/Plan.vue, views/Settings.vue, views/Together.vue
+.page-hero__title            4    → primitives             views/Me.vue, views/Plan.vue, views/Settings.vue, views/Together.vue
+.plan-card                   1    → scoped                 views/Plan.vue
+.plan-card__actions          0    ❓死样式?                    
+.plan-card__body             1    → scoped                 views/Plan.vue
+.plan-card__head             1    → scoped                 views/Plan.vue
+.plan-card__note             0    ❓死样式?                    
+.plan-card__row              1    → scoped                 views/Plan.vue
+.plan-card__title            1    → scoped                 views/Plan.vue
+.poster                      3    → primitives             components/AddModal.vue, components/Poster.vue, components/TogetherReel.vue
+.poster__kind                1    → scoped                 components/Poster.vue
+.poster__title               0    ❓死样式?                    
+.prio-opt                    3    → primitives             components/AddModal.vue, views/Home.vue, views/Work.vue
+.proxy-banner                1    → scoped                 components/ProxyBanner.vue
+.proxy-banner__exit          1    → scoped                 components/ProxyBanner.vue
+.proxy-banner__inner         1    → scoped                 components/ProxyBanner.vue
+.q                           1    → scoped                 components/AddModal.vue
+.quote                       0    ❓死样式?                    
+.rail                        0    ❓死样式?                    
+.rate-row                    3    → primitives             components/AddModal.vue, views/Home.vue, views/Work.vue
+.rating                      6    → primitives             components/AddModal.vue, components/EditModal.vue, components/Rating.vue, types.ts
+.rating--bangumi             0    ❓死样式?                    
+.rating--douban              0    ❓死样式?                    
+.rating--link                1    → scoped                 components/Rating.vue
+.rating__num                 1    → scoped                 components/Rating.vue
+.rating__src                 1    → scoped                 components/Rating.vue
+.rec-card                    0    ❓死样式?                    
+.rec-card__actions           0    ❓死样式?                    
+.rec-card__meta              0    ❓死样式?                    
+.rec-card__reason            0    ❓死样式?                    
+.rec-card__tags              0    ❓死样式?                    
+.rec-card__title             0    ❓死样式?                    
+.rec-card__top               0    ❓死样式?                    
+.rec-card__year              0    ❓死样式?                    
+.reco-rail                   1    → scoped                 views/Home.vue
+.reco-top                    1    → scoped                 views/Home.vue
+.record                      5    → primitives             components/EditModal.vue, views/Home.vue, views/Me.vue, views/Together.vue
+.record-grid                 1    → scoped                 views/Work.vue
+.record__avatar              1    → scoped                 views/Work.vue
+.record__date                0    ❓死样式?                    
+.record__head                1    → scoped                 views/Work.vue
+.record__review              1    → scoped                 views/Work.vue
+.record__role                2    → primitives             views/Settings.vue, views/Work.vue
+.record__score               1    → scoped                 views/Work.vue
+.record__who                 2    → primitives             views/Settings.vue, views/Work.vue
+.result                      1    → scoped                 components/AddModal.vue
+.result__check               1    → scoped                 components/AddModal.vue
+.result__info                1    → scoped                 components/AddModal.vue
+.result__name                1    → scoped                 components/AddModal.vue
+.result__sub                 1    → scoped                 components/AddModal.vue
+.results                     1    → scoped                 components/AddModal.vue
+.review-input                2    → primitives             components/AddModal.vue, components/EditModal.vue
+.ring                        0    ❓死样式?                    
+.ring__bar                   0    ❓死样式?                    
+.ring__inner                 0    ❓死样式?                    
+.ring__num                   0    ❓死样式?                    
+.ring__src                   0    ❓死样式?                    
+.ring__track                 0    ❓死样式?                    
+.rk                          1    → scoped                 views/Home.vue
+.rk-actions                  1    → scoped                 views/Home.vue
+.rk-hero                     1    → scoped                 views/Home.vue
+.rk-hero__body               1    → scoped                 views/Home.vue
+.rk-hero__title              1    → scoped                 views/Home.vue
+.rk-meta                     1    → scoped                 views/Home.vue
+.rk-mid                      1    → scoped                 views/Home.vue
+.rk-mid__body                1    → scoped                 views/Home.vue
+.rk-mid__title               1    → scoped                 views/Home.vue
+.rk-mids                     1    → scoped                 views/Home.vue
+.rk-mini                     1    → scoped                 views/Home.vue
+.rk-mini__body               1    → scoped                 views/Home.vue
+.rk-mini__foot               1    → scoped                 views/Home.vue
+.rk-mini__pw                 1    → scoped                 views/Home.vue
+.rk-mini__reason             1    → scoped                 views/Home.vue
+.rk-mini__reason-hd          1    → scoped                 views/Home.vue
+.rk-mini__title              1    → scoped                 views/Home.vue
+.rk-num                      1    → scoped                 views/Home.vue
+.rk-reason                   1    → scoped                 views/Home.vue
+.score-input                 0    ❓死样式?                    
+.score-pick                  1    → scoped                 components/ScorePicker.vue
+.score-pick__label           1    → scoped                 components/ScorePicker.vue
+.score-pick__n               1    → scoped                 components/ScorePicker.vue
+.score-pick__row             1    → scoped                 components/ScorePicker.vue
+.search-box                  1    → scoped                 components/AddModal.vue
+.section                     5    → primitives             components/TogetherReel.vue, views/Home.vue, views/Me.vue, views/Settings.vue
+.section__actions            4    → primitives             views/Home.vue, views/Me.vue, views/Plan.vue, views/Together.vue
+.section__head               5    → primitives             views/Home.vue, views/Me.vue, views/Plan.vue, views/Together.vue
+.section__hint               2    → primitives             views/Me.vue, views/Together.vue
+.section__title              2    → primitives             views/Home.vue, views/Work.vue
+.setting                     1    → scoped                 views/Settings.vue
+.setting__desc               1    → scoped                 views/Settings.vue
+.setting__head               1    → scoped                 views/Settings.vue
+.setting__row                1    → scoped                 views/Settings.vue
+.setting__title              1    → scoped                 views/Settings.vue
+.settings-list               1    → scoped                 views/Settings.vue
+.specimen                    0    ❓死样式?                    
+.specimen__label             0    ❓死样式?                    
+.specimen__row               0    ❓死样式?                    
+.stars                       0    ❓死样式?                    
+.status                      8    → primitives             api/index.ts, components/AddModal.vue, components/EditModal.vue, stores/marks.ts
+.step                        1    → scoped                 components/AddModal.vue
+.swatch                      0    ❓死样式?                    
+.swatch__chip                0    ❓死样式?                    
+.swatch__meta                0    ❓死样式?                    
+.swatch__name                0    ❓死样式?                    
+.swatch__val                 0    ❓死样式?                    
+.switcher                    1    → scoped                 components/TopBar.vue
+.switcher__label             1    → scoped                 components/TopBar.vue
+.tab                         0    ❓死样式?                    
+.tabpane                     1    → scoped                 views/Me.vue
+.tabs                        0    ❓死样式?                    
+.tag                         3    → primitives             components/TogetherReel.vue, views/Home.vue, views/Work.vue
+.target                      8    → primitives             components/AddModal.vue, components/DatePicker.vue, components/EditModal.vue, components/Rating.vue
+.target-list                 1    → scoped                 components/EditModal.vue
+.timeline                    0    ❓死样式?                    
+.title-card                  1    → scoped                 views/Me.vue
+.title-card__name            1    → scoped                 views/Me.vue
+.title-card__pw              1    → scoped                 views/Me.vue
+.title-card__row             1    → scoped                 views/Me.vue
+.tl-group                    0    ❓死样式?                    
+.tl-item                     0    ❓死样式?                    
+.tl-year                     0    ❓死样式?                    
+.tokens                      0    ❓死样式?                    
+.topbar                      1    → scoped                 components/TopBar.vue
+.topbar__inner               1    → scoped                 components/TopBar.vue
+.topbar__spacer              1    → scoped                 components/TopBar.vue
+.vcard                       0    ❓死样式?                    
+.viewing-partner             1    → scoped                 App.vue
+.watched-card                1    → scoped                 components/TogetherReel.vue
+.watched-card__body          1    → scoped                 components/TogetherReel.vue
+.watched-card__date          1    → scoped                 components/TogetherReel.vue
+.watched-card__foot          0    ❓死样式?                    
+.watched-card__note          0    ❓死样式?                    
+.watched-card__scores        1    → scoped                 components/TogetherReel.vue
+.watched-card__title         1    → scoped                 components/TogetherReel.vue
+.wf                          0    ❓死样式?                    
+.wf--bar                     0    ❓死样式?                    
+.wf--dot                     0    ❓死样式?                    
+.wf--line                    0    ❓死样式?                    
+.wf--lines                   0    ❓死样式?                    
+.wf--poster                  0    ❓死样式?                    
+.wf--row                     0    ❓死样式?                    
+.wf--tab                     0    ❓死样式?                    
+.wf--tabs                    0    ❓死样式?                    
+.wf--timeline                0    ❓死样式?                    
+.wf--track                   0    ❓死样式?                    
+.who                         1    → scoped                 components/TopBar.vue
+.who__avatar                 1    → scoped                 components/TopBar.vue
+.who__name                   1    → scoped                 components/TopBar.vue
+.work-meta__actions          0    ❓死样式?                    
+.work-meta__sub              1    → scoped                 views/Work.vue
+.work-meta__tags             1    → scoped                 views/Work.vue
+.work-meta__title            1    → scoped                 views/Work.vue
+.work-top                    1    → scoped                 views/Work.vue
+.year                        12   → primitives             components/AddModal.vue, components/DatePicker.vue, components/EditModal.vue, components/TogetherReel.vue
+
+
+================================================================================
+人工复核（Task 8）
+方法：对全部 78 个 ❓ 项，在 web/src 全部 .vue/.ts 文件里做「无边界限制」的宽松子串
+扫描（比脚本本身的边界匹配更松，专门用来捕捉 classList/三元/对象键这类动态写法），
+逐条读命中上下文判断是真死还是被漏判；同时对 55 个 primitives 项里文件列表可疑的
+（含纯逻辑 .ts 文件、或字面意思像常见英文单词/变量名的）用精确的
+`(?<![\w-])cls(?![\w-])` 正则加打印匹配上下文的方式逐一复核来源。
+结论：78 个 ❓ 里 76 个真死，2 个是动态生成类名（rating--douban/rating--bangumi，
+模板字符串拼接出来的，静态扫描原理上不可能找到字面量）。55 个 primitives 里 7 个
+是「有真实用户但文件列表被同名变量/属性/HTML属性污染」需要改判的误判，另有 3 个
+文件列表有噪音但结论不变。复核时顺手还发现 1 个 scoped 判断其实是误判（.q）。
+
+== ❓ 项人工复核（78 项，76 真死 + 2 动态）==
+
+-- 组件画廊 & 其他页面示意区块（loweve.css 内一整块「组件画廊」样式；router.ts 只有
+   home/me/together/plan/work/settings 6 个路由，views/ 目录也只有这 6 个文件，没有任
+   何「gallery/style-guide」视图——这块 CSS 从静态设计稿/原型时代起就没接入过 Vue app，
+   整块真死）：
+.gallery            真死：组件画廊死区，router.ts 无对应路由，全库无引用
+.gallery__intro     真死：同上，组件画廊死区
+.gallery__kicker    真死：同上，组件画廊死区
+.gallery__lead      真死：同上，组件画廊死区
+.gallery__title     真死：同上，组件画廊死区
+.specimen           真死：同上，组件画廊死区（token/组件展示条目）
+.specimen__label    真死：同上，组件画廊死区
+.specimen__row      真死：同上，组件画廊死区
+.tokens             真死：同上，组件画廊死区（design token 色板网格）
+.swatch             真死：同上，组件画廊死区
+.swatch__chip       真死：同上，组件画廊死区
+.swatch__meta       真死：同上，组件画廊死区
+.swatch__name       真死：同上，组件画廊死区
+.swatch__val        真死：同上，组件画廊死区
+.frames             真死：同上，组件画廊死区（wireframe 占位框容器）；子串扫描命中的
+                     只是 @keyframes 关键字，和这个类无关
+.frame              真死：同上，组件画廊死区；子串命中同样只是 @keyframes / TogetherReel
+                     自己无关的 .gate-frame 类，均为巧合
+.frame__bar         真死：同上，组件画廊死区
+.frame__body        真死：同上，组件画廊死区
+.frame__name        真死：同上，组件画廊死区
+.frame__route       真死：同上，组件画廊死区
+.wf                 真死：同上，组件画廊死区（wireframe 占位块）
+.wf--bar            真死：同上，组件画廊死区
+.wf--dot            真死：同上，组件画廊死区
+.wf--line           真死：同上，组件画廊死区
+.wf--lines          真死：同上，组件画廊死区
+.wf--poster         真死：同上，组件画廊死区
+.wf--row            真死：同上，组件画廊死区
+.wf--tab            真死：同上，组件画廊死区
+.wf--tabs           真死：同上，组件画廊死区
+.wf--timeline       真死：同上，组件画廊死区
+.wf--track          真死：同上，组件画廊死区
+
+-- 旧版首页推荐卡片系统（被「首页改版：排片榜」.rk-*/.reco-*/.hrail 整体取代，
+   Home.vue 现在渲染的是 .reco-top/.rk-hero/.rk-mid/.rk-mini/.reco-rail）：
+.rec-card           真死：旧推荐卡整体已被 .rk-hero/.rk-mid/.rk-mini 取代
+.rec-card__top      真死：同上
+.rec-card__meta     真死：同上
+.rec-card__title    真死：同上
+.rec-card__year     真死：同上
+.rec-card__tags     真死：同上
+.rec-card__reason   真死：同上（新版是 .rk-reason）
+.rec-card__actions  真死：同上（新版是 .rk-actions）
+.rail               真死：旧横向推荐卡槽位，已被 .reco-rail/.hrail 取代；子串扫描命中
+                     的 .reel-rail/.reco-rail/.hrail 是三个独立的类，只是名字包含
+                     "rail"，和这个基础 .rail 无关
+.quote              真死：新（.rk-reason .quote）旧（.rec-card__reason .quote）两处
+                     「引语」容器现在都只用 {{ }} 插值渲染纯文本，从未包一层
+                     class="quote"（Home.vue:129 `<div>{{ hero.reason }}</div>`）
+
+-- 旧版评分/状态展示组件（各自被更年轻的组件独立取代）：
+.ring               真死：旧「圆环评分」，已被 Rating.vue 的徽标样式取代
+.ring__track        真死：同上
+.ring__bar          真死：同上
+.ring__inner        真死：同上
+.ring__num          真死：同上
+.ring__src          真死：同上
+.is-bangumi         真死：挂在已死的 .ring__bar 下（.ring__bar.is-bangumi），随 .ring
+                     一起死
+.stars              真死：旧星形评分，已被 Priority.vue 的爱心图标取代（Priority.vue
+                     自带独立 scoped 的 .prio/.prio__h，与 .stars 无关）
+.on                 真死：挂在已死的 .stars 下（.stars .on）；子串扫描命中的全是
+                     onMounted/onScroll 等生命周期钩子名，和这个类无关
+.score-input        真死：loweve.css 原注释自证「评分选择器，替代 number input」——
+                     已被 .score-pick（ScorePicker.vue）取代
+.timeline           真死：Me.vue 未使用这个通用竖排时间轴；TogetherReel.vue 和
+                     WatchedTimeline.vue 各自重写了带前缀的独立 scoped 时间轴
+                     （.tl2*/.htl*），刻意避开了同名冲突
+.tl-group           真死：同上
+.tl-item            真死：同上
+.tl-year            真死：同上（TogetherReel.vue 里能看到明显的重写版本 .tl2__year）
+.tab                真死：Me.vue 只剩 .tabpane 这个包裹层（历史命名），没有真正的
+                     切换条 UI；子串命中的正是 tabpane 自身
+.tabs               真死：同上，切换条 UI 未实现/已移除
+
+-- 各页面已简化/未接线的子部件：
+.avatar-ring        真死：从未被任何模板引用；loweve.css 里紧接着的下一条规则
+                     `.who__avatar, .dual__who, .adder__dot, .record__avatar,
+                     .identity-card__avatar{border:...}` 把同款描边直接摊到了各
+                     头像类上，这条辅助类应是重构中间态遗留
+.chip               真死：Plan.vue 想看清单没有筛选 UI（visible 用 computed 直接过滤
+                     done/dropped，没有按钮/chip）
+.filters            真死：同上，筛选 UI 未实现/已移除
+.count              真死：挂在已死的 .chip/.tabs 计数徽标上，无宿主
+.ext-link           真死：Work.vue 没有独立的外链按钮元素
+.grid--together     真死：TogetherReel.vue 用自己的 .watched-layout 鼓轮时间轴，没有
+                     用通用 .grid/.grid--together 网格
+.hcard__foot        真死：Home.vue/WatchedTimeline.vue 的 hcard 都没有渲染 foot 区
+.hcard__note        真死：同上，hcard 没有备注区
+.input--mono        真死：Settings.vue 密钥输入框现在都用普通 .input，没有等宽字体变体
+.is-hidden          真死：Plan.vue 用 computed 在 JS 层过滤隐藏项（切数组），不是靠
+                     切 CSS class 隐藏
+.joint__text        真死：Work.vue 的 .joint 卡片直接渲染 review_a/review_b 文本，
+                     没有 .joint__text 包裹层
+.plan-card__actions 真死：Plan.vue 卡片没有内联操作按钮（优先级调整/移除走 Work.vue
+                     详情页）
+.plan-card__note    真死：Plan.vue 卡片不展示备注
+.poster__title      真死：规则本身写死 display:none，且没有任何模板渲染过
+                     class="poster__title" 的元素
+.record__date       真死：Work.vue 的 .record 卡片不展示日期（只有 who/role/score/
+                     review）
+.vcard              真死：只在 loweve.css 自己的 hover 选择器列表里被提了一句
+                     （`.vcard:hover .card-edit`），全库没有任何组件定义或使用过
+                     .vcard，这一条选择器分支本身也是死的
+.watched-card__foot 真死：TogetherReel.vue 的 .watched-card 没有渲染 foot 区
+.watched-card__note 真死：同上没有备注区（详见下方 primitives 复核里 .q 的关联发现）
+.work-meta__actions 真死：Work.vue 的"标记为一起看过/从清单移除"按钮直接用行内
+                     style 摆放，没有包进 .work-meta__actions
+
+-- 动态生成、静态扫描原理上找不到字面量，人工确认为活（本任务最重要的两条修正）：
+.rating--douban     动态：components/Rating.vue `:class="`rating--${source}`"`，
+                     source==='douban' 时拼出这个类名；模板字符串拼接，字面量
+                     "rating--douban" 不会以子串形式出现在源码里，任何静态/子串扫描
+                     都找不到。应改判为 → scoped: components/Rating.vue
+.rating--bangumi    动态：同上，source==='bangumi' 时拼出。应改判为
+                     → scoped: components/Rating.vue
+                     （旁注：source==='tmdb' 时拼出 "rating--tmdb"，loweve.css 里根本
+                     没有这条规则——tmdb 来源的评分徽标现在没有专属配色，纯属现状记录，
+                     不是本任务要修的问题）
+
+== primitives 项人工复核（55 项里挑可疑的复核，7 个改判 + 3 个文件列表有噪音但结论不变）==
+
+.status [8 文件] → 应改判为真死。8 处命中全部是同名数据字段/属性/HTTP 语义的巧合：
+    api/index.ts 的 res.status（HTTP 响应状态码）、stores/marks.ts 与 types.ts 的
+    m.status/p.status/接口字段、EditModal.vue 里 `:class="{ 'is-active': status ===
+    s[0] }"` 中的 status 是被比较的 JS 变量本身，不是被应用的类名。逐一确认后，全库
+    没有任何地方真正写过 class="status" 或用数组/对象绑定产出字符串 "status"。这个
+    带 [data-s="待看/在看/看完/弃了"] 4 个配色变体的状态徽标设计，已被 EditModal 里
+    的 .target + .is-active 选择按钮（编辑态）和 Work.vue 里的纯文本
+    {{ statusLabel(m.status) }}（只读态，渲染进已存活的 .record__role）取代。
+.n [9 文件] → 应改判为真死。loweve.css 里 .n 只出现在死区规则
+    `.specimen__label .n` 里（组件画廊的一部分，见上）。9 个文件的命中逐一核对后
+    全部是极常见的单字母循环变量/形参 n（v-for="n in [0,1,2,3]"、
+    function intToDateInput(n)、decodeWatched(n) 等），没有一处是 class="n"。
+.off [2 文件] → 应改判为真死。loweve.css 里 .off 只出现在死区规则 `.stars .off`
+    里（.stars 已确认死，见上）。Settings.vue 命中的是 HTML 属性
+    autocomplete="off"；Priority.vue 命中的是它自己完全独立的 scoped 类
+    `.prio__h.off`（心形图标空槽样式），和全局 .stars 毫无关系——Vue scoped 只隔离
+    "自己的样式往外漏"，不隔离"全局样式往里漏"，但因为全局 .off 规则要求
+    .stars 祖先、而 Priority.vue 模板里没有任何 class="stars" 元素，实际不会互相
+    影响，纯属同名巧合。
+.rating [6 文件] → 应改判为 scoped: components/Rating.vue。6 个命中只有
+    Rating.vue 是真正的 class="rating"/:class="`rating--${source}`"（见上面动态
+    发现）。其余是同名属性/变量巧合：AddModal.vue 的 `const rating = ref(...)`
+    表单变量、EditModal.vue 同名 ref、Me.vue 的 `m.rating`、Work.vue 的
+    `work.rating_source` 一类字段访问、types.ts 接口字段 `rating?: number`。
+.feedback [3 文件] → 应改判为 scoped: components/FeedbackBtns.vue。3 个命中只有
+    FeedbackBtns.vue 真正写了 class="feedback feedback--want/no/seen"。Home.vue
+    命中的是它自己的 `onFeedback()` 处理函数名；stores/recos.ts 命中的是 store 里
+    同名的 `feedback()` action（转发反馈到后端）。
+.label [4 文件] → 应改判为 scoped: views/Home.vue。Home.vue 的
+    `<span class="label">` 确实存在（挂在已存活的 .rk-reason 下）；AddModal.vue/
+    EditModal.vue 命中的是从 TARGETS 数组取出的 `?.label` 字段访问，
+    ScorePicker.vue 命中的是它自己 `label: { type: String, default: '' }` 这个
+    组件 prop 定义，都不是类名。
+.record [5 文件] → 应改判为 scoped: views/Work.vue。5 个命中只有 Work.vue 真正
+    写了 class="record"/class="record-grid"。EditModal.vue 命中的是它的
+    `record: { type: Object }` prop 定义和 `props.record`；Home.vue/Me.vue/
+    Together.vue 命中的都是 `<EditModal :record="editRecord" .../>` 这个 prop
+    绑定语法，不是类名。
+    旁注：.record__role/.record__who 这两个子类经核实是例外——确实在 Work.vue 和
+    Settings.vue 两处都有真实 class= 用法，只是语义完全不同（Work.vue 标"谁看的/
+    什么身份"，Settings.vue 标用户列表项的名字/角色）。primitives 判断本身没错，
+    但后续拆分 CSS 归属时要注意这两个类不能整体搬进 Work.vue 的 scoped 文件，
+    否则会破坏 Settings.vue 的样式，需要保持共享或给 Settings.vue 一份独立改名。
+
+以下 3 项文件列表有噪音，但"多文件共享"的最终结论不受影响，不需要改判：
+.grid [3 文件] → TogetherReel.vue 的命中其实是它自己 scoped 样式里的 CSS 属性值
+    `display: grid`（三处 place-items:center 布局），不是 class="grid"。真正用这
+    个类的只有 Me.vue（class="grid grid--me"）和 Plan.vue
+    （class="grid grid--plan"），仍是跨文件共享类，primitives 判断不变。
+.target [8 文件] → DatePicker.vue（e.target.value）、Rating.vue
+    （target="_blank" 锚点属性）、WatchedTimeline.vue（e.target.setPointerCapture）
+    的命中都是 DOM API/HTML 属性巧合。真正用 class="target" 的是 AddModal.vue/
+    EditModal.vue/Home.vue/Work.vue 这 4 处优先级或状态选择按钮，primitives 判断
+    不变。
+.input [4 文件] → AddModal.vue、Home.vue 的命中其实是裸 `<input>` 标签名本身
+    （`<input type="text">`、`<input class="intent__input">` 里标签名部分），不
+    是 class="input"。真正用这个类的是 DatePicker.vue 和 Settings.vue，
+    primitives 判断不变。
+.year [12 文件] → types.ts/utils/watchedDate.ts/watchedDate.spec.ts 的命中是同名
+    接口字段/函数变量/测试断言（非类名），但 AddModal/Home/Me/Plan/Work/
+    TogetherReel/WatchedTimeline 等确有大量真实 `<span class="year">`，
+    primitives 判断不变。
+
+== 额外发现（scoped 项顺手复核出的 1 个误判，非 primitives，超出本任务硬性要求但一并记录）==
+.q [scoped: components/AddModal.vue] → 应改判为真死。loweve.css 里 .q 只出现在
+    已确认死掉的 `.watched-card__note .q` 一条规则里（见上方 ❓ 复核里的
+    .watched-card__note）。AddModal.vue 命中的是搜索接口 URL 里的查询参数
+    `?q=` 和局部变量 `q.trim()`（`api('/api/search?q=' + encodeURIComponent(
+    q.trim()))`），和这个类完全无关。
+
+== 复核后修正的最终统计 ==
+原始工具输出：primitives 55 / scoped 116 / ❓ 78（共 249）
+人工复核修正：
+  primitives → 真死：  .status .n .off                              (−3)
+  primitives → scoped： .rating .feedback .label .record            (−4 primitives / +4 scoped)
+  ❓ → scoped（动态）： .rating--douban .rating--bangumi             (−2 ❓ / +2 scoped)
+  scoped → 真死：       .q（超出必查范围，顺手发现）                  (−1 scoped / +1 真死)
+修正后：primitives 48 / scoped 121 / 真死 80（共 249，48+121+80=249 校验通过）
+
+
+== 审查补充（T11 执行前必读）==
+1. .on 有两处规则：`.stars .on`（约 414 行）与 `.wf--tab.on`（约 569 行），删除时两处都要清。
+2. 「外科式片段删除」清单——以下死类寄生在与活类共享的多选择器规则里，只能摘除自己的
+   选择器片段、绝不可整条规则删除（否则活类样式丢失）：
+   - .vcard    → `.title-card:hover .card-edit, .hcard:hover .card-edit, .watched-card:hover .card-edit, .vcard:hover .card-edit, .card-edit:focus{...}`（~859 行）：只删 `.vcard:hover .card-edit,` 片段
+   - .avatar-ring → 共享头像描边规则：只删自己的选择器片段
+   执行 T11 时先全文扫一遍逗号多选择器规则里的死类，同样外科处理。
