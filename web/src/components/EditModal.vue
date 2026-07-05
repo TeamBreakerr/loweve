@@ -107,9 +107,9 @@ function close() { emit('update:modelValue', false); }
         </button>
       </div>
       <div class="modal__body">
-        <div v-if="work" style="display:flex;gap:var(--s-3);align-items:center;padding-bottom:var(--s-2)">
-          <Poster :color="'#2a2a30'" :url="work.primary_poster_url" :kind="work.is_anime ? '番剧' : ''" style="width:46px" />
-          <div style="font-family:var(--font-serif);font-weight:600;font-size:var(--fs-md)">
+        <div v-if="work" class="work-summary">
+          <Poster :color="'#2a2a30'" :url="work.primary_poster_url" :kind="work.is_anime ? '番剧' : ''" class="work-summary__poster" />
+          <div class="work-summary__title">
             {{ work.title }} <span class="year">{{ work.year }}</span>
           </div>
         </div>
@@ -144,13 +144,13 @@ function close() { emit('update:modelValue', false); }
         <template v-else-if="type === 'plan'">
           <div class="field">
             <span class="field__label">状态</span>
-            <div class="target-list" style="grid-template-columns:repeat(4,1fr)">
+            <div class="target-list target-list--4col">
               <button v-for="s in PLAN_STATUS" :key="s[0]" class="target" :class="{ 'is-active': status === s[0] }" @click="status = s[0]">{{ s[1] }}</button>
             </div>
           </div>
           <div class="field">
             <span class="field__label">优先级</span>
-            <div class="target-list" style="grid-template-columns:repeat(4,1fr)">
+            <div class="target-list target-list--4col">
               <button v-for="n in [0,1,2,3]" :key="n" class="target" :class="{ 'is-active': priority === n }" @click="priority = n">{{ n === 0 ? '无' : '★'.repeat(n) }}</button>
             </div>
           </div>
@@ -160,11 +160,11 @@ function close() { emit('update:modelValue', false); }
           </div>
         </template>
 
-        <p v-if="errorMsg" style="color:var(--rose-bright);font-size:var(--fs-sm)">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
       </div>
       <div class="modal__foot">
-        <button class="btn btn--primary" style="flex:1" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
-        <button class="btn btn--ghost" :disabled="saving" style="color:var(--rose-bright);border-color:var(--rose-line)" @click="del">删除</button>
+        <button class="btn btn--primary submit-btn" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
+        <button class="btn btn--ghost delete-btn" :disabled="saving" @click="del">删除</button>
       </div>
     </div>
   </div>
@@ -178,4 +178,27 @@ function close() { emit('update:modelValue', false); }
 @media (max-width:680px){
   .target-list{ grid-template-columns:1fr; }
 }
+
+/* ============================================================ 内联样式收编（T12）
+   以下均由原静态内联 style 属性收编而成，声明逐字节保持原值，零像素改动。
+   .work-summary 是本文件新起的 block（未在别处出现）；.work-summary__poster 落到
+   <Poster> 子组件根节点（同 Home.vue .hcard__poster 手法），子组件自身与
+   primitives.css 均未给 .poster 设 width，无声明冲突。.target-list--4col 覆盖两处原本
+   相同的内联 grid-template-columns:repeat(4,1fr)（状态/优先级两个按钮组同值合并）；
+   .target-list 与 @media 内的覆写都在本文件同一 scoped 块里，特异性同为 (0,2,0)（类+
+   scoped 属性选择器）打平，故把本规则放在 @media 块之后，让它在任何视口下都稳赢——
+   与原内联「无视断点、恒定 4 列」的效果一致。.error-msg/.submit-btn 与 AddModal.vue
+   同值的 .save-error/.submit-btn 纯属巧合重复，两文件各自 scoped 隔离，不构成跨文件
+   共享基类，未合并。.delete-btn 覆盖的 .btn{color:var(--text-dim)}/.btn--ghost{
+   border-color:var(--line)} 均来自 primitives.css（未 scoped，(0,1,0)），本类经 Vue
+   scoped 编译后为 (0,2,0)，稳赢；.btn:hover 同样 (0,2,0) 打平，但 primitives.css 在
+   main.ts 里先于组件 scoped 样式导入，源码序上本类靠后，hover 态下依然是本类生效，与
+   原内联「恒定颜色、不受 hover 影响」的效果一致。*/
+.work-summary{ display:flex; gap:var(--s-3); align-items:center; padding-bottom:var(--s-2); }
+.work-summary__poster{ width:46px; }
+.work-summary__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
+.target-list--4col{ grid-template-columns:repeat(4,1fr); }
+.error-msg{ color:var(--rose-bright); font-size:var(--fs-sm); }
+.submit-btn{ flex:1; }
+.delete-btn{ color:var(--rose-bright); border-color:var(--rose-line); }
 </style>

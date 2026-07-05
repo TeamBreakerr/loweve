@@ -198,8 +198,8 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
             <input type="text" v-model="query" placeholder="输入片名 / 番名…" />
           </div>
-          <p v-if="searching" style="font-size:var(--fs-sm);color:var(--text-faint);margin-top:6px">搜索中…</p>
-          <p v-if="searchError" style="font-size:var(--fs-sm);color:var(--rose-bright);margin-top:6px">{{ searchError === 'tmdb_not_configured' ? 'TMDB 未配置，请检查 .env' : searchError }}</p>
+          <p v-if="searching" class="search-hint search-hint--info">搜索中…</p>
+          <p v-if="searchError" class="search-hint search-hint--error">{{ searchError === 'tmdb_not_configured' ? 'TMDB 未配置，请检查 .env' : searchError }}</p>
         </div>
 
         <!-- Step 2: 候选 -->
@@ -213,10 +213,10 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
                 <img v-if="c.poster_path" :src="imgProxy(tmdbPoster(c.poster_path, 'w92'))" alt="" referrerpolicy="no-referrer" />
               </div>
               <div class="result__info">
-                <div class="result__name">{{ c.title }} <span class="year">{{ c.year }}</span><span v-if="c.original_title && c.original_title !== c.title" style="color:var(--text-faint);font-weight:400">  {{ c.original_title }}</span></div>
+                <div class="result__name">{{ c.title }} <span class="year">{{ c.year }}</span><span v-if="c.original_title && c.original_title !== c.title" class="result__original-title">  {{ c.original_title }}</span></div>
                 <div class="result__sub">
                   {{ c.tmdb_type === 'movie' ? '电影' : '剧/番' }} · TMDB {{ c.vote_average?.toFixed(1) || '—' }}
-                  <span v-if="c.via" style="color:var(--rose);font-weight:500"> · {{ c.via }}</span>
+                  <span v-if="c.via" class="result__via"> · {{ c.via }}</span>
                 </div>
               </div>
               <span class="result__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg></span>
@@ -230,7 +230,7 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
           <div v-if="target === 'watched'" class="field">
             <span class="field__label"><span class="step">{{ fromPlan ? 1 : 3 }}</span>评分 & 短评（可选）</span>
             <ScorePicker v-model="rating" label="我的评分" />
-            <textarea class="review-input" v-model="comment" placeholder="写一句感想…" style="margin-top:var(--s-3)"></textarea>
+            <textarea class="review-input review-input--gap" v-model="comment" placeholder="写一句感想…"></textarea>
           </div>
 
           <!-- 一起看过 -->
@@ -242,7 +242,7 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
             <div class="field">
               <span class="field__label"><span class="step">{{ fromPlan ? 2 : 4 }}</span>{{ identity.viewingName }} 这侧（可选）</span>
               <ScorePicker v-model="rating" :label="`${identity.viewingName} 的评分`" />
-              <textarea class="review-input" v-model="comment" :placeholder="`${identity.viewingName} 的短评…`" style="margin-top:var(--s-3)"></textarea>
+              <textarea class="review-input review-input--gap" v-model="comment" :placeholder="`${identity.viewingName} 的短评…`"></textarea>
             </div>
           </div>
 
@@ -251,7 +251,7 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
             <div class="field">
               <span class="field__label"><span class="step">3</span>优先级（可选）</span>
               <div class="rate-row">
-                <button v-for="n in [0,1,2,3]" :key="n" class="target prio-opt" style="flex:0 0 auto;padding:6px 12px"
+                <button v-for="n in [0,1,2,3]" :key="n" class="target prio-opt plan-prio-opt"
                         :class="{ 'is-active': planPriority === n }"
                         @click="planPriority = n"><span v-if="n === 0">无</span><Priority v-else :value="n" :total="n" /></button>
               </div>
@@ -259,12 +259,12 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
           </div>
         </div>
 
-        <p v-if="saveError" style="color:var(--rose-bright);font-size:var(--fs-sm)">
+        <p v-if="saveError" class="save-error">
           {{ {mark_exists:'已经在你的列表里', plan_exists:'已经在共同计划里'}[saveError] || saveError }}
         </p>
       </div>
       <div class="modal__foot">
-        <button class="btn btn--primary" style="flex:1" :disabled="(!selected && !fromPlan) || saving" @click="save">
+        <button class="btn btn--primary submit-btn" :disabled="(!selected && !fromPlan) || saving" @click="save">
           {{ saving ? '保存中…' : `保存到「${targetLabel}」` }}
         </button>
         <button class="btn" @click="close">取消</button>
@@ -300,4 +300,27 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
 .result.is-selected .result__check{ background:var(--rose); border-color:var(--rose); }
 .result.is-selected .result__check svg{ width:12px; height:12px; stroke:var(--bg); stroke-width:3; opacity:1; }
 .result__check svg{ opacity:0; }
+
+/* ============================================================ 内联样式收编（T12）
+   以下均由原静态内联 style 属性收编而成，声明逐字节保持原值，零像素改动。
+   .search-hint 是本文件新起的小 block：两个提示 <p> 原内联的 font-size:var(--fs-sm) 与
+   margin-top:6px 完全同值，合并进基类；二者仅有的差异（文字颜色）保留为独立修饰类，
+   未强行合并不同值。.result__original-title/.result__via 是 .result 的新增 BEM
+   element（未在别处出现）。.review-input--gap 是 .review-input 的修饰类，两处 textarea
+   原内联同值 margin-top:var(--s-3) 合并于此——.review-input 定义于 primitives.css 且
+   未设置 margin-top，无声明冲突。.plan-prio-opt 覆盖的 .target{padding:var(--s-3)} 来自
+   primitives.css（未 scoped，特异性 (0,1,0)），本类经 Vue scoped 编译后带
+   [data-v-xxx] 属性选择器（特异性 (0,2,0)），稳赢；与 Home.vue 的 .want-modal__prio-opt
+   取值不同（flex/padding 均不同），按规则各自独立起名，不合并。.save-error/.submit-btn
+   与 EditModal.vue 同名同值的 .error-msg/.submit-btn 纯属巧合重复，两文件各自 scoped
+   隔离，不构成跨文件共享基类，未合并。*/
+.search-hint{ font-size:var(--fs-sm); margin-top:6px; }
+.search-hint--info{ color:var(--text-faint); }
+.search-hint--error{ color:var(--rose-bright); }
+.result__original-title{ color:var(--text-faint); font-weight:400; }
+.result__via{ color:var(--rose); font-weight:500; }
+.review-input--gap{ margin-top:var(--s-3); }
+.plan-prio-opt{ flex:0 0 auto; padding:6px 12px; }
+.save-error{ color:var(--rose-bright); font-size:var(--fs-sm); }
+.submit-btn{ flex:1; }
 </style>
