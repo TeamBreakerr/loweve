@@ -80,13 +80,13 @@ onBeforeUnmount(() => { clearTimeout(hideTimer); window.removeEventListener('res
 <template>
   <div class="htl-wrap" @pointerenter="showBar" @pointerleave="scheduleHide(300)">
     <div class="htl" ref="scroller" @scroll="onScroll">
-      <p v-if="!sessions.length" style="color:var(--text-faint);padding:0 var(--s-3)">还没记录一起看过的作品。</p>
+      <p v-if="!sessions.length" class="htl-empty">还没记录一起看过的作品。</p>
       <template v-for="[year, items] in groups" :key="year">
         <div class="htl-node"><span class="htl-node__dot"></span><span class="htl-node__yr">{{ year }}</span></div>
         <article v-for="s in items" :key="s.id" class="hcard">
           <div class="hcard__pw">
             <Poster :color="'#2a2a30'" :url="s.work?.primary_poster_url" :kind="s.work?.is_anime ? '番剧' : ''"
-                    style="cursor:pointer" @click="s.work_id && router.push(`/work/${s.work_id}`)" />
+                    class="hcard__poster" @click="s.work_id && router.push(`/work/${s.work_id}`)" />
             <div class="hcard__corner">
               <button class="hcard__edit" data-tip="编辑" data-tip-pos="below" @click="emit('edit', s)">
                 <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
@@ -94,7 +94,7 @@ onBeforeUnmount(() => { clearTimeout(hideTimer); window.removeEventListener('res
             </div>
           </div>
           <div class="hcard__body">
-            <h3 class="hcard__title" style="cursor:pointer" @click="s.work_id && router.push(`/work/${s.work_id}`)">{{ s.work?.title }} <span class="year">{{ s.work?.year }}</span></h3>
+            <h3 class="hcard__title hcard__title--clickable" @click="s.work_id && router.push(`/work/${s.work_id}`)">{{ s.work?.title }} <span class="year">{{ s.work?.year }}</span></h3>
             <div class="hcard__row"><Dual :rating-a="s.rating_a ?? '–'" :rating-b="s.rating_b ?? '–'" /></div>
             <div class="hcard__row">
               <Rating v-if="s.work" :source="s.work.rating_source" :score="s.work.primary_rating?.toFixed(1) || '—'" :href="ratingHref(s.work)" />
@@ -163,4 +163,15 @@ onBeforeUnmount(() => { clearTimeout(hideTimer); window.removeEventListener('res
 .hcard__edit:hover{ background:var(--rose); color:oklch(0.16 0.02 30); border-color:var(--rose); }
 .hcard__date{ display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-sm); color:var(--text-faint); }
 .hcard__date svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.6; }
+
+/* ============================================================ 内联样式收编（T12 批 4）
+   .hcard__poster / .hcard__title--clickable 手法沿用 Home.vue「想看就一起看」横向小卡
+   同名修饰类（两处 cursor:pointer 语义完全一致）：.hcard/.hcard__pw/.hcard__body/
+   .hcard__row/.hcard__title 是跨文件共用基类（primitives.css），不改基类，各自文件用
+   scoped 修饰类覆盖，互不影响。.hcard__poster 落到 <Poster> 子组件根节点（单根组件，
+   fallthrough attrs 携带本文件 scoped id，同 Plan.vue .plan-card__poster 手法）。
+   .htl-empty 是本文件独有元素（无同名基类），直接建类，无特异性冲突。*/
+.hcard__poster{ cursor:pointer; }
+.hcard__title--clickable{ cursor:pointer; }
+.htl-empty{ color:var(--text-faint); padding:0 var(--s-3); }
 </style>

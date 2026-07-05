@@ -26,7 +26,7 @@ onMounted(() => sessions.load());
       <p class="page-hero__lead">我们一起看完的每一部，连同各自的评分和那天的日期。转动左边那卷胶片，一格格连续翻看过去的每个月。</p>
     </div>
 
-    <div class="section__head" style="margin-bottom:var(--s-6)">
+    <div class="section__head section__head--together-actions">
       <span class="section__hint">共 {{ sessions.list.length }} 部</span>
       <div class="section__actions">
         <button class="btn btn--ticket" @click="modalOpen = true">
@@ -35,8 +35,8 @@ onMounted(() => sessions.load());
       </div>
     </div>
 
-    <p v-if="sessions.loading" style="color:var(--text-faint);text-align:center;padding:var(--s-8)">加载中…</p>
-    <p v-else-if="!sessions.list.length" style="color:var(--text-faint);text-align:center;padding:var(--s-12) 0">
+    <p v-if="sessions.loading" class="together-state-note together-state-note--loading">加载中…</p>
+    <p v-else-if="!sessions.list.length" class="together-state-note together-state-note--empty">
       还没有一起看过的记录。
     </p>
 
@@ -63,4 +63,18 @@ onMounted(() => sessions.load());
 }
 .btn--ticket::before { top: 3px; } .btn--ticket::after { bottom: 3px; }
 .btn--ticket:hover { background: var(--rose-bright); transform: translateY(-1px); }
+
+/* ============================================================ 内联样式收编（T12 批 4）
+   .section__head 是跨文件共用类（primitives.css，Home/Work/Me/Together/Plan 等共用，见
+   Plan.vue 同类注释），按规则不并入基类，改用本文件专属修饰类
+   .section__head--together-actions，覆盖基类 margin-bottom:var(--s-5) 为 var(--s-6)。
+   经 Vue scoped 编译后为 (0,2,0)，稳赢 primitives.css 的 (0,1,0)；primitives.css 里另有
+   max-width:680px 下的 .section__head{flex-wrap:wrap} 覆写，不涉及 margin-bottom，无交集。
+   .together-state-note 合并两处原内联共有的 color:var(--text-faint);text-align:center；
+   padding 值不同（var(--s-8) vs var(--s-12) 0），拆成 --loading/--empty 两个修饰类，
+   手法同 Plan.vue 的 .plan-state-note。*/
+.section__head--together-actions{ margin-bottom:var(--s-6); }
+.together-state-note{ color:var(--text-faint); text-align:center; }
+.together-state-note--loading{ padding:var(--s-8); }
+.together-state-note--empty{ padding:var(--s-12) 0; }
 </style>

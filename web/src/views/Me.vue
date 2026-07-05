@@ -32,7 +32,7 @@ onMounted(async () => {
       <p class="page-hero__lead">这里是你个人「看过」的记录。想看的直接放进首页的「想看就一起看」，和对方一起。</p>
     </div>
 
-    <div class="section__head" style="margin-bottom:var(--s-6)">
+    <div class="section__head section__head--me-actions">
       <span class="section__hint">看过 {{ marks.watched.length }} 部</span>
       <div class="section__actions">
         <button class="btn btn--rose" @click="openAdd">
@@ -41,10 +41,10 @@ onMounted(async () => {
       </div>
     </div>
 
-    <p v-if="marks.loading" style="color:var(--text-faint);text-align:center;padding:var(--s-8)">加载中…</p>
+    <p v-if="marks.loading" class="me-state-note me-state-note--loading">加载中…</p>
 
     <section v-else class="tabpane is-active">
-      <p v-if="!marks.watched.length" style="color:var(--text-faint);text-align:center;padding:var(--s-12) 0">
+      <p v-if="!marks.watched.length" class="me-state-note me-state-note--empty">
         还没记录过看过的作品。点右上「添加」开始 →
       </p>
       <div v-else class="grid grid--me">
@@ -87,4 +87,18 @@ onMounted(async () => {
 .title-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
 .mini-score{ font-family:var(--font-brand); font-style:italic; font-weight:600; color:var(--gold); font-size:var(--fs-md); }
 .mini-score .lab{ font-family:var(--font-sans); font-style:normal; font-size:11px; color:var(--text-faint); margin-right:3px; }
+
+/* ============================================================ 内联样式收编（T12 批 4）
+   .section__head 是跨文件共用类（primitives.css，Home/Work/Me/Together/Plan 等共用，见
+   Plan.vue 同类注释），按规则不并入基类，改用本文件专属修饰类 .section__head--me-actions，
+   覆盖基类 margin-bottom:var(--s-5) 为 var(--s-6)。经 Vue scoped 编译后为 (0,2,0)，稳赢
+   primitives.css 的 (0,1,0)；primitives.css 里另有 max-width:680px 下的
+   .section__head{flex-wrap:wrap} 覆写，不涉及 margin-bottom，无交集。
+   .me-state-note 合并两处原内联共有的 color:var(--text-faint);text-align:center；
+   padding 值不同（var(--s-8) vs var(--s-12) 0），拆成 --loading/--empty 两个修饰类，
+   手法同 Plan.vue 的 .plan-state-note。*/
+.section__head--me-actions{ margin-bottom:var(--s-6); }
+.me-state-note{ color:var(--text-faint); text-align:center; }
+.me-state-note--loading{ padding:var(--s-8); }
+.me-state-note--empty{ padding:var(--s-12) 0; }
 </style>
