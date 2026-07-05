@@ -3,19 +3,12 @@
 // 左：进片盘 + 片门 3D 胶片滚筒 + 镜头光束；右：月份分组卡片，光束对准的那部点亮、其余压暗。
 // 拖/滚滚筒→列表跳到对应月；滚列表→滚筒联动 + 点亮对准卡片；停下吸附到光束线。咔哒音效可静音。
 import { computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useIdentity } from '../stores/identity';
-import Poster from './Poster.vue';
-import Rating from './Rating.vue';
-import Dual from './Dual.vue';
-import { imgProxy, ratingHref } from '../api/index';
-import { fmtWatched } from '../utils/watchedDate';
+import ReelEntry from './ReelEntry.vue';
+import { imgProxy } from '../api/index';
 import { buildYears, buildGroups } from '../utils/reelGroups';
 import { useReelDrum, STEP, RAD } from '../composables/useReelDrum';
 import type { Session } from '../types';
 
-const router = useRouter();
-const identity = useIdentity();
 const props = withDefaults(defineProps<{ sessions?: Session[] }>(), { sessions: () => [] });
 const emit = defineEmits(['edit']);
 
@@ -23,9 +16,6 @@ const emit = defineEmits(['edit']);
 const years = computed(() => buildYears(props.sessions));
 // 滚筒格子（扁平，新→旧）
 const GROUPS = computed(() => buildGroups(years.value, s => imgProxy(s?.work?.primary_poster_url || '')));
-const fmtDate = (n: any) => fmtWatched(n, ' 看完');
-function tags(s: Session) { try { return (JSON.parse(s.work?.genres || '[]') as string[]).slice(0, 3); } catch { return []; } }
-function goWork(s: Session) { if (s.work_id) router.push(`/work/${s.work_id}`); }
 
 // ============================================================ 放映机引擎（抽成 useReelDrum 组合式函数）
 const { drumWrapEl, drumEl, tlEl, reelTopEl, gateEl, muted, toggleMute, selectIdx, init } = useReelDrum(() => GROUPS.value);
@@ -80,29 +70,7 @@ watch(() => props.sessions, () => init(), { deep: false });
         <section v-for="mo in y.months" :key="mo.gid" class="mg" :id="mo.gid" :data-year="y.year" :data-month="mo.m">
           <div class="mg__head"><span class="mark"></span>{{ mo.mLabel }}</div>
           <div class="mg__cards">
-            <article v-for="s in mo.sessions" :key="s.id" class="watched-card">
-              <button class="card-edit" data-tip="编辑" data-tip-pos="below" @click.stop="emit('edit', s)">
-                <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
-              </button>
-              <Poster :color="'#2a2a30'" :url="s.work?.primary_poster_url" :kind="s.work?.is_anime ? '番剧' : ''" class="watched-card__poster" @click="goWork(s)" />
-              <div class="watched-card__body">
-                <h3 class="watched-card__title watched-card__title--clickable" @click="goWork(s)">{{ s.work?.title }} <span class="year">{{ s.work?.year }}</span></h3>
-                <div v-if="s.watched_at" class="watched-card__date">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 9h18" /></svg>
-                  {{ fmtDate(s.watched_at) }}
-                </div>
-                <div class="watched-card__scores">
-                  <Dual :rating-a="s.rating_a ?? '–'" :rating-b="s.rating_b ?? '–'" />
-                  <Rating v-if="s.work" :source="s.work.rating_source" :score="s.work.primary_rating?.toFixed(1) || '—'" :href="ratingHref(s.work)" />
-                </div>
-              </div>
-              <div class="wm">
-                <p v-if="s.review_a" class="wm__rev" :data-who="identity.whoKey(1)"><span class="wm__who">{{ identity.userById(1)?.display_name?.[0] || 'A' }}</span><span class="wm__txt">{{ s.review_a }}</span></p>
-                <p v-if="s.review_b" class="wm__rev" :data-who="identity.whoKey(2)"><span class="wm__who">{{ identity.userById(2)?.display_name?.[0] || 'B' }}</span><span class="wm__txt">{{ s.review_b }}</span></p>
-                <div v-if="tags(s).length" class="wm__tags"><span v-for="t in tags(s)" :key="t" class="tag">{{ t }}</span></div>
-                <p v-if="!s.review_a && !s.review_b && !tags(s).length" class="wm__empty">这部还没写短评</p>
-              </div>
-            </article>
+            <ReelEntry v-for="s in mo.sessions" :key="s.id" :s="s" @edit="emit('edit', $event)" />
           </div>
         </section>
       </template>
@@ -128,34 +96,10 @@ watch(() => props.sessions, () => init(), { deep: false });
   position:relative;
 }
 .watched-card:hover{ transform:translateY(-3px); }
-/* .watched-card__body/.watched-card__title(+.year)/.watched-card__date(+svg)/
-   .watched-card__scores 从 styles/loweve.css「② 一起看过卡片」段搬入（T10 批 6，纯剪切，
-   未改声明）。放在下方 :deep(.tl2 ...) 局部覆盖规则之前——同文件内源顺序即层叠顺序，保持
-   原「全局基础 → 组件局部覆盖」的胜负方向不变。*/
-.watched-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-2); }
-.watched-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
-.watched-card__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
-.watched-card__date{ display:flex; align-items:center; gap:6px; font-size:var(--fs-sm); color:var(--text-faint); }
-.watched-card__date svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.6; }
-.watched-card__scores{ display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap; }
-
-/* ============================================================ 内联样式收编（T12 批 4）
-   <Poster> 原内联 width:84px;cursor:pointer 曾误判 width:84px 可直接丢弃（以为与
-   loweve.css 的 .watched-card .poster{width:84px} 数值重复、外层规则会接管）——跑
-   visual-diff 才发现漏了 loweve.css 响应式段里同选择器、同特异性 (0,2,0) 的
-   @media(max-width:680px){ .watched-card .poster{width:100%;aspect-ratio:16/9} }：
-   两条规则特异性相同，胜负落到源码顺序，移动端命中的其实是后一条，width 会跳成
-   100%（inline 原先能不分视口地恒赢两条，才把这条移动端规则一直盖住）。现改用
-   .watched-card .watched-card__poster 两层类选择器，scoped 编译后 (0,4,0)，稳赢
-   loweve.css 那两条 (0,2,0)，不论视口/源序，宽度恒为 84px，与内联迁移前像素一致；
-   aspect-ratio 未被内联设过，仍走原级联（16/9 由移动端规则接管，桌面走 .poster 基类
-   2/3），未受影响。cursor:pointer 是新增语义，手法沿用 Home.vue .hcard__poster /
-   Plan.vue .plan-card__poster：落到 <Poster> 子组件根节点（单根组件，fallthrough
-   attrs 携带本文件 scoped id）。
-   .watched-card__title--clickable 同理沿用 Home.vue .hcard__title--clickable 手法，
-   本文件内 .watched-card__title 无其它 cursor 声明，无冲突。*/
-.watched-card .watched-card__poster{ width:84px; cursor:pointer; }
-.watched-card__title--clickable{ cursor:pointer; }
+/* 卡片内部 DOM 的基础样式（.watched-card__body/__title/__date/__scores/__poster/
+   __title--clickable 及 .wm 一族）已随模板迁入 ReelEntry.vue——它们命中 article 内部节点，
+   拆分后归子组件 scope。此处仅保留 .watched-card 根类自身（上方 position/hover、下方 680px
+   flex-direction）与后文全部 :deep(.tl2 .watched-card…) 跨界覆盖。*/
 
 .watched-layout { display: grid; grid-template-columns: 256px 1fr; gap: var(--s-8); align-items: start; position: relative; }
 .reel-rail { position: relative; z-index: 3; position: sticky; top: 88px; display: flex; flex-direction: column; align-items: center; }
@@ -243,14 +187,7 @@ watch(() => props.sessions, () => init(), { deep: false });
 :deep(.tl2 .watched-card__title) { font-size: var(--fs-lg); color: var(--text); }
 :deep(.tl2 .watched-card__title .year) { color: var(--text-faint); font-weight: 400; font-size: var(--fs-sm); }
 :deep(.tl2 .watched-card__date) { font-size: 12px; color: var(--text-faint); }
-.wm { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 7px; padding-left: var(--s-4); border-left: 1px solid var(--line-soft); }
-.wm__rev { display: flex; align-items: flex-start; gap: 7px; font-size: var(--fs-sm); color: var(--text-dim); line-height: 1.5; }
-.wm__who { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--bg); border: 1px solid oklch(0 0 0 / 0.28); }
-.wm__rev[data-who="a"] .wm__who { background: var(--user-a); }
-.wm__rev[data-who="b"] .wm__who { background: var(--user-b); }
-.wm__txt { min-width: 0; }
-.wm__tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
-.wm__empty { font-size: var(--fs-sm); color: var(--text-faint); }
+/* .wm 一族基础样式已迁入 ReelEntry.vue（命中 article 内部节点）。*/
 
 .cinema-fx { position: fixed; inset: 0; pointer-events: none; z-index: 60; background: radial-gradient(120% 92% at 50% 38%, transparent 56%, rgba(0,0,0,.34) 100%); }
 .cinema-fx::before { content: ""; position: absolute; inset: 0; opacity: .05; mix-blend-mode: overlay;
@@ -275,7 +212,7 @@ watch(() => props.sessions, () => init(), { deep: false });
   /* 卡片竖排：信息列 + 短评列堆叠；窄屏不压暗 */
   :deep(.tl2 .watched-card) { flex-wrap: wrap; }
   :deep(.tl2 .watched-card__body) { flex: 1 1 170px; }
-  .wm { flex: 1 1 100%; border-left: none; border-top: 1px solid var(--line-soft); padding-left: 0; padding-top: var(--s-3); margin-top: var(--s-1); }
+  /* 窄屏 .wm 堆叠版随基础样式迁入 ReelEntry.vue。*/
   .tl2.lit-mode :deep(.watched-card) { opacity: 1; filter: none; }
   .tl2.lit-mode :deep(.watched-card.is-lit) { box-shadow: none; }
 }
