@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { useIdentity } from '../stores/identity';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 const identity = useIdentity();
 const route = useRoute();
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 死代码，随 Task 13 一并删除
-const router = useRouter();
 
 function pickWho(id: any) {
   // 顶栏切换的是"看谁的视角"（viewing）。切到对方时 ProxyBanner 高亮提示「正在代维护」。

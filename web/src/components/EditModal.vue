@@ -34,12 +34,6 @@ const work = computed(() => props.record?.work || null);
 const isViewerA = computed(() => identity.viewing === 1);
 const titleLabel = computed(() => ({ mark: '编辑记录', session: '编辑共看记录', plan: '编辑计划' }[props.type]));
 
-/* eslint-disable @typescript-eslint/no-unused-vars -- 死代码，Task 13 删除 */
-function todayInt() { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
-function intToDateInput(n: any) { if (!n) return ''; return `${Math.floor(n/10000)}-${String(Math.floor(n/100)%100).padStart(2,'0')}-${String(n%100).padStart(2,'0')}`; }
-function dateInputToInt(s: any) { if (!s) return null; const [y,m,d] = s.split('-').map(Number); return y*10000 + m*100 + d; }
-/* eslint-enable @typescript-eslint/no-unused-vars */
-
 function fillFrom(r: any) {
   if (!r) return;
   if (props.type === 'mark') {
