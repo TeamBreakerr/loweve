@@ -10,6 +10,7 @@ import Rating from './Rating.vue';
 import Dual from './Dual.vue';
 import { imgProxy, ratingHref } from '../api/index';
 import { fmtWatched } from '../utils/watchedDate';
+import { buildYears, buildGroups } from '../utils/reelGroups';
 import type { Session } from '../types';
 
 const router = useRouter();
@@ -17,43 +18,10 @@ const identity = useIdentity();
 const props = withDefaults(defineProps<{ sessions?: Session[] }>(), { sessions: () => [] });
 const emit = defineEmits(['edit']);
 
-const MONTHS = ['', '1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-function ymOf(s: Session) {
-  const w = s.watched_at;
-  if (!w) return { year: null as number | null, month: 0 };
-  const m = Math.floor(w / 100) % 100;
-  return { year: Math.floor(w / 10000), month: m >= 1 && m <= 12 ? m : 0 };
-}
-
 // 年 → 月分组（新→旧）
-const years = computed(() => {
-  const byYear = new Map<number, Map<number, Session[]>>();
-  const unknown: Session[] = [];
-  for (const s of props.sessions) {
-    const { year, month } = ymOf(s);
-    if (year == null) { unknown.push(s); continue; }
-    if (!byYear.has(year)) byYear.set(year, new Map());
-    const mm = byYear.get(year)!;
-    if (!mm.has(month)) mm.set(month, []);
-    mm.get(month)!.push(s);
-  }
-  const res = [...byYear.keys()].sort((a, b) => b - a).map(year => ({
-    year,
-    months: [...byYear.get(year)!.keys()].sort((a, b) => b - a).map(m => ({
-      m, mLabel: m ? MONTHS[m] : '年内', gid: `g-${year}-${m}`, sessions: byYear.get(year)!.get(m)!,
-    })),
-  }));
-  if (unknown.length) res.push({ year: 0, months: [{ m: 0, mLabel: '未知', gid: 'g-0-0', sessions: unknown }] } as any);
-  return res;
-});
+const years = computed(() => buildYears(props.sessions));
 // 滚筒格子（扁平，新→旧）
-const GROUPS = computed(() => {
-  const g: { y: number; m: number; yLabel: string; mLabel: string; gid: string; poster: string }[] = [];
-  for (const y of years.value) for (const mo of y.months) {
-    g.push({ y: y.year, m: mo.m, yLabel: y.year ? String(y.year) : '·', mLabel: mo.mLabel, gid: mo.gid, poster: imgProxy(mo.sessions[0]?.work?.primary_poster_url || '') });
-  }
-  return g;
-});
+const GROUPS = computed(() => buildGroups(years.value, s => imgProxy(s?.work?.primary_poster_url || '')));
 const fmtDate = (n: any) => fmtWatched(n, ' 看完');
 function tags(s: Session) { try { return (JSON.parse(s.work?.genres || '[]') as string[]).slice(0, 3); } catch { return []; } }
 function goWork(s: Session) { if (s.work_id) router.push(`/work/${s.work_id}`); }
