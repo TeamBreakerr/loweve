@@ -31,7 +31,7 @@ onMounted(() => plan.load());
       <p class="page-hero__lead">两个人共同的待看清单。按优先级排个序，挑一部当下都想看的，今晚就开始。点开海报进详情可调优先级或移除。</p>
     </div>
 
-    <div class="section__head" style="margin-bottom:var(--s-6); justify-content:flex-end">
+    <div class="section__head section__head--plan-actions">
       <div class="section__actions">
         <button class="btn btn--rose" @click="addModalOpen = true">
           <svg class="btn__ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>添加
@@ -39,18 +39,18 @@ onMounted(() => plan.load());
       </div>
     </div>
 
-    <p v-if="plan.loading" style="color:var(--text-faint);text-align:center;padding:var(--s-8)">加载中…</p>
-    <p v-else-if="!visible.length" style="color:var(--text-faint);text-align:center;padding:var(--s-12) 0">
+    <p v-if="plan.loading" class="plan-state-note plan-state-note--loading">加载中…</p>
+    <p v-else-if="!visible.length" class="plan-state-note plan-state-note--empty">
       想看清单还是空的。
     </p>
 
     <div v-else class="grid grid--plan">
       <article v-for="p in visible" :key="p.id" class="plan-card">
         <Poster :color="'#2a2a30'" :url="p.work?.primary_poster_url" :kind="p.work?.is_anime ? '番剧' : ''"
-                style="cursor:pointer" @click="p.work_id && router.push(`/work/${p.work_id}`)" />
+                class="plan-card__poster" @click="p.work_id && router.push(`/work/${p.work_id}`)" />
         <div class="plan-card__body">
           <div class="plan-card__head">
-            <h3 class="plan-card__title" style="cursor:pointer" @click="p.work_id && router.push(`/work/${p.work_id}`)">{{ p.work?.title }} <span class="year">{{ p.work?.year }}</span></h3>
+            <h3 class="plan-card__title" @click="p.work_id && router.push(`/work/${p.work_id}`)">{{ p.work?.title }} <span class="year">{{ p.work?.year }}</span></h3>
             <Priority :value="p.priority" />
           </div>
           <div class="plan-card__row">
@@ -88,7 +88,27 @@ onMounted(() => plan.load());
 .plan-card:hover{ transform:translateY(-3px); }
 .plan-card__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
 .plan-card__head{ display:flex; align-items:flex-start; gap:var(--s-2); }
-.plan-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; flex:1; }
+.plan-card__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; flex:1; cursor:pointer; }
 .plan-card__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
 .plan-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; font-size:var(--fs-sm); color:var(--text-faint); }
+
+/* ============================================================ 内联样式收编（T12）
+   以下均由原静态内联 style 属性收编而成，声明逐字节保持原值，零像素改动。
+   .plan-card__title 的 cursor:pointer 直接并入既有本地规则（本文件专属类，未在别处
+   出现，无需新起修饰类）。.plan-card__poster 落到 <Poster> 子组件根节点（单根组件，
+   已验证同 Home.vue .hcard__poster 手法），loweve.css 里 .plan-card .poster{width:72px}
+   与本类是不同属性（width vs cursor），无声明冲突，无需比特异性。
+   .section__head 是跨文件共用类（primitives.css，Home/Work/Me/Together/Plan 等共用），
+   按规则不并入基类，改用本文件专属修饰类 .section__head--plan-actions，覆盖基类
+   margin-bottom:var(--s-5) 为 var(--s-6)、新增 justify-content:flex-end（基类未设）。
+   经 Vue scoped 编译后为 (0,2,0)，稳赢 primitives.css 的 (0,1,0)；primitives.css 里
+   另有 max-width:680px 下的 .section__head{flex-wrap:wrap} 覆写，不涉及 margin-bottom/
+   justify-content 两个属性，无交集。
+   .plan-state-note 合并两处原内联共有的 color:var(--text-faint);text-align:center；
+   padding 值不同（var(--s-8) vs var(--s-12) 0），拆成 --loading/--empty 两个修饰类。*/
+.section__head--plan-actions{ margin-bottom:var(--s-6); justify-content:flex-end; }
+.plan-card__poster{ cursor:pointer; }
+.plan-state-note{ color:var(--text-faint); text-align:center; }
+.plan-state-note--loading{ padding:var(--s-8); }
+.plan-state-note--empty{ padding:var(--s-12) 0; }
 </style>

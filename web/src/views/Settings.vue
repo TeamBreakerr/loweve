@@ -127,7 +127,7 @@ async function saveServices() {
             {{ saveStatus === 'saving' ? '保存中…' : saveStatus === 'saved' ? '已保存 ✓' : '保存' }}
           </button>
         </div>
-        <p v-if="saveStatus === 'error'" style="color:var(--rose-bright);margin-top:8px;font-size:var(--fs-sm)">保存失败，请重试。</p>
+        <p v-if="saveStatus === 'error'" class="save-error">保存失败，请重试。</p>
       </section>
 
       <!-- 服务配置（凭证）-->
@@ -167,7 +167,7 @@ async function saveServices() {
         <button class="btn btn--rose" :disabled="svcSaving" @click="saveServices">
           {{ svcSaving ? '保存中…' : svcSaved ? '已保存 ✓' : '保存配置' }}
         </button>
-        <p v-if="svcError" style="color:var(--rose-bright);margin-top:8px;font-size:var(--fs-sm)">保存失败，请重试。</p>
+        <p v-if="svcError" class="save-error">保存失败，请重试。</p>
       </section>
 
       <!-- 豆瓣 -->
@@ -186,14 +186,14 @@ async function saveServices() {
           <svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
           <span class="setting__title">Bangumi · 番剧评分</span>
         </div>
-        <p class="setting__desc">番剧的评分和封面会自动来自 <a href="https://bgm.tv" target="_blank" rel="noreferrer" style="color:var(--bangumi)">Bangumi</a> 公开数据，无需登录或配置。加番剧时自动匹配，匹配不到则用 TMDB 评分兜底。</p>
+        <p class="setting__desc">番剧的评分和封面会自动来自 <a href="https://bgm.tv" target="_blank" rel="noreferrer" class="bangumi-link">Bangumi</a> 公开数据，无需登录或配置。加番剧时自动匹配，匹配不到则用 TMDB 评分兜底。</p>
         <span class="badge-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>已启用</span>
       </section>
 
       <!-- 关于 -->
-      <section class="setting" style="text-align:center;color:var(--text-faint)">
-        <div class="brand__mark" style="font-size:22px">loweve</div>
-        <p style="margin-top:6px;font-size:var(--fs-sm)">小放映厅 · v1.0 · 为 {{ identity.userById(1)?.display_name || 'A' }} &amp; {{ identity.userById(2)?.display_name || 'B' }} 而做</p>
+      <section class="setting setting--about">
+        <div class="brand__mark brand__mark--about">loweve</div>
+        <p class="about-note">小放映厅 · v1.0 · 为 {{ identity.userById(1)?.display_name || 'A' }} &amp; {{ identity.userById(2)?.display_name || 'B' }} 而做</p>
       </section>
     </div>
   </main>
@@ -229,4 +229,21 @@ async function saveServices() {
 @media (max-width:680px){
   .identity-pick{ flex-direction:column; }
 }
+
+/* ============================================================ 内联样式收编（T12）
+   以下均由原静态内联 style 属性收编而成，声明逐字节保持原值，零像素改动。
+   .save-error 合并两处完全同值的原内联 color:var(--rose-bright);margin-top:8px;
+   font-size:var(--fs-sm)（显示名保存失败 / 服务配置保存失败）。.bangumi-link/.about-note
+   是本文件新起、未在别处出现的类。.setting--about 是本文件本地类 .setting 的修饰类
+   （.setting 仅本文件使用，见上方 T10 注释，故可直接起修饰类而非担心跨文件影响）。
+   .brand__mark 是跨文件共用类（App.vue footer / TopBar.vue 均引用，见 loweve.css 注释），
+   按规则不并入基类，改用本文件专属修饰类 .brand__mark--about 覆盖 font-size:28px 为
+   22px；该基类在 loweve.css 里还有一条 max-width:680px 下的 24px 覆写，两条均为未
+   scoped 的 (0,1,0)，本修饰类经 Vue scoped 编译后为 (0,2,0)，稳赢两者、不分视口，与原
+   内联「恒定 22px、不受断点影响」的效果一致。*/
+.save-error{ color:var(--rose-bright); margin-top:8px; font-size:var(--fs-sm); }
+.bangumi-link{ color:var(--bangumi); }
+.setting--about{ text-align:center; color:var(--text-faint); }
+.brand__mark--about{ font-size:22px; }
+.about-note{ margin-top:6px; font-size:var(--fs-sm); }
 </style>
