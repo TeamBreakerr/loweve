@@ -105,7 +105,7 @@ const planModalOpen = ref(false);
         <span class="reco-think__txt">正在为你们挑片…</span>
       </div>
       <template v-else>
-      <p v-if="!recos.items.length" style="color:var(--text-faint);padding:var(--s-4) var(--s-3)">
+      <p v-if="!recos.items.length" class="reco-empty-note">
         {{ recos.error === 'llm_unconfigured' ? '推荐未启用' : '推荐暂时不可用，点右上角换一批重试' }}
       </p>
       <template v-else>
@@ -116,7 +116,7 @@ const planModalOpen = ref(false);
           <span class="rk-num">1</span>
           <Poster :color="'#2a2a30'" :url="hero.poster_url" :kind="hero.is_anime ? '番剧' : ''" />
           <div class="rk-hero__body">
-            <h3 class="rk-hero__title" style="cursor:pointer" @click="openWork(hero)">{{ hero.title }} <span class="year">{{ hero.year }}</span></h3>
+            <h3 class="rk-hero__title" @click="openWork(hero)">{{ hero.title }} <span class="year">{{ hero.year }}</span></h3>
             <div class="rk-meta">
               <span v-if="hero.is_anime" class="tag">番剧</span>
               <Rating :source="hero.rating_source" :score="hero.primary_rating ? hero.primary_rating.toFixed(1) : '—'" :href="ratingHref(hero)" />
@@ -136,8 +136,8 @@ const planModalOpen = ref(false);
             <span class="rk-num">{{ i + 2 }}</span>
             <Poster :color="'#2a2a30'" :url="d.poster_url" :kind="d.is_anime ? '番剧' : ''" />
             <div class="rk-mid__body">
-              <h3 class="rk-mid__title" style="cursor:pointer" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h3>
-              <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" style="align-self:flex-start" />
+              <h3 class="rk-mid__title" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h3>
+              <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" class="rk-rating" />
               <div class="rk-reason">{{ d.reason }}</div>
               <div class="rk-actions"><FeedbackBtns @want="onFeedback(d,'want')" @no="onFeedback(d,'no')" @seen="onFeedback(d,'seen')" /></div>
             </div>
@@ -160,8 +160,8 @@ const planModalOpen = ref(false);
             </div>
           </div>
           <div class="rk-mini__body">
-            <h4 class="rk-mini__title" style="cursor:pointer" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h4>
-            <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" style="align-self:flex-start" />
+            <h4 class="rk-mini__title" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h4>
+            <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" class="rk-rating" />
             <div class="rk-mini__foot"><FeedbackBtns @want="onFeedback(d,'want')" @no="onFeedback(d,'no')" @seen="onFeedback(d,'seen')" /></div>
           </div>
         </article>
@@ -202,20 +202,20 @@ const planModalOpen = ref(false);
       </div>
 
       <div class="hrail">
-        <p v-if="!visiblePlan.length" style="color:var(--text-faint);padding:0 var(--s-3)">
+        <p v-if="!visiblePlan.length" class="plan-empty-note">
           想看清单还是空的。
         </p>
         <article v-for="p in visiblePlan" :key="p.id" class="hcard">
           <div class="hcard__pw">
             <Poster :color="'#2a2a30'" :url="p.work?.primary_poster_url" :kind="p.work?.is_anime ? '番剧' : ''"
-                    style="cursor:pointer" @click="p.work_id && router.push(`/work/${p.work_id}`)" />
+                    class="hcard__poster" @click="p.work_id && router.push(`/work/${p.work_id}`)" />
           </div>
           <div class="hcard__body">
-            <h3 class="hcard__title" style="cursor:pointer" @click="p.work_id && router.push(`/work/${p.work_id}`)">{{ p.work?.title }} <span class="year">{{ p.work?.year }}</span></h3>
+            <h3 class="hcard__title hcard__title--clickable" @click="p.work_id && router.push(`/work/${p.work_id}`)">{{ p.work?.title }} <span class="year">{{ p.work?.year }}</span></h3>
             <div class="hcard__row">
               <Rating v-if="p.work" :source="p.work.rating_source" :score="p.work.primary_rating?.toFixed(1) || '—'" :href="ratingHref(p.work)" />
               <Priority :value="p.priority" />
-              <span class="adder" :data-who="identity.whoKey(p.added_by)" :data-tip="(identity.userById(p.added_by)?.display_name || '') + ' 添加'" style="margin-left:auto">
+              <span class="adder adder--push-end" :data-who="identity.whoKey(p.added_by)" :data-tip="(identity.userById(p.added_by)?.display_name || '') + ' 添加'">
                 <span class="adder__dot">{{ identity.userById(p.added_by)?.display_name?.[0] || (p.added_by === 1 ? 'A' : 'B') }}</span>
               </span>
             </div>
@@ -226,7 +226,7 @@ const planModalOpen = ref(false);
 
     <!-- 推荐爱心 → 选优先级再加入想看 -->
     <div v-if="wantPickerOpen" class="modal-overlay is-open" @click.self="wantPickerOpen = false">
-      <div class="modal" style="max-width:380px" role="dialog" aria-modal="true">
+      <div class="modal want-modal" role="dialog" aria-modal="true">
         <div class="modal__head">
           <h3 class="modal__title">加入想看 · 优先级</h3>
           <button class="modal__close" @click="wantPickerOpen = false" aria-label="关闭">
@@ -234,16 +234,16 @@ const planModalOpen = ref(false);
           </button>
         </div>
         <div class="modal__body">
-          <p style="color:var(--text-dim);font-size:var(--fs-body)">{{ wantRec?.title }}<span v-if="wantRec?.year" class="year"> {{ wantRec.year }}</span></p>
+          <p class="want-modal__subject">{{ wantRec?.title }}<span v-if="wantRec?.year" class="year"> {{ wantRec.year }}</span></p>
           <div class="rate-row">
-            <button v-for="n in [0,1,2,3]" :key="n" class="target prio-opt" style="flex:1;padding:9px 0"
+            <button v-for="n in [0,1,2,3]" :key="n" class="target prio-opt want-modal__prio-opt"
                     :class="{ 'is-active': wantPriority === n }" @click="wantPriority = n">
               <span v-if="n === 0">无</span><Priority v-else :value="n" :total="n" />
             </button>
           </div>
         </div>
         <div class="modal__foot">
-          <button class="btn btn--primary" style="flex:1" @click="confirmWant">加入想看</button>
+          <button class="btn btn--primary want-modal__confirm" @click="confirmWant">加入想看</button>
           <button class="btn" @click="wantPickerOpen = false">取消</button>
         </div>
       </div>
@@ -399,4 +399,24 @@ const planModalOpen = ref(false);
   .rk-hero__title{ padding-right:0; }
   .rk-hero .rk-num{ font-size:60px; top:12px; right:16px; }
 }
+
+/* ============================================================ 内联样式收编（T12）
+   以下均由原静态内联 style 属性收编而成，声明逐字节保持原值，零像素改动。
+   .rk-hero__title/.rk-mid__title/.rk-mini__title 是本文件专属类名（未在别处出现），
+   三处原本相同的 cursor:pointer 内联合并到同一条规则；.rk-rating 同理合并两处
+   相同的 align-self:flex-start 内联（Rating.vue 单根组件，父级 class 落到其根
+   节点，scoped 属性选择器同样命中）。.hcard__title/.adder 是跨文件共用类名（分别
+   见 primitives.css 与 WatchedTimeline.vue/Plan.vue），为避免误读为「全局改动」，
+   改用独立的修饰类名（而非同名类里加声明），双重保险不影响其他实例。 */
+.rk-hero__title, .rk-mid__title, .rk-mini__title{ cursor:pointer; }
+.rk-rating{ align-self:flex-start; }
+.reco-empty-note{ color:var(--text-faint); padding:var(--s-4) var(--s-3); }
+.plan-empty-note{ color:var(--text-faint); padding:0 var(--s-3); }
+.hcard__poster{ cursor:pointer; }
+.hcard__title--clickable{ cursor:pointer; }
+.adder--push-end{ margin-left:auto; }
+.want-modal{ max-width:380px; }
+.want-modal__subject{ color:var(--text-dim); font-size:var(--fs-body); }
+.want-modal__prio-opt{ flex:1; padding:9px 0; }
+.want-modal__confirm{ flex:1; }
 </style>
