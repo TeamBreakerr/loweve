@@ -352,6 +352,49 @@ describe('upsertWork Douban 异步升级', () => {
   });
 });
 
+describe('upsertWork 分季', () => {
+  const FAKE_TV_ST = {
+    id: 66732, name: '怪奇物语', original_name: 'Stranger Things',
+    first_air_date: '2016-07-15', overview: '...', genres: [], episode_run_time: [50],
+    origin_country: ['US'], vote_average: 8.6, vote_count: 100, poster_path: '/st.jpg',
+    external_ids: { imdb_id: null }, seasons: [],
+  };
+
+  it('同剧第1季与第4季各自独立入库、标题带「第N季」、用季首播年', async () => {
+    const db = makeTestDb();
+    const tmdb = makeFakeTmdb({
+      tvDetail: async () => FAKE_TV_ST,
+      tvSeasonDetail: async (_id: any, n: any) => ({ name: `第 ${n} 季`, air_date: n === 4 ? '2022-05-27' : '2016-07-15', poster_path: `/s${n}.jpg`, overview: '' }),
+    });
+    const { upsertWork } = await import('../src/routes/works.js');
+    const s1: any = await upsertWork(db, tmdb, makeFakeBangumi(), makeFakeDouban(), { tmdb_id: 66732, tmdb_type: 'tv', season_number: 1, skipUpgrade: true });
+    const s4: any = await upsertWork(db, tmdb, makeFakeBangumi(), makeFakeDouban(), { tmdb_id: 66732, tmdb_type: 'tv', season_number: 4, skipUpgrade: true });
+    assert.notEqual(s1.id, s4.id);
+    assert.equal(s1.season_number, 1);
+    assert.match(s4.title, /第四季/);
+    assert.equal(s4.year, 2022);
+    // 再加同一季 → 复用不新建（身份含季维度）
+    const s4b: any = await upsertWork(db, tmdb, makeFakeBangumi(), makeFakeDouban(), { tmdb_id: 66732, tmdb_type: 'tv', season_number: 4, skipUpgrade: true });
+    assert.equal(s4b.id, s4.id);
+    db.close();
+  });
+
+  it('整部（season_number 缺省）与分季并存、互不覆盖', async () => {
+    const db = makeTestDb();
+    const tmdb = makeFakeTmdb({
+      tvDetail: async () => FAKE_TV_ST,
+      tvSeasonDetail: async (_id: any, n: any) => ({ name: `第 ${n} 季`, air_date: '2022-05-27', poster_path: null, overview: '' }),
+    });
+    const { upsertWork } = await import('../src/routes/works.js');
+    const whole: any = await upsertWork(db, tmdb, makeFakeBangumi(), makeFakeDouban(), { tmdb_id: 66732, tmdb_type: 'tv', skipUpgrade: true });
+    const s4: any = await upsertWork(db, tmdb, makeFakeBangumi(), makeFakeDouban(), { tmdb_id: 66732, tmdb_type: 'tv', season_number: 4, skipUpgrade: true });
+    assert.notEqual(whole.id, s4.id);
+    assert.equal(whole.season_number, null);
+    assert.equal(whole.title, '怪奇物语');       // 整部不带季后缀
+    db.close();
+  });
+});
+
 async function eventually(read: any, timeoutMs = 250) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {

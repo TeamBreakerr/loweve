@@ -1,11 +1,12 @@
 // server/src/routes/works.js
 import { Router } from 'express';
 import { mapMovie, mapTv } from '../tmdb/mapper.js';
+import { seasonLabel } from '../tmdb/season.js';
 import { matchAnime } from '../bangumi/matcher.js';
 import { enqueueDoubanUpgrade } from '../douban/queue.js';
 import type { Work } from '../../../shared/types.js';
 
-const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, aka_titles, year, overview, genres,
+const WORK_COLS = `id, tmdb_id, tmdb_type, season_number, title, original_title, aka_titles, year, overview, genres,
   runtime, is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source,
   bangumi_id, douban_id, douban_url, imdb_id, fetched_at, updated_at`;
 
@@ -23,8 +24,9 @@ export function workNames(work: any): string[] {
 
 // upsertWork：work 不存在则调 tmdb 拉详情入库；存在直接返回。番剧再尝试 Bangumi 升级。
 // 暴露为函数，便于 marks/sessions/plan 复用。
-export async function upsertWork(db: any, tmdb: any, bangumi: any, douban: any, { tmdb_id, tmdb_type, skipUpgrade = false }: any) {
-  const existing = db.prepare(`SELECT ${WORK_COLS} FROM works WHERE tmdb_id = ? AND tmdb_type = ?`).get(tmdb_id, tmdb_type);
+export async function upsertWork(db: any, tmdb: any, bangumi: any, douban: any, { tmdb_id, tmdb_type, season_number = null, skipUpgrade = false }: any) {
+  // 身份含季维度：COALESCE(NULL,-1) 让「整部」与各季各自唯一、互不误判为已存在。
+  const existing = db.prepare(`SELECT ${WORK_COLS} FROM works WHERE tmdb_id = ? AND tmdb_type = ? AND COALESCE(season_number,-1) = COALESCE(?,-1)`).get(tmdb_id, tmdb_type, season_number);
   if (existing) {
     // 自愈：已入库但仍 tmdb 的作品（如推荐 skipUpgrade 纯 tmdb 入库，或 browser-svc 重启窗口升级失败）
     // → 重新尝试评分升级：番剧同步 Bangumi、电影异步豆瓣；已升级的（rating_source≠tmdb）跳过。
@@ -42,17 +44,29 @@ export async function upsertWork(db: any, tmdb: any, bangumi: any, douban: any, 
   const payload = tmdb_type === 'movie'
     ? await tmdb.movieDetail(tmdb_id)
     : await tmdb.tvDetail(tmdb_id);
-  const mapped = tmdb_type === 'movie' ? mapMovie(payload) : mapTv(payload);
+  const mapped: any = tmdb_type === 'movie' ? mapMovie(payload) : mapTv(payload);
+  mapped.season_number = null;
+  // 分季：拉该季 TMDB 详情，用季标题/海报/首播年覆盖剧集主体。标题带「第N季」既直接在卡片显示，
+  // 又驱动豆瓣/Bangumi 按季匹配（豆瓣 suggest(title) 搜到该季条目；Bangumi matcher 的 seasonOf
+  // 从标题提取季号、惩罚不符项）。genres/is_anime 沿用剧集主体。
+  if (tmdb_type === 'tv' && season_number != null) {
+    const sd = await tmdb.tvSeasonDetail(tmdb_id, season_number);
+    mapped.season_number = season_number;
+    mapped.title = `${mapped.title} ${seasonLabel(season_number)}`;
+    mapped.year = parseInt((sd.air_date || '').slice(0, 4), 10) || mapped.year;
+    if (sd.poster_path) mapped.primary_poster_url = `https://image.tmdb.org/t/p/w500${sd.poster_path}`;
+    if (sd.overview) mapped.overview = sd.overview;
+  }
   const now = Date.now();
 
   const insert = db.prepare(`
     INSERT INTO works (
-      tmdb_id, tmdb_type, title, original_title, aka_titles, year, overview, genres, runtime,
+      tmdb_id, tmdb_type, season_number, title, original_title, aka_titles, year, overview, genres, runtime,
       is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source,
       bangumi_id, douban_id, douban_url, imdb_id, tmdb_raw, bangumi_raw, douban_raw,
       fetched_at, updated_at
     ) VALUES (
-      @tmdb_id, @tmdb_type, @title, @original_title, @aka_titles, @year, @overview, @genres, @runtime,
+      @tmdb_id, @tmdb_type, @season_number, @title, @original_title, @aka_titles, @year, @overview, @genres, @runtime,
       @is_anime, @primary_rating, @primary_rating_count, @primary_poster_url, @rating_source,
       @bangumi_id, @douban_id, @douban_url, @imdb_id, @tmdb_raw, @bangumi_raw, @douban_raw,
       @fetched_at, @updated_at
