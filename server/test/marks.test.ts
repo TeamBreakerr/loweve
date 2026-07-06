@@ -94,6 +94,21 @@ describe('POST /api/marks (Form B: tmdb_id + tmdb_type)', () => {
     const work = db.prepare('SELECT * FROM works WHERE tmdb_id = 1 AND tmdb_type = ?').get('movie');
     assert.ok(work);
   });
+
+  it('带 season_number 建季 work（标题带「第N季」）', async () => {
+    const tmdb = makeFakeTmdb({
+      tvDetail: async () => ({ id: 66732, name: '怪奇物语', original_name: 'Stranger Things', first_air_date: '2016-07-15', genres: [], episode_run_time: [50], origin_country: ['US'], vote_average: 8.6, vote_count: 100, poster_path: '/st.jpg', external_ids: { imdb_id: null }, seasons: [] }),
+      tvSeasonDetail: async (_id: any, n: any) => ({ name: `第 ${n} 季`, air_date: '2022-05-27', poster_path: null, overview: '' }),
+    });
+    const app = createApp({ db, tmdb });
+    const res = await request(app).post('/api/marks').set('Cookie', 'loweve_user_id=1').send({
+      tmdb_id: 66732, tmdb_type: 'tv', season_number: 4, status: 'watched'
+    });
+    assert.equal(res.status, 200);
+    const detail = await request(app).get('/api/works/' + res.body.work_id).set('Cookie', 'loweve_user_id=1');
+    assert.match(detail.body.title, /第四季/);
+    assert.equal(detail.body.season_number, 4);
+  });
 });
 
 describe('GET /api/marks', () => {

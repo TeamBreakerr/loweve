@@ -5,6 +5,7 @@ export interface Work {
   id: number;
   tmdb_id: number;
   tmdb_type: 'movie' | 'tv';
+  season_number?: number | null;   // NULL/缺省=整部剧；N≥1=第N季
   title: string;
   original_title?: string | null;
   year?: number | null;

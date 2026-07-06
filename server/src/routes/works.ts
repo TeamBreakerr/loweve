@@ -128,12 +128,12 @@ export function worksRoutes() {
   router.post('/', async (req, res) => {
     const db = req.app.locals.db;
     const tmdb = req.app.locals.tmdb;
-    const { tmdb_id, tmdb_type } = req.body || {};
+    const { tmdb_id, tmdb_type, season_number } = req.body || {};
     if (!Number.isInteger(tmdb_id)) return res.status(400).json({ error: 'tmdb_id_required' });
     if (tmdb_type !== 'movie' && tmdb_type !== 'tv') return res.status(400).json({ error: 'tmdb_type_required' });
 
     try {
-      const work = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type });
+      const work = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type, season_number });
       res.json(work satisfies Work);
     } catch (e) {
       const code = e.code || 'tmdb_unknown';

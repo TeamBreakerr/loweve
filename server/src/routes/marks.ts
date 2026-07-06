@@ -45,7 +45,7 @@ export function marksRoutes() {
     if (!requireViewing(req, res)) return;
     const db = req.app.locals.db;
     const tmdb = req.app.locals.tmdb;
-    const { status, rating, comment, work_id, tmdb_id, tmdb_type } = req.body || {};
+    const { status, rating, comment, work_id, tmdb_id, tmdb_type, season_number } = req.body || {};
     if (!validateStatus(status)) return res.status(400).json({ error: 'invalid_status' });
     if (!validateRating(rating)) return res.status(400).json({ error: 'invalid_rating' });
 
@@ -55,7 +55,7 @@ export function marksRoutes() {
         return res.status(400).json({ error: 'work_id_or_tmdb_required' });
       }
       try {
-        const w = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type });
+        const w = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type, season_number });
         finalWorkId = w.id;
       } catch (e) {
         return res.status(502).json({ error: e.code || 'tmdb_unknown', message: e.message });

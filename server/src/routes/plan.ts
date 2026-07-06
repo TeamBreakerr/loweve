@@ -31,7 +31,7 @@ export function planRoutes() {
     if (!req.viewing_user_id) return res.status(401).json({ error: 'not_authenticated' });
     const db = req.app.locals.db;
     const tmdb = req.app.locals.tmdb;
-    const { work_id, tmdb_id, tmdb_type, note, priority } = req.body || {};
+    const { work_id, tmdb_id, tmdb_type, season_number, note, priority } = req.body || {};
     const prio = priority ?? 0;
     if (!Number.isInteger(prio) || prio < 0 || prio > 3) return res.status(400).json({ error: 'invalid_priority' });
 
@@ -41,7 +41,7 @@ export function planRoutes() {
         return res.status(400).json({ error: 'work_id_or_tmdb_required' });
       }
       try {
-        const w = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type });
+        const w = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type, season_number });
         finalWorkId = w.id;
       } catch (e) {
         return res.status(502).json({ error: e.code || 'tmdb_unknown' });

@@ -28,7 +28,7 @@ export function sessionsRoutes() {
     const tmdb = req.app.locals.tmdb;
     const fromPlanId = parseInt(req.query.from_plan as string, 10);
 
-    const { work_id, tmdb_id, tmdb_type, watched_at, rating, review, joint_note } = req.body || {};
+    const { work_id, tmdb_id, tmdb_type, season_number, watched_at, rating, review, joint_note } = req.body || {};
     // watched_at 可空（有时忘了哪天看的）；给了就必须是整数日期
     if (watched_at != null && !Number.isInteger(watched_at)) return res.status(400).json({ error: 'invalid_watched_at' });
     if (!validateRating(rating)) return res.status(400).json({ error: 'invalid_rating' });
@@ -63,7 +63,7 @@ export function sessionsRoutes() {
         return res.status(400).json({ error: 'work_id_or_tmdb_required' });
       }
       try {
-        const w = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type });
+        const w = await upsertWork(db, tmdb, req.app.locals.bangumi, req.app.locals.douban, { tmdb_id, tmdb_type, season_number });
         finalWorkId = w.id;
       } catch (e) {
         return res.status(502).json({ error: e.code || 'tmdb_unknown' });
