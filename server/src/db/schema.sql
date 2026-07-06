@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS works (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   tmdb_id INTEGER NOT NULL,
   tmdb_type TEXT NOT NULL CHECK(tmdb_type IN ('movie', 'tv')),
+  season_number INTEGER,           -- NULL=整部剧；N≥1=第N季（身份唯一索引见 migrate.ts）
   title TEXT NOT NULL,
   original_title TEXT,
   aka_titles TEXT,            -- JSON 数组：TMDB 英文名 + 各国 AKA，给豆瓣/Bangumi 匹配多比一道
@@ -30,8 +31,9 @@ CREATE TABLE IF NOT EXISTS works (
   bangumi_raw TEXT,
   douban_raw TEXT,
   fetched_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  UNIQUE(tmdb_id, tmdb_type)
+  updated_at INTEGER NOT NULL
+  -- 身份唯一性由 migrate() 的 idx_works_identity 保证：(tmdb_id, tmdb_type, COALESCE(season_number,-1))
+  -- 不用表级 UNIQUE(tmdb_id,tmdb_type)——那样同剧的整部+各季无法并存。
 );
 
 -- ============ 个人标记 ============

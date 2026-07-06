@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { makeTestDb } from './helpers.js';
 import { openDb } from '../src/db/index.js';
-import { migrate, migrateNullableWatchedAt } from '../src/db/migrate.js';
+import { migrate, migrateNullableWatchedAt, migrateAddSeasonNumber } from '../src/db/migrate.js';
 
 describe('db migration', () => {
   it('创建 7 张表', () => {
@@ -62,6 +62,59 @@ describe('db migration', () => {
     migrate(db, { userA: '新名字', userB: 'B' });
     const row = db.prepare('SELECT display_name FROM users WHERE id = 1').get();
     assert.equal(row.display_name, '改后的名字');  // 不被覆盖
+    db.close();
+  });
+});
+
+describe('migrateAddSeasonNumber', () => {
+  // 造一个 season_number 之前的老库：老 works（表级 UNIQUE、无 season_number）+ 一条数据 + 一条子表引用
+  function makeOldDb() {
+    const db = openDb(':memory:');
+    db.pragma('foreign_keys = ON');
+    db.exec(`CREATE TABLE works (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, tmdb_id INTEGER NOT NULL,
+      tmdb_type TEXT NOT NULL CHECK(tmdb_type IN ('movie','tv')), title TEXT NOT NULL,
+      original_title TEXT, aka_titles TEXT, year INTEGER, overview TEXT, genres TEXT, runtime INTEGER,
+      is_anime INTEGER NOT NULL DEFAULT 0, primary_rating REAL, primary_rating_count INTEGER,
+      primary_poster_url TEXT, rating_source TEXT NOT NULL CHECK(rating_source IN ('bangumi','douban','tmdb')),
+      bangumi_id INTEGER, douban_id TEXT, douban_url TEXT, imdb_id TEXT, tmdb_raw TEXT NOT NULL,
+      bangumi_raw TEXT, douban_raw TEXT, fetched_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+      UNIQUE(tmdb_id, tmdb_type));`);
+    db.exec(`CREATE TABLE user_marks (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, work_id INTEGER REFERENCES works(id), status TEXT, rating INTEGER, comment TEXT, marked_at INTEGER);`);
+    db.prepare(`INSERT INTO works (id, tmdb_id, tmdb_type, title, rating_source, tmdb_raw, fetched_at, updated_at) VALUES (7, 66732, 'tv', '怪奇物语', 'tmdb', '{}', 1, 1)`).run();
+    db.prepare(`INSERT INTO user_marks (work_id, user_id, status, marked_at) VALUES (7, 1, 'watched', 1)`).run();
+    return db;
+  }
+
+  it('迁移保留数据、season_number 置 NULL、子表引用不失效、pragma 恢复', () => {
+    const db = makeOldDb();
+    const ran = migrateAddSeasonNumber(db);
+    assert.equal(ran, true);
+    const w: any = db.prepare('SELECT id, tmdb_id, title, season_number FROM works WHERE id = 7').get();
+    assert.deepEqual([w.id, w.tmdb_id, w.title, w.season_number], [7, 66732, '怪奇物语', null]);
+    const m: any = db.prepare('SELECT work_id FROM user_marks WHERE work_id = 7').get();
+    assert.equal(m.work_id, 7);                                      // 子表引用完好
+    assert.equal(db.pragma('foreign_keys', { simple: true }), 1);   // pragma 已恢复
+    db.close();
+  });
+
+  it('幂等：第二次调用是 no-op', () => {
+    const db = makeOldDb();
+    migrateAddSeasonNumber(db);
+    assert.equal(migrateAddSeasonNumber(db), false);
+    db.close();
+  });
+
+  it('迁移后同剧「整部」与「第N季」可并存，且各自唯一', () => {
+    const db = openDb(':memory:');
+    migrate(db, { userA: 'A', userB: 'B' });   // 全量迁移建索引
+    const ins = db.prepare(`INSERT INTO works (tmdb_id, tmdb_type, season_number, title, rating_source, tmdb_raw, fetched_at, updated_at) VALUES (?, 'tv', ?, ?, 'tmdb', '{}', 1, 1)`);
+    ins.run(66732, null, '怪奇物语');       // 整部
+    ins.run(66732, 1, '怪奇物语 第一季');    // 第1季
+    ins.run(66732, 4, '怪奇物语 第四季');    // 第4季
+    assert.equal((db.prepare('SELECT count(*) c FROM works WHERE tmdb_id = 66732').get() as any).c, 3);
+    assert.throws(() => ins.run(66732, 4, '重复第四季'));  // 唯一索引挡重复季
+    assert.throws(() => ins.run(66732, null, '重复整部')); // COALESCE 让 NULL 也唯一
     db.close();
   });
 });

@@ -65,11 +65,67 @@ export function migrateAddAkaTitles(db: any) {
 }
 
 /**
+ * 给 works 加 season_number 列（NULL=整部，N=第N季），并去掉表级 UNIQUE(tmdb_id, tmdb_type)。
+ * SQLite 表级 UNIQUE 是隐式索引、不可单独 DROP → 必须表重建。幂等：列已存在则跳过。
+ * 事务 + foreign_keys=OFF（重建的是父表 works，子表按名引用、id 值保留，引用不失效）。
+ */
+export function migrateAddSeasonNumber(db: any) {
+  const has = db.prepare(`SELECT 1 FROM pragma_table_info('works') WHERE name = 'season_number'`).get();
+  if (has) return false;
+  const fkWasOn = db.pragma('foreign_keys', { simple: true });
+  db.pragma('foreign_keys = OFF');   // 必须在事务外设置（事务内改此 pragma 无效）
+  try {
+    db.transaction(() => {
+      db.exec(`CREATE TABLE works_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tmdb_id INTEGER NOT NULL,
+        tmdb_type TEXT NOT NULL CHECK(tmdb_type IN ('movie', 'tv')),
+        season_number INTEGER,
+        title TEXT NOT NULL,
+        original_title TEXT,
+        aka_titles TEXT,
+        year INTEGER,
+        overview TEXT,
+        genres TEXT,
+        runtime INTEGER,
+        is_anime INTEGER NOT NULL DEFAULT 0,
+        primary_rating REAL,
+        primary_rating_count INTEGER,
+        primary_poster_url TEXT,
+        rating_source TEXT NOT NULL CHECK(rating_source IN ('bangumi', 'douban', 'tmdb')),
+        bangumi_id INTEGER,
+        douban_id TEXT,
+        douban_url TEXT,
+        imdb_id TEXT,
+        tmdb_raw TEXT NOT NULL,
+        bangumi_raw TEXT,
+        douban_raw TEXT,
+        fetched_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );`);
+      db.exec(`INSERT INTO works_new
+        (id, tmdb_id, tmdb_type, season_number, title, original_title, aka_titles, year, overview, genres, runtime, is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source, bangumi_id, douban_id, douban_url, imdb_id, tmdb_raw, bangumi_raw, douban_raw, fetched_at, updated_at)
+        SELECT id, tmdb_id, tmdb_type, NULL, title, original_title, aka_titles, year, overview, genres, runtime, is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source, bangumi_id, douban_id, douban_url, imdb_id, tmdb_raw, bangumi_raw, douban_raw, fetched_at, updated_at
+        FROM works;`);
+      db.exec(`DROP TABLE works;`);
+      db.exec(`ALTER TABLE works_new RENAME TO works;`);
+    })();
+  } finally {
+    if (fkWasOn) db.pragma('foreign_keys = ON');
+  }
+  return true;
+}
+
+/**
  * 完整迁移：创表 + 列迁移 + 种子。idempotent。
  */
 export function migrate(db: any, { userA, userB }: any) {
   applySchema(db);
   migrateNullableWatchedAt(db);
   migrateAddAkaTitles(db);
+  migrateAddSeasonNumber(db);
+  // 身份唯一索引：整部(NULL→-1)与各季各自唯一。放在此处（列已确保存在）而非 schema.sql，
+  // 避免老库 applySchema 阶段 season_number 尚不存在导致 COALESCE 报错。
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_works_identity ON works(tmdb_id, tmdb_type, COALESCE(season_number, -1));`);
   seedUsers(db, { userA, userB });
 }
