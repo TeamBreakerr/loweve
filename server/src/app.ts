@@ -10,6 +10,7 @@ import { healthRoutes } from './routes/health.js';
 import { meRoutes } from './routes/me.js';
 import { usersRoutes } from './routes/users.js';
 import { searchRoutes } from './routes/search.js';
+import { tvRoutes } from './routes/tv.js';
 import { worksRoutes } from './routes/works.js';
 import { marksRoutes } from './routes/marks.js';
 import { sessionsRoutes } from './routes/sessions.js';
@@ -36,6 +37,7 @@ export function createApp({ db, tmdb, bangumi, douban, llm }: { db: any; tmdb?: 
   app.use('/api/me', meRoutes());
   app.use('/api/users', usersRoutes());
   app.use('/api/search', searchRoutes());          // ← 新增
+  app.use('/api/tv', tvRoutes());                  // 剧集季列表（分季追踪）
   app.use('/api/posters', express.static(paths.posterDir, { immutable: true, maxAge: '365d' }));
   app.use('/api/img', imgRoutes());                // 海报代理+缓存（外链 CDN → 本地）
   app.use('/api/works', worksRoutes());            // ← 新增

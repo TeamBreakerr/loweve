@@ -15,6 +15,7 @@ export function makeFakeTmdb(impl: any = {}) {
     search:        impl.search        ?? (async () => { throw new Error('fake tmdb.search not stubbed'); }),
     movieDetail:   impl.movieDetail   ?? (async () => { throw new Error('fake tmdb.movieDetail not stubbed'); }),
     tvDetail:      impl.tvDetail      ?? (async () => { throw new Error('fake tmdb.tvDetail not stubbed'); }),
+    tvSeasonDetail: impl.tvSeasonDetail ?? (async () => { throw new Error('fake tmdb.tvSeasonDetail not stubbed'); }),
   };
 }
 
