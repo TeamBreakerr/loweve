@@ -48,6 +48,22 @@ watch(query, (q) => {
 
 // —— Step 2 选作品 ——
 const selected = ref<any>(null);
+const seasons = ref<any[]>([]);                  // 选中 TV 时拉到的季列表
+const seasonNumber = ref<number | null>(null);   // null=整部；N=第N季
+
+// 选中一个候选：收起候选列表（模板据 selected 收起），若是剧集拉季列表供分季
+async function onSelect(c: any) {
+  selected.value = c;
+  seasons.value = [];
+  seasonNumber.value = null;
+  if (c.tmdb_type === 'tv') {
+    try {
+      const data = await api('/api/tv/' + c.tmdb_id + '/seasons');
+      seasons.value = data.seasons || [];
+    } catch { seasons.value = []; }   // 拉季失败不挡添加，退化为整部
+  }
+}
+function reselect() { selected.value = null; seasons.value = []; seasonNumber.value = null; }
 
 // —— Step 3 选目标列表 ——
 const target = ref(props.initialTarget);
@@ -83,6 +99,8 @@ watch(() => props.fromPlan, () => { prefillFromPlan(); }, { immediate: true });
 // —— 重置 ——
 function reset() {
   candidates.value = [];
+  seasons.value = [];
+  seasonNumber.value = null;
   rating.value = null;
   comment.value = '';
   watchedAt.value = null;
@@ -117,7 +135,7 @@ async function save() {
   try {
     const workRef = selected.value._workId
       ? { work_id: selected.value._workId }
-      : { tmdb_id: selected.value.tmdb_id, tmdb_type: selected.value.tmdb_type };
+      : { tmdb_id: selected.value.tmdb_id, tmdb_type: selected.value.tmdb_type, season_number: seasonNumber.value };
     let result;
     if (target.value === 'watched') {
       result = await api('/api/marks', {
@@ -186,13 +204,13 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
           <p v-if="searchError" class="search-hint search-hint--error">{{ searchError === 'tmdb_not_configured' ? 'TMDB 未配置，请检查 .env' : searchError }}</p>
         </div>
 
-        <!-- Step 2: 候选 -->
-        <div class="field" v-if="!fromPlan && candidates.length">
+        <!-- Step 2: 候选（选中即整块收起，改由下方"已选"块展示）-->
+        <div class="field" v-if="!fromPlan && candidates.length && !selected">
           <span class="field__label"><span class="step">2</span>选择结果</span>
           <div class="results">
             <div v-for="c in candidates" :key="c.tmdb_type + ':' + c.tmdb_id"
                  class="result" :class="{ 'is-selected': ifSelected(c) }"
-                 @click="selected = c">
+                 @click="onSelect(c)">
               <div class="poster" :style="{ '--p1': '#2a2a30' }">
                 <img v-if="c.poster_path" :src="imgProxy(tmdbPoster(c.poster_path, 'w92'))" alt="" referrerpolicy="no-referrer" />
               </div>
@@ -205,6 +223,25 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
               </div>
               <span class="result__check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg></span>
             </div>
+          </div>
+        </div>
+
+        <!-- 已选中：收起候选，显示选中项 + 换一个 + 剧集季选择器 -->
+        <div class="field" v-if="selected && !fromPlan">
+          <div class="result is-selected">
+            <div class="poster">
+              <img v-if="selected.poster_path" :src="imgProxy(tmdbPoster(selected.poster_path, 'w92'))" alt="" referrerpolicy="no-referrer" />
+            </div>
+            <div class="result__info">
+              <div class="result__name">{{ selected.title }} <span class="year">{{ selected.year }}</span></div>
+              <div class="result__sub">{{ selected.tmdb_type === 'movie' ? '电影' : '剧/番' }}</div>
+            </div>
+            <button class="reselect-btn" @click="reselect">换一个</button>
+          </div>
+          <div v-if="seasons.length" class="season-pick">
+            <button class="target season-opt" :class="{ 'is-active': seasonNumber === null }" @click="seasonNumber = null">整部</button>
+            <button v-for="s in seasons" :key="s.season_number" class="target season-opt"
+                    :class="{ 'is-active': seasonNumber === s.season_number }" @click="seasonNumber = s.season_number">第{{ s.season_number }}季</button>
           </div>
         </div>
 
@@ -307,4 +344,10 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
 .plan-prio-opt{ flex:0 0 auto; padding:6px 12px; }
 .save-error{ color:var(--rose-bright); font-size:var(--fs-sm); }
 .submit-btn{ flex:1; }
+
+/* 分季 + 搜索选中收起 */
+.reselect-btn{ margin-left:auto; flex-shrink:0; font-size:var(--fs-sm); color:var(--rose); padding:4px 12px; border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface-2); transition:all .18s; }
+.reselect-btn:hover{ color:oklch(0.16 0.02 30); background:var(--rose); border-color:var(--rose); }
+.season-pick{ display:flex; flex-wrap:wrap; gap:6px; margin-top:var(--s-3); }
+.season-opt{ flex:0 0 auto; padding:6px 12px; }
 </style>
