@@ -16,6 +16,8 @@ export const config = {
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   llmModel: process.env.LLM_MODEL || '',
+  // LLM 单次请求超时（ms）。推理模型（如 deepseek）思考久，默认给 150s；改 .env 后重启即生效。
+  llmTimeoutMs: parseInt(process.env.LLM_TIMEOUT_MS || '150000', 10),
 };
 
 export const paths = {
