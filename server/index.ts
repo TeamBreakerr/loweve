@@ -11,6 +11,9 @@ import { createDoubanClient } from './src/douban/client.js';
 import { sweepStuckDouban, setDoubanQueueDelay } from './src/douban/queue.js';
 import { createLlmClient } from './src/llm/client.js';
 import { effectiveConfig } from './src/settings.js';
+import { createSteamClient } from './src/steam/client.js';
+import { createIgdbClient } from './src/igdb/client.js';
+import { createWikidataClient } from './src/wikidata/client.js';
 
 async function main() {
   // 必须在任何 fetch 之前装代理（外网请求经 HTTPS_PROXY 走代理，内网 cli-proxy-api 经 NO_PROXY 直连）
@@ -29,14 +32,17 @@ async function main() {
   const douban = createDoubanClient();   // 纯 HTTP（豆瓣 subject_suggest + rexxar），不再依赖 browser-svc
   setDoubanQueueDelay(1000);             // 队列任务间隔 1s，避免批量补抓时被豆瓣限流
   const llm = createLlmClient({ timeoutMs: config.llmTimeoutMs, resolve: () => { const e = cfg(); return { baseUrl: e.llmBaseUrl, apiKey: e.llmApiKey, model: e.llmModel }; } });
+  const steam = createSteamClient();
+  const igdb = createIgdbClient({ resolve: () => { const e = cfg(); return { clientId: e.igdbClientId, clientSecret: e.igdbClientSecret }; } });
+  const wikidata = createWikidataClient();
   if (!tmdb.isConfigured()) {
     console.warn('[warn] TMDB key 未配置（TMDB_API_TOKEN / TMDB_API_KEY 均缺失），/api/search 将返回 503');
   }
 
-  const app = createApp({ db, tmdb, bangumi, douban, llm });
+  const app = createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidata });
 
   app.listen(config.port, () => {
-    console.log(`loweve listening on :${config.port}, db=${paths.dbFile}, tmdb=${tmdb.isConfigured() ? 'ok' : 'unconfigured'}, bangumi=ok, douban=http, llm=${llm.isConfigured() ? 'ok' : 'off'}`);
+    console.log(`loweve listening on :${config.port}, db=${paths.dbFile}, tmdb=${tmdb.isConfigured() ? 'ok' : 'unconfigured'}, igdb=${igdb.isConfigured() ? 'ok' : 'unconfigured'}, steam=ok, bangumi=ok, douban=http, llm=${llm.isConfigured() ? 'ok' : 'off'}`);
     const ids = sweepStuckDouban(db, douban);   // 后台补抓卡在 tmdb 的电影
     if (ids.length) console.log(`[douban] 自愈补抓 ${ids.length} 部卡在 tmdb 的电影`);
   });

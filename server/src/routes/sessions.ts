@@ -3,10 +3,16 @@ import { Router } from 'express';
 import { upsertWork } from './works.js';
 import { markRecosStale } from '../recos/state.js';
 import type { Session } from '../../../shared/types.js';
+import { moveToTrash } from '../trash/service.js';
 
 const SESSION_COLS = 'id, work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at';
 
 function validateRating(r: any) { return r == null || (Number.isInteger(r) && r >= 1 && r <= 10); }
+
+export function currentDateKey(now = Date.now()) {
+  const d = new Date(now);
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
 
 export function sessionsRoutes() {
   const router = Router();
@@ -29,20 +35,24 @@ export function sessionsRoutes() {
     const fromPlanId = parseInt(req.query.from_plan as string, 10);
 
     const { work_id, tmdb_id, tmdb_type, season_number, watched_at, rating, review, joint_note } = req.body || {};
-    // watched_at 可空（有时忘了哪天看的）；给了就必须是整数日期
-    if (watched_at != null && !Number.isInteger(watched_at)) return res.status(400).json({ error: 'invalid_watched_at' });
+    // 新增时留空即今天；编辑接口仍允许显式传 null 清空历史日期。
+    const effectiveWatchedAt = watched_at == null ? currentDateKey() : watched_at;
+    if (!Number.isInteger(effectiveWatchedAt)) return res.status(400).json({ error: 'invalid_watched_at' });
     if (!validateRating(rating)) return res.status(400).json({ error: 'invalid_rating' });
 
     // from_plan 模式：work_id 从 plan 拿，事务执行
     if (Number.isInteger(fromPlanId)) {
       const plan = db.prepare('SELECT id, work_id FROM plan_items WHERE id = ?').get(fromPlanId);
       if (!plan) return res.status(404).json({ error: 'plan_not_found' });
+      if (db.prepare('SELECT 1 FROM couple_sessions WHERE work_id = ?').get(plan.work_id)) {
+        return res.status(409).json({ error: 'session_exists' });
+      }
 
       const now = Date.now();
       const isA = req.viewing_user_id === 1;
       const tx = db.transaction(() => {
         const info = db.prepare(`INSERT INTO couple_sessions (work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-          .run(plan.work_id, watched_at,
+          .run(plan.work_id, effectiveWatchedAt,
                isA ? (rating ?? null) : null,
                isA ? null : (rating ?? null),
                isA ? (review ?? null) : null,
@@ -70,10 +80,14 @@ export function sessionsRoutes() {
       }
     }
 
+    if (db.prepare('SELECT 1 FROM couple_sessions WHERE work_id = ?').get(finalWorkId)) {
+      return res.status(409).json({ error: 'session_exists' });
+    }
+
     const now = Date.now();
     const isA = req.viewing_user_id === 1;
     const info = db.prepare(`INSERT INTO couple_sessions (work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(finalWorkId, watched_at,
+      .run(finalWorkId, effectiveWatchedAt,
            isA ? (rating ?? null) : null,
            isA ? null : (rating ?? null),
            isA ? (review ?? null) : null,
@@ -123,8 +137,7 @@ export function sessionsRoutes() {
   router.delete('/:id', (req, res) => {
     const db = req.app.locals.db;
     const id = parseInt(req.params.id, 10);
-    const info = db.prepare('DELETE FROM couple_sessions WHERE id = ?').run(id);
-    if (info.changes === 0) return res.status(404).json({ error: 'not_found' });
+    if (!moveToTrash(db, 'session', id, req.viewing_user_id)) return res.status(404).json({ error: 'not_found' });
     markRecosStale(db);
     res.status(204).end();
   });

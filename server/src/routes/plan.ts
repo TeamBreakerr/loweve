@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { upsertWork } from './works.js';
 import type { PlanItem } from '../../../shared/types.js';
+import { moveToTrash } from '../trash/service.js';
 
 const PLAN_COLS = 'id, work_id, added_by, note, priority, status, created_at, updated_at';
 const VALID_STATUS = ['pending', 'watching', 'done', 'dropped'];
@@ -84,8 +85,7 @@ export function planRoutes() {
   router.delete('/:id', (req, res) => {
     const db = req.app.locals.db;
     const id = parseInt(req.params.id, 10);
-    const info = db.prepare('DELETE FROM plan_items WHERE id = ?').run(id);
-    if (info.changes === 0) return res.status(404).json({ error: 'not_found' });
+    if (!moveToTrash(db, 'plan', id, req.viewing_user_id)) return res.status(404).json({ error: 'not_found' });
     res.status(204).end();
   });
 

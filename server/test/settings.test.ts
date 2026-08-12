@@ -19,13 +19,20 @@ describe('settings 运行时配置', () => {
   });
 
   it('readForApi 脱敏：密钥只回 *_set、非密钥明文、附 ready', () => {
-    updateSettings(db, { llm_base_url: 'https://x/v1', llm_api_key: 'sk-1', llm_model: 'm' });
+    updateSettings(db, {
+      llm_base_url: 'https://x/v1', llm_api_key: 'sk-1', llm_model: 'm',
+      igdb_client_id: 'client-id', igdb_client_secret: 'client-secret',
+    });
     const out = readForApi(db);
     assert.equal(out.llm_base_url, 'https://x/v1');
     assert.equal(out.llm_model, 'm');
     assert.equal(out.llm_api_key_set, true);
     assert.equal(out.llm_api_key, undefined);   // 密钥不回明文
     assert.equal(out.llm_ready, true);
+    assert.equal(out.igdb_client_id, 'client-id');
+    assert.equal(out.igdb_client_secret_set, true);
+    assert.equal(out.igdb_client_secret, undefined);
+    assert.equal(out.igdb_ready, true);
   });
 
   it('空串清除覆盖 → 回退 env 默认', () => {
@@ -51,6 +58,13 @@ describe('settings 运行时配置', () => {
     assert.equal(get.body.llm_base_url, 'https://x/v1');
     assert.equal(get.body.llm_api_key, undefined);
     assert.equal(get.body.llm_ready, true);
+  });
+
+  it('GET /api/settings/models 返回当前 AI 端点探测到的可选模型', async () => {
+    const app = createApp({ db, llm: { listModels: async () => ['deepseek-v4-flash', 'gpt-5.6'] } });
+    const res = await request(app).get('/api/settings/models').set('Cookie', 'loweve_user_id=1');
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.models, ['deepseek-v4-flash', 'gpt-5.6']);
   });
 
   it('createLlmClient(resolve) 运行时即时反映配置变化（不用重建）', () => {

@@ -119,4 +119,17 @@ describe('POST /api/sessions?from_plan=<id> 闭环', () => {
     const count = db.prepare('SELECT COUNT(*) AS c FROM couple_sessions').get().c;
     assert.equal(count, 0);
   });
+
+  it('from_plan 对应作品已有共看记录 → 409，计划保持 pending', async () => {
+    const app = createApp({ db, tmdb: makeFakeTmdb() });
+    const w = seedWork(db);
+    const plan = (await request(app).post('/api/plan').set('Cookie', 'loweve_user_id=1').send({ work_id: w })).body;
+    await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id: w, watched_at: 20250101 });
+
+    const res = await request(app).post(`/api/sessions?from_plan=${plan.id}`).set('Cookie', 'loweve_user_id=1').send({ watched_at: 20260101 });
+    assert.equal(res.status, 409);
+    assert.equal(res.body.error, 'session_exists');
+    assert.equal((db.prepare('SELECT status FROM plan_items WHERE id = ?').get(plan.id) as any).status, 'pending');
+    assert.equal((db.prepare('SELECT COUNT(*) AS c FROM couple_sessions WHERE work_id = ?').get(w) as any).c, 1);
+  });
 });

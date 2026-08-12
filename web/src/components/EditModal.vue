@@ -9,6 +9,7 @@ import { usePlan } from '../stores/plan';
 import Poster from './Poster.vue';
 import ScorePicker from './ScorePicker.vue';
 import DatePicker from './DatePicker.vue';
+import { encodeWatched } from '../utils/watchedDate';
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -43,7 +44,9 @@ function fillFrom(r: any) {
   } else if (props.type === 'session') {
     rating.value = (isViewerA.value ? r.rating_a : r.rating_b) ?? null;
     text.value = (isViewerA.value ? r.review_a : r.review_b) || '';
-    watchedAt.value = r.watched_at ?? null;     // 空就保持空，别默认今天
+    // 空则默认今天（回填在输入框里，可见可清空）
+    const t = new Date();
+    watchedAt.value = r.watched_at ?? encodeWatched(t.getFullYear(), t.getMonth() + 1, t.getDate());
   } else if (props.type === 'plan') {
     text.value = r.note || '';
     priority.value = r.priority || 0;
@@ -76,7 +79,7 @@ async function save() {
 }
 
 async function del() {
-  if (!window.confirm('确定删除这条记录？')) return;
+  if (!window.confirm('确定移入回收站？之后可在「设置 → 回收站」恢复。')) return;
   saving.value = true; errorMsg.value = '';
   try {
     if (props.type === 'mark') await marks.remove(props.record.id);
@@ -92,7 +95,9 @@ function close() { emit('update:modelValue', false); }
 </script>
 
 <template>
-  <div v-if="modelValue" class="modal-overlay is-open" @click.self="close">
+  <!-- pointerdown 而非 click：click 的 target 是 down/up 两点的共同祖先，
+       在框内拖 textarea 手柄、松手落在遮罩上时会误判成点遮罩关窗 -->
+  <div v-if="modelValue" class="modal-overlay is-open" @pointerdown.self="close">
     <div class="modal" role="dialog" aria-modal="true">
       <div class="modal__head">
         <h3 class="modal__title">{{ titleLabel }}</h3>
@@ -158,7 +163,7 @@ function close() { emit('update:modelValue', false); }
       </div>
       <div class="modal__foot">
         <button class="btn btn--primary submit-btn" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
-        <button class="btn btn--ghost delete-btn" :disabled="saving" @click="del">删除</button>
+        <button class="btn btn--ghost delete-btn" :disabled="saving" @click="del">移入回收站</button>
       </div>
     </div>
   </div>

@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { upsertWork } from './works.js';
 import { markRecosStale } from '../recos/state.js';
 import type { Mark } from '../../../shared/types.js';
+import { moveToTrash } from '../trash/service.js';
 
 const MARK_COLS = 'id, user_id, work_id, status, rating, comment, marked_at';
 
@@ -98,8 +99,7 @@ export function marksRoutes() {
   router.delete('/:id', (req, res) => {
     const db = req.app.locals.db;
     const id = parseInt(req.params.id, 10);
-    const info = db.prepare('DELETE FROM user_marks WHERE id = ?').run(id);
-    if (info.changes === 0) return res.status(404).json({ error: 'not_found' });
+    if (!moveToTrash(db, 'mark', id, req.viewing_user_id)) return res.status(404).json({ error: 'not_found' });
     markRecosStale(db);
     res.status(204).end();
   });

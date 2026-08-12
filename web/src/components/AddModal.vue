@@ -71,7 +71,7 @@ const target = ref(props.initialTarget);
 // —— Step 4 详情 ——
 const rating = ref<number | null>(null);
 const comment = ref('');
-const watchedAt = ref<number | null>(null);     // 默认空：有时忘了哪天看的
+const watchedAt = ref<number | null>(null);     // 留空由服务端统一补成当天
 const planNote = ref('');
 const planPriority = ref(0);
 
@@ -120,6 +120,55 @@ watch(() => props.initialTarget, (t) => { target.value = t; });
 // —— 保存 ——
 const saving = ref(false);
 const saveError = ref('');
+const duplicateError = ref('');
+const duplicateChecking = ref(false);
+let duplicateTimer: any = null;
+let duplicateRequest = 0;
+
+const ERROR_LABELS: Record<string, string> = {
+  mark_exists: '这部作品已经在你的个人片单里了',
+  session_exists: '这部作品已经在「一起看过」里了',
+  plan_exists: '这部作品已经在「想看就一起看」里了',
+};
+function errorLabel(code: string) { return ERROR_LABELS[code] || code; }
+
+async function checkDuplicate() {
+  const requestId = ++duplicateRequest;
+  const item = selected.value;
+  duplicateError.value = '';
+  if (!props.modelValue || !item) { duplicateChecking.value = false; return; }
+
+  const params = new URLSearchParams({ target: target.value });
+  if (item._workId) {
+    params.set('work_id', String(item._workId));
+  } else {
+    params.set('tmdb_id', String(item.tmdb_id));
+    params.set('tmdb_type', item.tmdb_type);
+    if (seasonNumber.value != null) params.set('season_number', String(seasonNumber.value));
+  }
+
+  duplicateChecking.value = true;
+  try {
+    const data = await api('/api/works/duplicate?' + params.toString());
+    if (requestId === duplicateRequest) duplicateError.value = data.duplicate ? data.error : '';
+  } catch {
+    // 前置探测失败不阻塞添加；写入 API 仍会做最终重复校验。
+  } finally {
+    if (requestId === duplicateRequest) duplicateChecking.value = false;
+  }
+}
+
+watch(
+  [selected, target, seasonNumber, () => identity.viewing, () => props.modelValue],
+  () => {
+    clearTimeout(duplicateTimer);
+    duplicateRequest++;
+    saveError.value = '';
+    duplicateError.value = '';
+    duplicateChecking.value = Boolean(props.modelValue && selected.value);
+    if (props.modelValue && selected.value) duplicateTimer = setTimeout(checkDuplicate, 120);
+  },
+);
 
 function close() { emit('update:modelValue', false); }
 
@@ -129,7 +178,7 @@ function cleanRating(r: any) {
 }
 
 async function save() {
-  if (!selected.value) return;
+  if (!selected.value || duplicateError.value || duplicateChecking.value) return;
   saving.value = true;
   saveError.value = '';
   try {
@@ -172,6 +221,7 @@ async function save() {
     close();
   } catch (e) {
     saveError.value = e.body?.error || e.message;
+    if (ERROR_LABELS[saveError.value]) duplicateError.value = saveError.value;
   } finally {
     saving.value = false;
   }
@@ -183,7 +233,8 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
 </script>
 
 <template>
-  <div v-if="modelValue" class="modal-overlay is-open" @click.self="close">
+  <!-- pointerdown 而非 click：拖 textarea 手柄松手在遮罩上时 click 会误关，见 EditModal -->
+  <div v-if="modelValue" class="modal-overlay is-open" @pointerdown.self="close">
     <div class="modal" role="dialog" aria-modal="true">
       <div class="modal__head">
         <h3 class="modal__title">添加到 · {{ targetLabel }}</h3>
@@ -257,7 +308,7 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
           <!-- 一起看过 -->
           <div v-else-if="target === 'couple_watched'">
             <div class="field">
-              <span class="field__label"><span class="step">{{ fromPlan ? 1 : 3 }}</span>看完日期（可空，只记到年或月也行）</span>
+              <span class="field__label"><span class="step">{{ fromPlan ? 1 : 3 }}</span>看完日期（留空默认今天，也可只记到年或月）</span>
               <DatePicker v-model="watchedAt" />
             </div>
             <div class="field">
@@ -280,13 +331,13 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
           </div>
         </div>
 
-        <p v-if="saveError" class="save-error">
-          {{ {mark_exists:'已经在你的列表里', plan_exists:'已经在共同计划里'}[saveError] || saveError }}
-        </p>
+        <p v-if="duplicateChecking" class="duplicate-note duplicate-note--checking">正在检查是否已添加…</p>
+        <p v-else-if="duplicateError" class="duplicate-note duplicate-note--error">{{ errorLabel(duplicateError) }}</p>
+        <p v-else-if="saveError" class="save-error">{{ errorLabel(saveError) }}</p>
       </div>
       <div class="modal__foot">
-        <button class="btn btn--primary submit-btn" :disabled="(!selected && !fromPlan) || saving" @click="save">
-          {{ saving ? '保存中…' : `保存到「${targetLabel}」` }}
+        <button class="btn btn--primary submit-btn" :disabled="(!selected && !fromPlan) || saving || duplicateChecking || Boolean(duplicateError)" @click="save">
+          {{ saving ? '保存中…' : duplicateError ? '已存在，不能重复添加' : `保存到「${targetLabel}」` }}
         </button>
         <button class="btn" @click="close">取消</button>
       </div>
@@ -343,6 +394,9 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
 .review-input--gap{ margin-top:var(--s-3); }
 .plan-prio-opt{ flex:0 0 auto; padding:6px 12px; }
 .save-error{ color:var(--rose-bright); font-size:var(--fs-sm); }
+.duplicate-note{ padding:9px 12px; border-radius:var(--r-md); font-size:var(--fs-sm); }
+.duplicate-note--checking{ color:var(--text-faint); background:var(--surface-2); border:1px solid var(--line-soft); }
+.duplicate-note--error{ color:var(--rose-bright); background:var(--rose-tint); border:1px solid var(--rose-line); }
 .submit-btn{ flex:1; }
 
 /* 分季 + 搜索选中收起 */

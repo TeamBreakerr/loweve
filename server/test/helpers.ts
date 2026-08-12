@@ -40,3 +40,26 @@ export function makeFakeLlm(impl: any = {}) {
     chat: impl.chat ?? (async () => '[]'),
   };
 }
+
+export function makeFakeSteam(impl: any = {}) {
+  return {
+    isConfigured: impl.isConfigured ?? (() => true),
+    search: impl.search ?? (async () => ({ results: [] })),
+    searchCandidates: impl.searchCandidates ?? impl.search ?? (async () => ({ results: [] })),
+    gameDetail: impl.gameDetail ?? (async () => { throw new Error('fake steam.gameDetail not stubbed'); }),
+  };
+}
+
+export function makeFakeIgdb(impl: any = {}) {
+  return {
+    isConfigured: impl.isConfigured ?? (() => true),
+    search: impl.search ?? (async () => ({ results: [] })),
+    gameDetail: impl.gameDetail ?? (async () => { throw new Error('fake igdb.gameDetail not stubbed'); }),
+  };
+}
+
+export function makeFakeWikidata(impl: any = {}) {
+  return {
+    searchGameAliases: impl.searchGameAliases ?? (async () => []),
+  };
+}

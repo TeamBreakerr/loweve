@@ -26,9 +26,54 @@ describe('llm/client', () => {
     assert.deepEqual(body.messages, [{ role: 'user', content: 'hi' }]);
   });
 
+  it('chat 使用 SSE 流式请求，只拼接最终 content 并忽略 reasoning_content', async () => {
+    let captured: any;
+    const encoder = new TextEncoder();
+    const chunks = [
+      'data: {"choices":[{"delta":{"reasoning_content":"很长的思考"}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"["}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"]"}}]}\n\n',
+      'data: [DONE]\n\n',
+    ];
+    const client = createLlmClient({
+      baseUrl: 'http://p/v1', apiKey: 'KEY', model: 'test-model',
+      fetch: async (url: any, opts: any) => {
+        captured = { url, opts };
+        return new Response(new ReadableStream({
+          start(controller) {
+            for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+            controller.close();
+          },
+        }), { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+      },
+    });
+
+    assert.equal(await client.chat([{ role: 'user', content: 'hi' }]), '[]');
+    assert.equal(JSON.parse(captured.opts.body).stream, true);
+  });
+
   it('未配置 chat 抛 LlmError', async () => {
     const client = createLlmClient({ baseUrl: '', apiKey: '', model: '' });
     await assert.rejects(() => client.chat([]), LlmError);
+  });
+
+  it('listModels 从 OpenAI 兼容 /models 探测并返回去重后的全部模型 ID', async () => {
+    let captured: any;
+    const client = createLlmClient({
+      baseUrl: 'http://p/v1', apiKey: 'KEY', model: 'unused',
+      fetch: async (url: any, opts: any) => {
+        captured = { url, opts };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: [{ id: 'gpt-b' }, { id: 'gpt-a' }, { id: 'gpt-b' }, {}] }),
+        };
+      },
+    });
+    assert.deepEqual(await client.listModels(), ['gpt-a', 'gpt-b']);
+    assert.equal(captured.url, 'http://p/v1/models');
+    assert.equal(captured.opts.method, 'GET');
+    assert.equal(captured.opts.headers.Authorization, 'Bearer KEY');
   });
 
   it('5xx 重试一次后抛错', async () => {
@@ -42,13 +87,16 @@ describe('llm/client', () => {
   });
 
   it('超时抛 LlmError', async () => {
+    let calls = 0;
     const client = createLlmClient({
       baseUrl: 'http://p/v1', apiKey: 'k', model: 'm', timeoutMs: 5,
       fetch: (_u: any, opts: any) => new Promise((_res, rej) => {
+        calls++;
         opts.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' })));
       }),
     });
     await assert.rejects(() => client.chat([]), LlmError);
+    assert.equal(calls, 1, '相同长请求超时后不应立刻完整重跑');
   });
 
   it('parseJsonArray 剥 fence + 截取数组', () => {

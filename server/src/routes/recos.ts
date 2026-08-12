@@ -1,6 +1,6 @@
 // server/src/routes/recos.js
 import { Router } from 'express';
-import { getCurrentRecos, generateStanding } from '../recos/service.js';
+import { getCurrentRecos, generateStanding, requestStandingRefresh } from '../recos/service.js';
 import { markRecosStale } from '../recos/state.js';
 import { upsertWork } from './works.js';
 import type { Mark, PlanItem } from '../../../shared/types.js';
@@ -23,12 +23,9 @@ export function recosRoutes() {
     res.json(await getCurrentRecos(req.app.locals.db, depsOf(req)));
   });
 
-  router.post('/refresh', async (req, res) => {
-    try {
-      res.json({ ...(await generateStanding(req.app.locals.db, depsOf(req), {})), error: null });
-    } catch (e) {
-      res.status(502).json({ error: 'llm_unavailable', message: e.message });
-    }
+  router.post('/refresh', (req, res) => {
+    const result = requestStandingRefresh(req.app.locals.db, depsOf(req));
+    res.status(result.generating ? 202 : 200).json(result);
   });
 
   router.post('/custom', async (req, res) => {

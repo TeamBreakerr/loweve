@@ -56,6 +56,7 @@ async function setPriority(n: number) {
 }
 async function removePlan() {
   if (!planActive.value) return;
+  if (!window.confirm('确定从清单移入回收站？之后可在「设置 → 回收站」恢复。')) return;
   await api(`/api/plan/${planActive.value.id}`, { method: 'DELETE' });
   await loadWork();
 }

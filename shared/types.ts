@@ -58,6 +58,20 @@ export interface PlanItem {
   work: Work;
 }
 
+export type TrashEntityType = 'mark' | 'session' | 'plan';
+
+export interface TrashItem {
+  id: number;
+  entity_type: TrashEntityType;
+  entity_id: number;
+  work_id: number;
+  payload: Record<string, any>;
+  deleted_at: number;
+  deleted_by?: number | null;
+  deleted_by_name?: string | null;
+  work: Work;
+}
+
 export interface Reco {
   id: number;
   reason: string;
@@ -90,5 +104,100 @@ export interface ApiSettings {
   tmdb_key_set: boolean;
   llm_ready: boolean;
   tmdb_ready: boolean;
+  igdb_ready: boolean;
+  steam_ready: boolean;
   [k: string]: string | boolean | undefined;
+}
+
+export interface GameWork {
+  id: number;
+  igdb_id?: number | null;
+  steam_appid?: number | null;
+  catalog_source: 'igdb' | 'steam' | 'manual';
+  content_type: 'game' | 'dlc';
+  parent_igdb_id?: number | null;
+  parent_steam_appid?: number | null;
+  parent_title?: string | null;
+  title: string;
+  original_title?: string | null;
+  release_date?: string | null;
+  release_year?: number | null;
+  release_state: 'released' | 'unreleased' | 'early_access';
+  is_free: number;
+  short_description?: string | null;
+  about_game?: string | null;
+  developers?: string | null;
+  publishers?: string | null;
+  genres?: string | null;
+  platforms?: string | null;
+  play_modes?: string | null;
+  supports_together: number;
+  cover_url?: string | null;
+  header_url?: string | null;
+  initial_price?: number | null;
+  current_price?: number | null;
+  discount_percent?: number;
+  price_formatted?: string | null;
+  discount_end_date?: string | null;
+  review_desc?: string | null;
+  review_total?: number | null;
+  review_percent?: number | null;
+  recent_review_desc?: string | null;
+  recent_review_total?: number | null;
+  recent_review_percent?: number | null;
+  catalog_rating?: number | null;
+  catalog_rating_count?: number | null;
+  critic_rating?: number | null;
+  critic_rating_count?: number | null;
+  igdb_url?: string | null;
+  external_links?: string | null;
+  store_url?: string | null;
+  source_url?: string | null;
+  platform_releases?: Array<Record<string, unknown>>;
+  all_marks?: GameMark[];
+  my_mark?: GameMark | null;
+  sessions?: GameSession[];
+  plan?: GamePlanItem | null;
+}
+
+export interface GameMark {
+  id: number;
+  user_id: number;
+  work_id: number;
+  status: 'played';
+  rating?: number | null;
+  comment?: string | null;
+  marked_at: number;
+  work: GameWork;
+}
+
+export interface GameSession {
+  id: number;
+  work_id: number;
+  played_at?: number | null;
+  completed_at?: number | null;
+  plan_status?: 'pending' | 'playing' | 'done' | 'dropped' | null;
+  rating_a?: number | null;
+  rating_b?: number | null;
+  review_a?: string | null;
+  review_b?: string | null;
+  joint_note?: string | null;
+  work: GameWork;
+}
+
+export interface GamePlanItem {
+  id: number;
+  work_id: number;
+  added_by: number;
+  note?: string | null;
+  priority: number;
+  status: 'pending' | 'playing' | 'done' | 'dropped';
+  work: GameWork;
+}
+
+export interface GameReco extends GameWork {
+  reason: string;
+  confidence_note?: string | null;
+  work_id: number;
+  poster_url?: string | null;
 }

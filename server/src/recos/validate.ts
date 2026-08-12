@@ -47,6 +47,8 @@ function scoreCandidate(c: any, { title, year, type }: any) {
 
 export async function resolveTmdb(tmdb: any, { title, year, type }: any) {
   if (!title) return null;
+  // LLM 时常给「剧名 第N季」，带季号在 TMDB 搜索会失配；剥掉季号按剧名搜（打分也用剥后标题）
+  title = String(title).replace(/\s*第\s*[一二三四五六七八九十\d]{1,3}\s*季$/u, '').trim() || title;
   let data: any;
   try { data = await tmdb.search(title); }
   catch { return null; }                              // 搜索失败 → 当未命中，丢弃该条

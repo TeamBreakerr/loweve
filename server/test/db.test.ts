@@ -2,10 +2,10 @@
 import assert from 'node:assert/strict';
 import { makeTestDb } from './helpers.js';
 import { openDb } from '../src/db/index.js';
-import { migrate, migrateNullableWatchedAt, migrateAddSeasonNumber } from '../src/db/migrate.js';
+import { migrate, migrateNullableWatchedAt, migrateAddGameCompletedAt, migrateAddGameContentType, migrateAddGameDiscountEndDate, migrateAddSeasonNumber, migrateGameCatalogSchema } from '../src/db/migrate.js';
 
 describe('db migration', () => {
-  it('创建 7 张表', () => {
+  it('创建影视与游戏两套隔离业务表', () => {
     const db = makeTestDb();
     const rows = db.prepare(`
       SELECT name FROM sqlite_master
@@ -16,8 +16,19 @@ describe('db migration', () => {
     assert.deepEqual(names.sort(), [
       'app_state',
       'couple_sessions',
+      'game_external_ids',
+      'game_marks',
+      'game_plan_items',
+      'game_platform_releases',
+      'game_recommendations',
+      'game_review_aggregates',
+      'game_sessions',
+      'game_store_offers',
+      'game_trash_items',
+      'game_works',
       'plan_items',
       'recommendations',
+      'trash_items',
       'user_marks',
       'users',
       'works',
@@ -62,6 +73,70 @@ describe('db migration', () => {
     migrate(db, { userA: '新名字', userB: 'B' });
     const row = db.prepare('SELECT display_name FROM users WHERE id = 1').get();
     assert.equal(row.display_name, '改后的名字');  // 不被覆盖
+    db.close();
+  });
+
+  it('旧游戏共同记录补通关日期，原数据保留且不伪造完成状态', () => {
+    const db = openDb(':memory:');
+    db.exec(`CREATE TABLE game_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, work_id INTEGER NOT NULL UNIQUE,
+      played_at INTEGER, rating_a INTEGER, rating_b INTEGER, review_a TEXT,
+      review_b TEXT, joint_note TEXT, created_at INTEGER NOT NULL);`);
+    db.prepare(`INSERT INTO game_sessions (work_id, played_at, rating_a, created_at)
+      VALUES (7, 20260801, 9, 1)`).run();
+    assert.equal(migrateAddGameCompletedAt(db), true);
+    const row: any = db.prepare('SELECT * FROM game_sessions').get();
+    assert.equal(row.played_at, 20260801);
+    assert.equal(row.completed_at, null);
+    assert.equal(migrateAddGameCompletedAt(db), false);
+    db.close();
+  });
+
+  it('旧 Steam 游戏表升级为 IGDB 主目录时保留 id 与 Steam 数据', () => {
+    const db = openDb(':memory:');
+    db.exec(`CREATE TABLE game_works (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, steam_appid INTEGER NOT NULL UNIQUE, title TEXT NOT NULL,
+      original_title TEXT, release_date TEXT, release_year INTEGER, release_state TEXT NOT NULL,
+      is_free INTEGER NOT NULL, short_description TEXT, about_game TEXT, developers TEXT, publishers TEXT,
+      genres TEXT, platforms TEXT, play_modes TEXT, supports_together INTEGER NOT NULL, cover_url TEXT,
+      header_url TEXT, price_currency TEXT, initial_price INTEGER, current_price INTEGER,
+      discount_percent INTEGER NOT NULL, price_formatted TEXT, review_score INTEGER, review_desc TEXT,
+      review_positive INTEGER, review_negative INTEGER, review_total INTEGER, review_percent INTEGER,
+      recent_review_score INTEGER, recent_review_desc TEXT, recent_review_positive INTEGER,
+      recent_review_negative INTEGER, recent_review_total INTEGER, recent_review_percent INTEGER,
+      steam_raw TEXT NOT NULL, reviews_raw TEXT, fetched_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);`);
+    db.prepare(`INSERT INTO game_works (id, steam_appid, title, release_state, is_free,
+      supports_together, discount_percent, steam_raw, fetched_at, updated_at)
+      VALUES (9, 620, 'Portal 2', 'released', 0, 1, 0, '{}', 1, 1)`).run();
+    assert.equal(migrateGameCatalogSchema(db), true);
+    const row: any = db.prepare('SELECT id, igdb_id, steam_appid, catalog_source, title FROM game_works').get();
+    assert.deepEqual(row, { id: 9, igdb_id: null, steam_appid: 620, catalog_source: 'steam', title: 'Portal 2' });
+    db.prepare(`INSERT INTO game_works (igdb_id, catalog_source, title, release_state, is_free,
+      supports_together, discount_percent, fetched_at, updated_at) VALUES (123, 'igdb', 'GBA Game',
+      'released', 0, 0, 0, 1, 1)`).run();
+    assert.equal(migrateGameCatalogSchema(db), false);
+    db.close();
+  });
+
+  it('已有 IGDB 游戏表补 DLC 分类时旧记录保留为本体且迁移幂等', () => {
+    const db = openDb(':memory:');
+    db.exec(`CREATE TABLE game_works (
+      id INTEGER PRIMARY KEY, igdb_id INTEGER, steam_appid INTEGER, catalog_source TEXT,
+      title TEXT NOT NULL, updated_at INTEGER NOT NULL);`);
+    db.exec(`INSERT INTO game_works VALUES (1, 123, NULL, 'igdb', '旧游戏', 1);`);
+    assert.equal(migrateAddGameContentType(db), true);
+    const row: any = db.prepare(`SELECT content_type, parent_igdb_id, parent_steam_appid, parent_title FROM game_works`).get();
+    assert.deepEqual(row, { content_type: 'game', parent_igdb_id: null, parent_steam_appid: null, parent_title: null });
+    assert.equal(migrateAddGameContentType(db), false);
+    db.close();
+  });
+
+  it('已有游戏表补促销截止日且迁移幂等', () => {
+    const db = openDb(':memory:');
+    db.exec(`CREATE TABLE game_works (id INTEGER PRIMARY KEY, title TEXT NOT NULL);`);
+    assert.equal(migrateAddGameDiscountEndDate(db), true);
+    assert.ok(db.prepare(`SELECT 1 FROM pragma_table_info('game_works') WHERE name = 'discount_end_date'`).get());
+    assert.equal(migrateAddGameDiscountEndDate(db), false);
     db.close();
   });
 });

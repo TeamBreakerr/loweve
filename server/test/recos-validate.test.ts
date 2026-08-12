@@ -40,6 +40,16 @@ describe('recos/validate resolveTmdb', () => {
     assert.equal(await resolveTmdb(tmdb, { title: '续·穿越时空的少女', year: null, type: 'movie' }), null);
   });
 
+  it('「剧名 第N季」剥掉季号按剧名搜索并可命中', async () => {
+    let query: any = null;
+    const tmdb = makeFakeTmdb({ search: async (q: any) => { query = q; return { results: [
+      { tmdb_id: 66, tmdb_type: 'tv', title: '怪奇物语', original_title: 'Stranger Things', year: 2016 },
+    ] }; } });
+    const out = await resolveTmdb(tmdb, { title: '怪奇物语 第三季', year: 2019, type: 'tv' });
+    assert.equal(query, '怪奇物语');
+    assert.deepEqual(out, { tmdb_id: 66, tmdb_type: 'tv' });
+  });
+
   it('年份差太多降权，但名称完全一致仍可命中', async () => {
     const tmdb = RES([
       { tmdb_id: 33, tmdb_type: 'tv', title: '孤独摇滚！', original_title: 'ぼっち・ざ・ろっく！', year: 2022 },

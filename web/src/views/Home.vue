@@ -68,8 +68,8 @@ const planModalOpen = ref(false);
       <div class="section__head">
         <h2 class="section__title">今晚为<span class="accent">你们</span>排片</h2>
         <div class="section__actions">
-          <button class="btn btn--icon btn--ghost" data-tip="换一批" @click="refresh" :disabled="recos.loading">
-            <svg class="btn__ic" viewBox="0 0 24 24" :class="{ 'spin-loop': recos.loading }"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+          <button class="btn btn--icon btn--ghost" data-tip="换一批" @click="refresh" :disabled="recos.loading || recos.generating">
+            <svg class="btn__ic" viewBox="0 0 24 24" :class="{ 'spin-loop': recos.loading || recos.generating }"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
           </button>
         </div>
       </div>
@@ -84,7 +84,7 @@ const planModalOpen = ref(false);
       </div>
 
       <!-- 生成中：会蹦的爆米花 + 流光「思考」文字 -->
-      <div v-if="recos.loading" class="reco-think">
+      <div v-if="recos.loading || recos.generating" class="reco-think">
         <svg class="popcorn" viewBox="0 0 48 48" aria-hidden="true">
           <defs><clipPath id="pcCup"><path d="M14 24 H34 L31 44 H17 Z"/></clipPath></defs>
           <g clip-path="url(#pcCup)">
@@ -102,13 +102,15 @@ const planModalOpen = ref(false);
             <circle class="pc-k pc-k4" cx="24" cy="21" r="4.4"/>
           </g>
         </svg>
-        <span class="reco-think__txt">正在为你们挑片…</span>
+        <span class="reco-think__txt">{{ recos.generating ? '正在后台为你们换一批，当前推荐仍可浏览…' : '正在加载推荐…' }}</span>
       </div>
-      <template v-else>
-      <p v-if="!recos.items.length" class="reco-empty-note">
+      <p v-if="recos.error && recos.items.length" class="reco-error-note">
+        {{ recos.error === 'generation_timeout' ? '生成时间过长，已保留上一批推荐，请稍后重试。' : '推荐更新失败，已保留上一批推荐，请稍后重试。' }}
+      </p>
+      <p v-if="!recos.items.length && !recos.loading && !recos.generating" class="reco-empty-note">
         {{ recos.error === 'llm_unconfigured' ? '推荐未启用' : '推荐暂时不可用，点右上角换一批重试' }}
       </p>
-      <template v-else>
+      <template v-if="recos.items.length">
 
       <!-- 1 号大卡 + 2/3 号中卡 -->
       <div class="reco-top">
@@ -167,7 +169,6 @@ const planModalOpen = ref(false);
         </article>
       </div>
       </template>
-      </template>
     </section>
 
     <!-- ② 一起看过 -->
@@ -225,7 +226,7 @@ const planModalOpen = ref(false);
     </section>
 
     <!-- 推荐爱心 → 选优先级再加入想看 -->
-    <div v-if="wantPickerOpen" class="modal-overlay is-open" @click.self="wantPickerOpen = false">
+    <div v-if="wantPickerOpen" class="modal-overlay is-open" @pointerdown.self="wantPickerOpen = false">
       <div class="modal want-modal" role="dialog" aria-modal="true">
         <div class="modal__head">
           <h3 class="modal__title">加入想看 · 优先级</h3>
@@ -321,13 +322,13 @@ const planModalOpen = ref(false);
    首页改版：推荐「排片榜」（按名次定大小）+ 横向卡片轨道
    ============================================================ */
 /* —— 推荐顶部：1 号大卡 + 2/3 号中卡 —— */
-.reco-top{ display:grid; grid-template-columns:1.55fr 1fr; gap:var(--s-4); margin-bottom:var(--s-4); }
+.reco-top{ display:grid; grid-template-columns:1.55fr 1fr; gap:var(--s-4); min-height:400px; margin-bottom:var(--s-4); }
 .rk{ position:relative; background:var(--surface); border-radius:var(--r-lg); overflow:hidden; }
 .rk-num{ position:absolute; z-index:2; font-family:var(--font-brand); font-style:italic; font-weight:600; line-height:.78; color:var(--rose); pointer-events:none; }
 
 .rk-hero{ display:flex; gap:0; height:100%; }
 .rk-hero .rk-num{ top:18px; right:24px; font-size:90px; }
-.rk-hero__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-3); padding:var(--s-5); }
+.rk-hero__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s-3); padding:var(--s-5) var(--s-5) var(--s-3); }
 .rk-hero__title{ font-family:var(--font-serif); font-weight:700; font-size:var(--fs-xl); line-height:1.15; padding-right:70px; }
 /* .rk-hero__title .year / .rk-mid__title .year 从 styles/loweve.css 搬入（T10 批 6，纯剪切，
    未改声明）。.year 本身是 primitives 类，但这两条复合选择器最右侧的宿主 .rk-hero__title/
@@ -375,7 +376,7 @@ const planModalOpen = ref(false);
   overflow-y:auto; flex:1 1 auto;
 }
 .rk-mini .rk-num{ top:5px; left:9px; font-size:30px; color:oklch(0.98 0.06 25); }
-.rk-mini__body{ padding:var(--s-3); display:flex; flex-direction:column; gap:8px; }
+.rk-mini__body{ flex:1; padding:var(--s-3); display:flex; flex-direction:column; gap:8px; }
 .rk-mini__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-sm); line-height:1.25; }
 .rk-mini__foot{ display:flex; gap:5px; margin-top:auto; }
 
@@ -390,7 +391,7 @@ const planModalOpen = ref(false);
   .intent__btn{ width:100%; justify-content:center; }
 }
 @media (max-width:860px){
-  .reco-top{ grid-template-columns:1fr; }
+  .reco-top{ grid-template-columns:1fr; min-height:0; }
   .rk-mid{ gap:var(--s-4); padding:var(--s-4); }
   .rk-mid__body{ padding:0; }
 }
@@ -411,6 +412,7 @@ const planModalOpen = ref(false);
 .rk-hero__title, .rk-mid__title, .rk-mini__title{ cursor:pointer; }
 .rk-rating{ align-self:flex-start; }
 .reco-empty-note{ color:var(--text-faint); padding:var(--s-4) var(--s-3); }
+.reco-error-note{ color:var(--rose); padding:0 var(--s-3) var(--s-4); }
 .plan-empty-note{ color:var(--text-faint); padding:0 var(--s-3); }
 .hcard__poster{ cursor:pointer; }
 .hcard__title--clickable{ cursor:pointer; }

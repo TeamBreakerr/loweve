@@ -49,21 +49,28 @@ describe('POST /api/sessions', () => {
     assert.equal(res.body.review_a, null);
   });
 
-  it('一个 work 多次 session（重温）允许', async () => {
+  it('同一 work 重复添加 → 409 + 明确提示码', async () => {
     const app = createApp({ db, tmdb: makeFakeTmdb() });
     const work_id = seedWork(db);
     await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: 20240315 });
     const r2 = await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: 20250315 });
-    assert.equal(r2.status, 200);
+    assert.equal(r2.status, 409);
+    assert.equal(r2.body.error, 'session_exists');
   });
 
-  it('watched_at 缺失 → 200，存 null（有时忘了哪天看的）', async () => {
-    const app = createApp({ db, tmdb: makeFakeTmdb() });
-    const work_id = seedWork(db);
-    const res = await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, rating: 7 });
-    assert.equal(res.status, 200);
-    assert.equal(res.body.watched_at, null);
-    assert.equal(res.body.rating_a, 7);
+  it('watched_at 为空 → 200，默认存当前日期', async () => {
+    const realNow = Date.now;
+    Date.now = () => new Date('2026-08-01T12:00:00Z').getTime();
+    try {
+      const app = createApp({ db, tmdb: makeFakeTmdb() });
+      const work_id = seedWork(db);
+      const res = await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: null, rating: 7 });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.watched_at, 20260801);
+      assert.equal(res.body.rating_a, 7);
+    } finally {
+      Date.now = realNow;
+    }
   });
 
   it('watched_at 非整数（非 null）→ 400', async () => {
@@ -88,15 +95,16 @@ describe('GET /api/sessions', () => {
 
   it('按 watched_at DESC + 含 work join', async () => {
     const app = createApp({ db, tmdb: makeFakeTmdb() });
-    const work_id = seedWork(db);
-    await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: 20240101 });
-    await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: 20250101 });
+    const work1 = seedWork(db);
+    const work2 = db.prepare(`INSERT INTO works (tmdb_id, tmdb_type, title, rating_source, tmdb_raw, fetched_at, updated_at) VALUES (2, 'movie', 'Y', 'tmdb', '{}', ?, ?)`).run(Date.now(), Date.now()).lastInsertRowid;
+    await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id: work1, watched_at: 20240101 });
+    await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id: work2, watched_at: 20250101 });
     const res = await request(app).get('/api/sessions');
     assert.equal(res.status, 200);
     assert.equal(res.body.sessions.length, 2);
     assert.equal(res.body.sessions[0].watched_at, 20250101);  // DESC
     assert.ok(res.body.sessions[0].work);
-    assert.equal(res.body.sessions[0].work.title, 'X');
+    assert.equal(res.body.sessions[0].work.title, 'Y');
   });
 });
 

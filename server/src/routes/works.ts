@@ -125,6 +125,50 @@ async function upgradeWithBangumi(db: any, bangumi: any, work: any) {
 export function worksRoutes() {
   const router = Router();
 
+  // 添加弹窗的前置重复探测。最终写入接口仍各自做约束，避免并发竞态绕过。
+  router.get('/duplicate', (req, res) => {
+    if (!req.viewing_user_id) return res.status(401).json({ error: 'not_authenticated' });
+    const db = req.app.locals.db;
+    const target = req.query.target;
+    if (!['watched', 'couple_watched', 'couple_plan'].includes(target as string)) {
+      return res.status(400).json({ error: 'invalid_target' });
+    }
+
+    let work: any;
+    if (req.query.work_id !== undefined) {
+      const workId = parseInt(req.query.work_id as string, 10);
+      if (!Number.isInteger(workId)) return res.status(400).json({ error: 'invalid_work_id' });
+      work = db.prepare('SELECT id FROM works WHERE id = ?').get(workId);
+    } else {
+      const tmdbId = parseInt(req.query.tmdb_id as string, 10);
+      const tmdbType = req.query.tmdb_type;
+      if (!Number.isInteger(tmdbId) || (tmdbType !== 'movie' && tmdbType !== 'tv')) {
+        return res.status(400).json({ error: 'invalid_work_identity' });
+      }
+      let seasonNumber: number | null = null;
+      if (req.query.season_number !== undefined && req.query.season_number !== '') {
+        seasonNumber = parseInt(req.query.season_number as string, 10);
+        if (!Number.isInteger(seasonNumber)) return res.status(400).json({ error: 'invalid_season_number' });
+      }
+      work = db.prepare(`SELECT id FROM works
+        WHERE tmdb_id = ? AND tmdb_type = ?
+        AND COALESCE(season_number, -1) = COALESCE(?, -1)`)
+        .get(tmdbId, tmdbType, seasonNumber);
+    }
+
+    if (!work) return res.json({ duplicate: false });
+    if (target === 'watched') {
+      const found = db.prepare('SELECT 1 FROM user_marks WHERE user_id = ? AND work_id = ?').get(req.viewing_user_id, work.id);
+      return res.json(found ? { duplicate: true, error: 'mark_exists' } : { duplicate: false });
+    }
+    if (target === 'couple_watched') {
+      const found = db.prepare('SELECT 1 FROM couple_sessions WHERE work_id = ?').get(work.id);
+      return res.json(found ? { duplicate: true, error: 'session_exists' } : { duplicate: false });
+    }
+    const found = db.prepare('SELECT 1 FROM plan_items WHERE work_id = ?').get(work.id);
+    return res.json(found ? { duplicate: true, error: 'plan_exists' } : { duplicate: false });
+  });
+
   router.post('/', async (req, res) => {
     const db = req.app.locals.db;
     const tmdb = req.app.locals.tmdb;

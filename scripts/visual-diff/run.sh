@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 截图对比验证器。
-#   run.sh baseline   —— 用当前代码建镜像、冻结一份数据快照、起隔离实例、截基准图 → baselines/
-#   run.sh verify     —— 复用 baseline 时冻结的同一份数据快照（重点：不是重新从线上库拷贝！），
+#   run.sh baseline [state] —— 用当前代码建镜像、冻结一份数据快照、起隔离实例、截基准图 → baselines/
+#   run.sh verify [state]   —— 复用 baseline 时冻结的同一份数据快照（重点：不是重新从线上库拷贝！），
 #                         起隔离实例、截新图 → .tmp/current，与 baselines/ 按「LSB 容忍带」对比
 #                         （Δ≤2 且 ≤256px 判光栅噪声放行，其余一律拦——详见 compare.py 头注）
 #
@@ -13,6 +13,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 MODE="${1:?用法: run.sh baseline|verify}"
+STATE="${2:-}"
 VD=scripts/visual-diff
 NET=loweve-verify-net
 FROZEN_DATA="$VD/baselines/.data-snapshot"   # 随基线一起冻结/复用，baselines/ 已在 .gitignore 里整目录排除
@@ -37,6 +38,9 @@ echo '── 构建 loweve:verify ──'
 docker build -q -t loweve:verify -f server/Dockerfile .
 
 rm -rf "$VD/.tmp/data"; mkdir -p "$VD/.tmp/data"
+
+CAPTURE_ARGS=()
+[ -n "$STATE" ] && CAPTURE_ARGS+=(--state "$STATE")
 
 if [ "$MODE" = baseline ]; then
   echo "── 冻结数据快照（源: $DATA_SRC，绝不写回；之后所有 verify 复用这份，不再碰线上库）──"
@@ -85,10 +89,10 @@ if [ "$MODE" = baseline ]; then
   # 只清旧 PNG，不能 rm -rf 整个 baselines/——上面刚冻的 .data-snapshot 也在这目录下面，
   # 一把梭会连数据快照一起删掉，verify 就没有稳定数据可复用了。
   rm -f "$VD"/baselines/*.png; mkdir -p "$VD/baselines"
-  python3 "$VD/capture.py" --out "$VD/baselines"
+  python3 "$VD/capture.py" --out "$VD/baselines" "${CAPTURE_ARGS[@]}"
   echo "✅ 基准已存 $VD/baselines"
 else
   rm -rf "$VD/.tmp/current" "$VD/.tmp/diff"; mkdir -p "$VD/.tmp/current"
-  python3 "$VD/capture.py" --out "$VD/.tmp/current"
+  python3 "$VD/capture.py" --out "$VD/.tmp/current" "${CAPTURE_ARGS[@]}"
   python3 "$VD/compare.py" "$VD/baselines" "$VD/.tmp/current" "$VD/.tmp/diff"
 fi
