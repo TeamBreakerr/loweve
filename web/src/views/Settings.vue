@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 import { useIdentity } from '../stores/identity';
+import { useSpace } from '../stores/space';
 import { api } from '../api/index';
 import type { ApiSettings } from '../types';
 
 const identity = useIdentity();
+const space = useSpace();
 
 // 双方显示名本地态——首次进入设置页时同步
 const nameA = ref('');
@@ -45,8 +47,31 @@ function pickIdentity(id: any) { identity.switchMe(id); }
 
 // —— 服务配置（LLM / TMDB / Bangumi 凭证）：存服务器、覆盖 env、改完即时生效 ——
 const svc = ref<Partial<ApiSettings>>({});   // GET /api/settings（密钥脱敏）
-const form = ref({ llm_base_url: '', llm_api_key: '', llm_model: '', tmdb_token: '', tmdb_key: '', bangumi_ua: '' });
+const form = ref({
+  llm_base_url: '', llm_api_key: '', llm_model: '', tmdb_token: '', tmdb_key: '', bangumi_ua: '',
+  igdb_client_id: '', igdb_client_secret: '',
+});
 const svcSaving = ref(false), svcSaved = ref(false), svcError = ref(false);
+const modelOptions = ref<string[]>([]);
+const modelsBaseUrl = ref('');
+const modelsLoading = ref(false);
+const modelsLoaded = ref(false);
+const modelsError = ref('');
+
+const availableModels = computed(() =>
+  modelsBaseUrl.value === form.value.llm_base_url.trim() ? modelOptions.value : []
+);
+const canLoadModels = computed(() => Boolean(
+  svc.value.llm_api_key_set &&
+  form.value.llm_base_url.trim() &&
+  form.value.llm_base_url.trim() === (svc.value.llm_base_url || '').trim()
+));
+const modelUnavailable = computed(() => Boolean(
+  modelsLoaded.value &&
+  modelsBaseUrl.value === form.value.llm_base_url.trim() &&
+  form.value.llm_model &&
+  !availableModels.value.includes(form.value.llm_model)
+));
 
 async function loadServices() {
   try {
@@ -54,9 +79,35 @@ async function loadServices() {
     form.value.llm_base_url = svc.value.llm_base_url || '';
     form.value.llm_model = svc.value.llm_model || '';
     form.value.bangumi_ua = svc.value.bangumi_ua || '';
+    form.value.igdb_client_id = typeof svc.value.igdb_client_id === 'string' ? svc.value.igdb_client_id : '';
+    return true;
   } catch { /* 忽略 */ }
+  return false;
 }
-onMounted(loadServices);
+
+async function loadModels() {
+  modelsError.value = '';
+  if (!canLoadModels.value) {
+    modelsError.value = '请先保存 Base URL 和 API Key，再获取模型列表。';
+    return;
+  }
+  modelsLoading.value = true;
+  try {
+    const data = await api('/api/settings/models');
+    modelOptions.value = Array.isArray(data.models) ? data.models : [];
+    modelsBaseUrl.value = form.value.llm_base_url.trim();
+    modelsLoaded.value = true;
+    if (!modelOptions.value.length) modelsError.value = '端点没有返回可选模型。';
+  } catch (e) {
+    modelsError.value = e.body?.error || e.message || '模型探测失败';
+  } finally {
+    modelsLoading.value = false;
+  }
+}
+
+onMounted(async () => {
+  if (await loadServices() && svc.value.llm_api_key_set && svc.value.llm_base_url) await loadModels();
+});
 
 async function saveServices() {
   svcSaving.value = true; svcError.value = false;
@@ -66,11 +117,15 @@ async function saveServices() {
     if (form.value.llm_base_url !== (svc.value.llm_base_url || '')) patch.llm_base_url = form.value.llm_base_url.trim();
     if (form.value.llm_model !== (svc.value.llm_model || '')) patch.llm_model = form.value.llm_model.trim();
     if (form.value.bangumi_ua !== (svc.value.bangumi_ua || '')) patch.bangumi_ua = form.value.bangumi_ua.trim();
+    if (form.value.igdb_client_id !== (svc.value.igdb_client_id || '')) patch.igdb_client_id = form.value.igdb_client_id.trim();
+    if (form.value.igdb_client_secret) patch.igdb_client_secret = form.value.igdb_client_secret.trim();
     if (form.value.llm_api_key) patch.llm_api_key = form.value.llm_api_key.trim();
     if (form.value.tmdb_token) patch.tmdb_token = form.value.tmdb_token.trim();
     if (form.value.tmdb_key) patch.tmdb_key = form.value.tmdb_key.trim();
+    const reloadModels = Object.hasOwn(patch, 'llm_base_url') || Object.hasOwn(patch, 'llm_api_key');
     svc.value = await api('/api/settings', { method: 'PUT', body: JSON.stringify(patch) });
-    form.value.llm_api_key = ''; form.value.tmdb_token = ''; form.value.tmdb_key = '';
+    form.value.llm_api_key = ''; form.value.tmdb_token = ''; form.value.tmdb_key = ''; form.value.igdb_client_secret = '';
+    if (reloadModels && svc.value.llm_api_key_set && svc.value.llm_base_url) await loadModels();
     svcSaved.value = true; setTimeout(() => (svcSaved.value = false), 1800);
   } catch { svcError.value = true; }
   finally { svcSaving.value = false; }
@@ -79,13 +134,13 @@ async function saveServices() {
 
 <template>
   <main class="page">
-    <router-link class="back-link" to="/">
+    <router-link class="back-link" :to="space.isGames ? '/games' : '/'">
       <svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>返回首页
     </router-link>
     <div class="page-hero">
       <span class="page-hero__kicker">Settings</span>
       <h1 class="page-hero__title">设置</h1>
-      <p class="page-hero__lead">身份、显示名、服务配置（LLM / TMDB 凭证），以及评分来源状态。只你们俩可见。</p>
+      <p class="page-hero__lead">身份、显示名、影视与游戏回收站、服务配置，以及所有数据来源状态。只你们俩可见。</p>
     </div>
 
     <div class="settings-list">
@@ -130,6 +185,26 @@ async function saveServices() {
         <p v-if="saveStatus === 'error'" class="save-error">保存失败，请重试。</p>
       </section>
 
+      <!-- 回收站 -->
+      <section class="setting">
+        <div class="setting__head">
+          <svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v5M14 11v5"/></svg>
+          <span class="setting__title">回收站</span>
+        </div>
+        <p class="setting__desc">影视与游戏数据保持隔离，误删的记录可以分别进入对应回收站恢复。</p>
+        <div class="trash-links"><router-link class="btn btn--ghost" to="/trash">影视回收站</router-link><router-link class="btn btn--ghost game-trash-link" to="/games/trash">游戏回收站</router-link></div>
+      </section>
+
+      <!-- Steam -->
+      <section class="setting">
+        <div class="setting__head">
+          <svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 8h8a5 5 0 0 1 4.7 6.7l-1 2.8a2 2 0 0 1-3.3.8L14 16h-4l-2.4 2.3a2 2 0 0 1-3.3-.8l-1-2.8A5 5 0 0 1 8 8Z"/><path d="M7 12v4M5 14h4M17 13h.01M19 15h.01"/></svg>
+          <span class="setting__title">Steam · 商店增强</span>
+        </div>
+        <p class="setting__desc">当 IGDB 条目带有 Steam 版本时，自动补充简体中文资料、国区价格、全部与近期评测。无需绑定 Steam 账号或配置密钥。</p>
+        <span class="badge-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>自动启用</span>
+      </section>
+
       <!-- 服务配置（凭证）-->
       <section class="setting">
         <div class="setting__head">
@@ -140,13 +215,39 @@ async function saveServices() {
 
         <div class="cfg-group">
           <div class="cfg-group__title">
+            IGDB 全平台游戏目录（Twitch 应用凭证）
+            <span v-if="svc.igdb_ready" class="badge-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>已就绪</span>
+            <span v-else class="badge-off">未配置</span>
+          </div>
+          <input class="input" type="text" autocomplete="off" v-model="form.igdb_client_id" placeholder="Twitch Client ID" />
+          <input class="input" type="password" autocomplete="off" v-model="form.igdb_client_secret" :placeholder="svc.igdb_client_secret_set ? '•••• Client Secret 已配置（留空不改）' : 'Twitch Client Secret'" />
+          <p class="model-note">用于 GBA、Switch / Switch 2、PlayStation、Xbox、PC 等全平台搜索。Client Secret 只保存在服务器端。</p>
+        </div>
+
+        <div class="cfg-group">
+          <div class="cfg-group__title">
             AI 推荐（LLM，OpenAI 兼容端点）
             <span v-if="svc.llm_ready" class="badge-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>已就绪</span>
             <span v-else class="badge-off">未配置</span>
           </div>
           <input class="input" type="text" v-model="form.llm_base_url" placeholder="Base URL，如 https://your-host/v1" />
           <input class="input" type="password" autocomplete="off" v-model="form.llm_api_key" :placeholder="svc.llm_api_key_set ? '•••• 已配置（留空不改）' : 'API Key'" />
-          <input class="input" type="text" v-model="form.llm_model" placeholder="模型名，如 gpt-4o / gemini-2.5-pro" />
+          <div class="model-picker">
+            <select class="input" v-model="form.llm_model" :disabled="modelsLoading || !availableModels.length">
+              <option value="" disabled>{{ modelsLoading ? '正在获取模型…' : availableModels.length ? '请选择模型' : '请先获取模型列表' }}</option>
+              <option v-if="form.llm_model && !availableModels.includes(form.llm_model)" :value="form.llm_model" disabled>
+                {{ form.llm_model }}（当前值未被端点返回）
+              </option>
+              <option v-for="model in availableModels" :key="model" :value="model">{{ model }}</option>
+            </select>
+            <button class="btn btn--ghost model-probe" type="button" :disabled="modelsLoading || !canLoadModels" @click="loadModels">
+              {{ modelsLoading ? '获取中…' : '获取模型' }}
+            </button>
+          </div>
+          <p v-if="modelUnavailable" class="model-note model-note--error">当前模型不在端点返回列表中，请重新选择。</p>
+          <p v-else-if="modelsError" class="model-note model-note--error">{{ modelsError }}</p>
+          <p v-else-if="availableModels.length" class="model-note">已从当前端点获取 {{ availableModels.length }} 个模型。</p>
+          <p v-else class="model-note">模型列表使用已保存的 Base URL 和 API Key 获取。</p>
         </div>
 
         <div class="cfg-group">
@@ -164,7 +265,7 @@ async function saveServices() {
           <input class="input" type="text" v-model="form.bangumi_ua" placeholder="如 loweve/1.0" />
         </div>
 
-        <button class="btn btn--rose" :disabled="svcSaving" @click="saveServices">
+        <button class="btn btn--rose" :disabled="svcSaving || modelUnavailable" @click="saveServices">
           {{ svcSaving ? '保存中…' : svcSaved ? '已保存 ✓' : '保存配置' }}
         </button>
         <p v-if="svcError" class="save-error">保存失败，请重试。</p>
@@ -193,7 +294,7 @@ async function saveServices() {
       <!-- 关于 -->
       <section class="setting setting--about">
         <div class="brand__mark brand__mark--about">loweve</div>
-        <p class="about-note">小放映厅 · v1.0 · 为 {{ identity.userById(1)?.display_name || 'A' }} &amp; {{ identity.userById(2)?.display_name || 'B' }} 而做</p>
+        <p class="about-note">小放映厅 × 双人游戏舱 · 为 {{ identity.userById(1)?.display_name || 'A' }} &amp; {{ identity.userById(2)?.display_name || 'B' }} 而做</p>
       </section>
     </div>
   </main>
@@ -204,6 +305,18 @@ async function saveServices() {
 .cfg-group__title { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--text-dim); margin-bottom: 8px; }
 .cfg-group .input { width: 100%; margin-bottom: 6px; }
 .badge-off { font-size: 11px; color: var(--text-faint); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 1px 9px; }
+.model-picker { display: flex; align-items: stretch; gap: var(--s-2); }
+.model-picker .input { min-width: 0; margin-bottom: 0; }
+.model-probe { flex-shrink: 0; }
+.model-note { margin-top: 6px; color: var(--text-faint); font-size: var(--fs-sm); }
+.model-note--error { color: var(--rose-bright); }
+.trash-links{ display:flex; gap:var(--s-2); flex-wrap:wrap; }
+.game-trash-link{ color:var(--game-accent); border-color:var(--game-line); }
+
+@media (max-width:560px){
+  .model-picker { flex-direction: column; }
+  .model-probe { justify-content: center; }
+}
 
 /* 从 styles/loweve.css「二级页面专用样式」段搬入（T10 批 3，纯剪切，未改声明）。
    .input(+:focus) 留在 loweve.css（primitives，DatePicker.vue 共用，见该文件注释）；

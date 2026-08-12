@@ -1,7 +1,7 @@
 // server/src/douban/queue.js
 import { workNames } from '../routes/works.js';
 
-const WORK_COLS = `id, tmdb_id, tmdb_type, title, original_title, aka_titles, year, overview, genres,
+const WORK_COLS = `id, tmdb_id, tmdb_type, season_number, title, original_title, aka_titles, year, overview, genres,
   runtime, is_anime, primary_rating, primary_rating_count, primary_poster_url, rating_source,
   bangumi_id, douban_id, douban_url, imdb_id, fetched_at, updated_at, douban_raw`;
 

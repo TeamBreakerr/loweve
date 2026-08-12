@@ -68,6 +68,8 @@ def parse_args():
     ap.add_argument('--cdp', default='http://127.0.0.1:9223')
     ap.add_argument('--base', default='http://loweve-verify:18083')
     ap.add_argument('--out', required=True)
+    ap.add_argument('--state', action='append', dest='states',
+                    help='只截指定 state；可重复传入。不传则截 pages.json 中的全部 state。')
     ap.add_argument('--hshell-container', default='loweve-hshell',
                      help='浏览器容器名，撞上崩溃需要整容器重启时用（docker restart）')
     return ap.parse_args()
@@ -506,7 +508,14 @@ def main():
     warm_up(cdp, args.base, args.hshell_container)
     work_path = resolve_work_path(cdp, args.base)
     print('work page:', work_path, flush=True)
-    for state in cfg['states']:
+    states = cfg['states']
+    if args.states:
+        wanted = set(args.states)
+        states = [state for state in states if state['name'] in wanted]
+        missing = wanted - {state['name'] for state in states}
+        if missing:
+            raise PageLogicError('pages.json 中找不到 state: ' + ', '.join(sorted(missing)))
+    for state in states:
         for vp in state['viewports']:
             shoot_with_retry(cdp, args.base, args.out, state, vp, cfg['viewports'][vp], work_path, args.hshell_container)
     print('done →', args.out, flush=True)

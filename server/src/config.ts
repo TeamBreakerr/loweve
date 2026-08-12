@@ -13,9 +13,13 @@ export const config = {
   tmdbToken: process.env.TMDB_API_TOKEN || '',
   tmdbKey: process.env.TMDB_API_KEY || '',
   bangumiUserAgent: process.env.BANGUMI_USER_AGENT || 'loweve/1.0',
+  igdbClientId: process.env.IGDB_CLIENT_ID || process.env.TWITCH_CLIENT_ID || '',
+  igdbClientSecret: process.env.IGDB_CLIENT_SECRET || process.env.TWITCH_CLIENT_SECRET || '',
   llmBaseUrl: process.env.LLM_BASE_URL || '',
   llmApiKey: process.env.LLM_API_KEY || '',
   llmModel: process.env.LLM_MODEL || '',
+  // LLM 单次请求超时（ms）。推理模型（如 deepseek）思考久，默认给 150s；改 .env 后重启即生效。
+  llmTimeoutMs: parseInt(process.env.LLM_TIMEOUT_MS || '150000', 10),
 };
 
 export const paths = {

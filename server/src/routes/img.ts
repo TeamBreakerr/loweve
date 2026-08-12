@@ -7,7 +7,12 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { paths } from '../config.js';
 
-const ALLOW = new Set(['image.tmdb.org', 'lain.bgm.tv']);   // 白名单，防 SSRF
+const ALLOW = new Set([
+  'image.tmdb.org', 'lain.bgm.tv',
+  'shared.fastly.steamstatic.com', 'shared.akamai.steamstatic.com',
+  'cdn.cloudflare.steamstatic.com', 'steamcdn-a.akamaihd.net',
+  'images.igdb.com',
+]);   // 白名单，防 SSRF
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 const TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
 

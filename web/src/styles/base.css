@@ -12,6 +12,12 @@ body{
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
 }
+body.game-mode{
+  background:
+    radial-gradient(circle at 18% -12%, oklch(0.55 0.16 225 / .16), transparent 34rem),
+    radial-gradient(circle at 88% 12%, oklch(0.48 0.17 285 / .10), transparent 30rem),
+    var(--bg);
+}
 img{ display:block; max-width:100%; }
 button{ font-family:inherit; cursor:pointer; color:inherit; background:none; border:none; }
 input{ font-family:inherit; }

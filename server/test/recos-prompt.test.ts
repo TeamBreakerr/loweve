@@ -37,6 +37,7 @@ describe('recos/prompt buildMessages', () => {
     assert.match(u, /海街日记/);
     assert.match(u, /某烂片/);          // 避雷池
     assert.match(u, /JSON/i);           // 输出格式要求
+    assert.match(u, /推荐 15 部/);       // 首轮留足硬过滤缓冲，最终仍只展示 9 条
     assert.match(u, /Alice评8/);        // 一起看过用名字标注双方评分，而非 A评/B评
     assert.doesNotMatch(u, /（A）|（B）|A评|B评/);  // 不再用 A/B 标签
   });
@@ -61,9 +62,32 @@ describe('recos/prompt buildMessages', () => {
     assert.match(sys, /不要用 A\/B/);
   });
 
+  it('评分样本充足时注入口味画像与画像指令', () => {
+    const scifi = (r: number) => ({ title: 'x', year: 2020, status: 'watched', rating: r, genres: '["科幻"]', is_anime: 0 });
+    const u = buildMessages({ ...base, marksA: [scifi(9), scifi(9), scifi(10)] })[1].content;
+    assert.match(u, /口味画像/);
+    assert.match(u, /Alice 偏爱：科幻（均9\.3分×3部，中置信）/);
+    assert.match(u, /高置信方向/);   // 画像使用指令
+  });
+
+  it('样本不足时不出现画像段', () => {
+    const u = buildMessages(base)[1].content;   // base 里无 genres 字段、评分样本也不够
+    assert.doesNotMatch(u, /口味画像/);
+  });
+
   it('userPrompt 注入额外要求', () => {
     const u = buildMessages({ ...base, userPrompt: '90分钟内的轻松治愈片' })[1].content;
     assert.match(u, /90分钟内的轻松治愈片/);
+  });
+
+  it('原始历史只保留近期代表样本，避免真实数据持续放大推理耗时', () => {
+    const many = [...Array(20)].map((_, i) => ({
+      title: `历史${i}`, year: 2020, status: 'watched', rating: 8, comment: `短评${i}`,
+    }));
+    const u = buildMessages({ ...base, marksA: many })[1].content;
+    assert.match(u, /历史0/);
+    assert.match(u, /历史11/);
+    assert.doesNotMatch(u, /历史12/);
   });
 
   it('空数据不报错', () => {

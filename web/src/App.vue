@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { onMounted, watchEffect } from 'vue';
+import { onMounted, watch, watchEffect } from 'vue';
+import { useRoute } from 'vue-router';
 import { useIdentity } from './stores/identity';
+import { useSpace } from './stores/space';
 import TopBar from './components/TopBar.vue';
 import ProxyBanner from './components/ProxyBanner.vue';
 
 const identity = useIdentity();
+const route = useRoute();
+const space = useSpace();
 onMounted(() => identity.load());
+watch(() => route.meta.space, value => {
+  if (value === 'games' || value === 'media') space.set(value);
+}, { immediate: true });
 
 // 把身份状态同步到 <body> 的 dataset/class，让全局 CSS 选择器生效
 watchEffect(() => {
@@ -13,6 +20,7 @@ watchEffect(() => {
   body.dataset.me = identity.meKey || '';
   body.dataset.viewing = identity.viewingKey || '';
   body.classList.toggle('viewing-partner', identity.isViewingPartner);
+  body.classList.toggle('game-mode', space.isGames);
 });
 </script>
 
@@ -31,7 +39,7 @@ watchEffect(() => {
   <router-view v-if="identity.loaded" />
   <footer v-if="identity.loaded">
     <div class="brand__mark">loweve</div>
-    <p class="footer__tagline">小放映厅 · 只属于 {{ identity.userById(1)?.display_name || 'A' }} &amp; {{ identity.userById(2)?.display_name || 'B' }} 的两个人</p>
+    <p class="footer__tagline">{{ space.isGames ? '双人游戏舱' : '小放映厅' }} · 只属于 {{ identity.userById(1)?.display_name || 'A' }} &amp; {{ identity.userById(2)?.display_name || 'B' }} 的两个人</p>
   </footer>
 </template>
 

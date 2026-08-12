@@ -156,5 +156,9 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
     tvDetail(id: any) {
       return request(`/tv/${id}`, { append_to_response: 'external_ids,alternative_titles,translations' });
     },
+
+    tvSeasonDetail(id: any, seasonNumber: any) {
+      return request(`/tv/${id}/season/${seasonNumber}`, {});
+    },
   };
 }

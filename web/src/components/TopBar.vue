@@ -1,9 +1,22 @@
 <script setup lang="ts">
 import { useIdentity } from '../stores/identity';
-import { useRoute } from 'vue-router';
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useSpace } from '../stores/space';
 
 const identity = useIdentity();
 const route = useRoute();
+const router = useRouter();
+const space = useSpace();
+const homePath = computed(() => space.isGames ? '/games' : '/');
+const mePath = computed(() => space.isGames ? '/games/me' : '/me');
+
+function switchSpace(next: 'media' | 'games') {
+  space.set(next);
+  const page = route.meta.page;
+  const target = page === 'me' ? (next === 'games' ? '/games/me' : '/me') : (next === 'games' ? '/games' : '/');
+  router.push(target);
+}
 
 function pickWho(id: any) {
   // 顶栏切换的是"看谁的视角"（viewing）。切到对方时 ProxyBanner 高亮提示「正在代维护」。
@@ -15,16 +28,24 @@ function pickWho(id: any) {
 <template>
   <header class="topbar">
     <div class="topbar__inner">
-      <router-link class="brand" to="/" aria-label="loweve 小放映厅">
+      <router-link class="brand" :to="homePath" :aria-label="`loweve ${space.isGames ? '双人游戏舱' : '小放映厅'}`">
         <span class="brand__mark">loweve</span>
-        <span class="brand__sub">小放映厅</span>
+        <span class="brand__sub">{{ space.isGames ? '双人游戏舱' : '小放映厅' }}</span>
       </router-link>
+      <div class="mode-switch" role="group" aria-label="切换影视或游戏空间">
+        <button class="mode-switch__item" :class="{ 'is-active': !space.isGames }" @click="switchSpace('media')">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM8 3l3 4M16 3l-3 4"/></svg><span>影视</span>
+        </button>
+        <button class="mode-switch__item" :class="{ 'is-active': space.isGames }" @click="switchSpace('games')">
+          <svg viewBox="0 0 24 24"><path d="M8 8h8a5 5 0 0 1 4.7 6.7l-1 2.8a2 2 0 0 1-3.3.8L14 16h-4l-2.4 2.3a2 2 0 0 1-3.3-.8l-1-2.8A5 5 0 0 1 8 8Z"/><path d="M7 12v4M5 14h4M16.5 13.5h.01M18.5 15.5h.01"/></svg><span>游戏</span>
+        </button>
+      </div>
       <nav class="nav">
-        <router-link class="nav__item" to="/" :class="{ 'is-active': route.path === '/' }">首页</router-link>
-        <router-link class="nav__item" to="/me" :class="{ 'is-active': route.path === '/me' }">我的</router-link>
+        <router-link class="nav__item" :to="homePath" :class="{ 'is-active': route.meta.page === 'home' }">首页</router-link>
+        <router-link class="nav__item" :to="mePath" :class="{ 'is-active': route.meta.page === 'me' }">我的</router-link>
       </nav>
       <div class="topbar__spacer"></div>
-      <router-link class="btn btn--icon btn--ghost btn--topbar-settings" to="/settings" data-tip="设置" aria-label="设置">
+      <router-link class="btn btn--icon btn--ghost btn--topbar-settings" to="/settings" data-tip="设置" data-tip-pos="below" aria-label="设置">
         <svg class="btn__ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg>
       </router-link>
       <div class="switcher" role="group" aria-label="切换身份">
@@ -78,6 +99,18 @@ function pickWho(id: any) {
 .nav__item:hover{ color:var(--text); }
 .nav__item.is-active{ color:var(--text); background:var(--surface-2); }
 
+.mode-switch{
+  display:flex; align-items:center; padding:3px; gap:2px;
+  background:var(--surface-2); border:1px solid var(--line-soft); border-radius:var(--r-pill);
+}
+.mode-switch__item{
+  display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:var(--r-pill);
+  color:var(--text-faint); font-size:12px; transition:all .2s var(--ease);
+}
+.mode-switch__item svg{ width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.8; }
+.mode-switch__item.is-active{ color:var(--text); background:var(--surface-3); box-shadow:var(--shadow-sm); }
+:global(body.game-mode) .mode-switch__item.is-active{ color:var(--game-accent); box-shadow:inset 0 0 0 1px var(--game-line); }
+
 .topbar__spacer{ flex:1; }
 
 /* 身份切换器 */
@@ -115,11 +148,17 @@ function pickWho(id: any) {
 }
 /* 手机：顶栏更紧凑，身份切换器只显头像不显名字，保证 首页/我的/设置/切换 都点得到 */
 @media (max-width:560px){
-  .topbar__inner{ gap:var(--s-2); padding:var(--s-3) var(--s-4); }
-  .nav{ margin-left:0; }
+  .topbar__inner{ flex-wrap:wrap; gap:var(--s-2); padding:var(--s-3) var(--s-4) var(--s-2); }
+  .brand__mark{ font-size:24px; }
+  .topbar__spacer{ display:none; }
+  .nav{ order:20; flex:0 0 100%; justify-content:center; margin-left:0; padding-top:var(--s-1); border-top:1px solid var(--line-soft); }
   .nav__item{ padding:var(--s-2) var(--s-2); }
+  .btn--topbar-settings{ margin-left:auto; margin-right:0; }
   .who__name{ display:none; }
-  .who{ padding:5px; }
+  .who{ padding:4px; }
+  .who__avatar{ width:22px; height:22px; }
+  .switcher{ gap:2px; padding:3px; }
+  .mode-switch__item{ padding:5px 7px; }
 }
 @media (max-width:680px){
   .topbar__inner{ padding:var(--s-3) var(--s-4); gap:var(--s-3); }
@@ -130,4 +169,8 @@ function pickWho(id: any) {
    margin-right，本文件专属修饰类 .btn--topbar-settings 新增该属性，与基类属性无交集，
    无需比特异性；scoped 编译后选择器为 (0,2,0)。*/
 .btn--topbar-settings{ margin-right:var(--s-2); }
+@media (max-width:560px){
+  .topbar__inner{ gap:var(--s-2); padding:var(--s-3) var(--s-4) var(--s-2); }
+  .btn--topbar-settings{ margin-left:auto; margin-right:0; }
+}
 </style>

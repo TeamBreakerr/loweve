@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 死代码，延后统一删除
 import { makeTestDb, makeFakeTmdb, makeFakeBangumi, makeFakeDouban, makeFakeLlm } from './helpers.js';
-import { generateStanding, getCurrentRecos, gatherContext } from '../src/recos/service.js';
-import { markRecosStale, isRecosStale, getStandingBatchId } from '../src/recos/state.js';
+import { generateStanding, getCurrentRecos, gatherContext, whenRegenSettled } from '../src/recos/service.js';
+import { markRecosStale, isRecosStale, getStandingBatchId, setStandingBatchId } from '../src/recos/state.js';
 
 const FAKE_MOVIE = (id: any) => ({
   id, title: `片${id}`, original_title: `Movie ${id}`, release_date: '2020-01-01',
@@ -11,7 +11,7 @@ const FAKE_MOVIE = (id: any) => ({
   vote_average: 8.0, vote_count: 100, poster_path: `/p${id}.jpg`, external_ids: { imdb_id: null },
 });
 
-// 两条推荐都能在 TMDB 命中
+// 「片N」按 N 在 TMDB 命中（同 recos-routes 的 fake 手法）
 function deps({ chat }: any = {}) {
   return {
     llm: makeFakeLlm({ chat: chat ?? (async () => JSON.stringify([
@@ -20,7 +20,7 @@ function deps({ chat }: any = {}) {
     ])) }),
     tmdb: makeFakeTmdb({
       search: async (q: any) => ({ results: [{
-        tmdb_id: q === '片101' ? 101 : 102, tmdb_type: 'movie',
+        tmdb_id: Number(q.replace('片', '')) || 0, tmdb_type: 'movie',
         title: q, original_title: q, year: 2020,
       }] }),
       movieDetail: async (id: any) => FAKE_MOVIE(id),
@@ -29,6 +29,10 @@ function deps({ chat }: any = {}) {
     douban: {},   // 推荐不再 skipUpgrade；这里用无 match 的 douban，避免电影异步入队污染测试
   };
 }
+
+// 片101..片(100+n) 的 LLM 返回
+const mkChat = (from: number, n: number) =>
+  JSON.stringify([...Array(n)].map((_, i) => ({ title: `片${from + i}`, year: 2020, type: 'movie', reason: 'r' })));
 
 describe('recos/service', () => {
   let db: any;
@@ -60,30 +64,44 @@ describe('recos/service', () => {
     assert.equal(out.items[0].primary_rating, 8.4);
   });
 
-  it('getCurrentRecos：空→生成；缓存→秒回不重生；stale→重生', async () => {
+  it('getCurrentRecos：空→阻塞生成；缓存→秒回不重生；stale→秒回旧批+后台重生', async () => {
     let chatCalls = 0;
-    const d = deps({ chat: async () => { chatCalls++; return JSON.stringify([
-      { title: '片101', year: 2020, type: 'movie', reason: 'r' }]); } });
-    const r1 = await getCurrentRecos(db, d);     // 空 → 生成
+    // 一轮给足 9 条可验证 → 不触发补齐轮，一次生成 = 一次 chat
+    const d = deps({ chat: async () => { chatCalls++; return mkChat(101 + chatCalls * 20, 9); } });
+    const r1 = await getCurrentRecos(db, d);     // 空 → 阻塞生成
     assert.equal(chatCalls, 1);
-    assert.equal(r1.items.length, 1);
+    assert.equal(r1.items.length, 9);
     const r2 = await getCurrentRecos(db, d);     // 缓存 → 不重生
     assert.equal(chatCalls, 1);
     assert.equal(r2.batch_id, r1.batch_id);
     markRecosStale(db);
-    await getCurrentRecos(db, d);                // stale → 重生
+    const r3 = await getCurrentRecos(db, d);     // stale → 秒回旧批次 + 后台重生成
+    assert.equal(r3.stale, true);
+    assert.equal(r3.batch_id, r1.batch_id);      // 返回的还是旧批
+    await whenRegenSettled();                    // 等后台完成
+    assert.equal(chatCalls, 2);
+    const r4 = await getCurrentRecos(db, d);     // 新批已就位，stale 清除
+    assert.equal(r4.stale, false);
+    assert.notEqual(r4.batch_id, r1.batch_id);
     assert.equal(chatCalls, 2);
   });
 
-  it('LLM 失败：有旧批次回落旧批次不抛', async () => {
+  it('LLM 失败：保留旧批次、停止轮询并返回明确错误', async () => {
     await generateStanding(db, deps(), {});       // 先有一批
     const oldBatch = getStandingBatchId(db);
     markRecosStale(db);
     const bad = deps({ chat: async () => { throw new Error('llm down'); } });
     const r = await getCurrentRecos(db, bad);
-    assert.equal(r.error, 'llm_unavailable');
     assert.equal(r.batch_id, oldBatch);           // 回落
     assert.ok(r.items.length >= 1);
+    await whenRegenSettled();                     // 后台重生成失败
+    assert.equal(isRecosStale(db), false);        // 停止自动轮询/重试风暴
+    assert.equal(getStandingBatchId(db), oldBatch);
+    const failed = await getCurrentRecos(db, bad);
+    assert.equal(failed.stale, false);
+    assert.equal(failed.generating, false);
+    assert.equal(failed.error, 'llm_unavailable');
+    assert.equal(failed.batch_id, oldBatch);
   });
 
   it('已知作品（已在列表）不重复推荐', async () => {
@@ -103,6 +121,67 @@ describe('recos/service', () => {
     // LLM 仍返回 片101 + 片102（默认 deps 的 chat）→ 101 应被避雷池硬挡
     const out = await generateStanding(db, d, {});
     assert.deepEqual(out.items.map((i: any) => i.title), ['片102']);
+  });
+
+  it('首轮掉条目不足 9 → 自动补一轮，且补充轮避雷池含首轮标题', async () => {
+    let calls = 0;
+    const prompts: string[] = [];
+    const d = deps({ chat: async (messages: any) => {
+      prompts.push(messages[1].content);
+      return ++calls === 1 ? mkChat(101, 5) : mkChat(201, 8);
+    } });
+    const out = await generateStanding(db, d, {});
+    assert.equal(calls, 2);
+    assert.equal(out.items.length, 9);                 // 5 + 8 = 13 条 validated，展示上限 9
+    assert.match(prompts[1], /《片101》/);             // 首轮标题进了补充轮避雷池
+    assert.doesNotMatch(prompts[0], /《片101》/);
+  });
+
+  it('补充轮 LLM 失败不作废首轮结果', async () => {
+    let calls = 0;
+    const d = deps({ chat: async () => { if (++calls === 2) throw new Error('llm down'); return mkChat(101, 3); } });
+    const out = await generateStanding(db, d, {});
+    assert.equal(out.items.length, 3);
+  });
+
+  it('首轮只验证出 7 条且补充轮预算不足时，新批次仍固定交付 9 条', async () => {
+    const initial = await generateStanding(db, deps({ chat: async () => mkChat(101, 9) }), {});
+    const realNow = Date.now;
+    let now = 1_000;
+    let calls = 0;
+    Date.now = () => now;
+    try {
+      const d = deps({ chat: async () => {
+        calls++;
+        now += 121_000;
+        return mkChat(201, 7);
+      } });
+      const out = await generateStanding(db, d, {});
+      assert.equal(calls, 1);
+      assert.notEqual(out.batch_id, initial.batch_id);
+      assert.equal(out.items.length, 9);
+      assert.equal(new Set(out.items.map((item: any) => item.work_id)).size, 9);
+      assert.deepEqual(out.items.slice(0, 7).map((item: any) => item.title),
+        [...Array(7)].map((_, i) => `片${201 + i}`));
+    } finally {
+      Date.now = realNow;
+    }
+  });
+
+  it('历史遗留的 7 条当前批次在读取时本地自愈为 9 条，不再调用 LLM', async () => {
+    const initial = await generateStanding(db, deps({ chat: async () => mkChat(101, 9) }), {});
+    const rows = db.prepare('SELECT * FROM recommendations WHERE batch_id = ? ORDER BY id LIMIT 7').all(initial.batch_id);
+    const insert = db.prepare(`INSERT INTO recommendations
+      (batch_id, rec_type, user_prompt, work_id, raw_title, raw_original_title, raw_year, raw_type, reason, validated, created_at)
+      VALUES ('broken-7', @rec_type, @user_prompt, @work_id, @raw_title, @raw_original_title, @raw_year, @raw_type, @reason, @validated, @created_at)`);
+    for (const row of rows) insert.run(row);
+    setStandingBatchId(db, 'broken-7');
+
+    let chatCalls = 0;
+    const out = await getCurrentRecos(db, deps({ chat: async () => { chatCalls++; return '[]'; } }));
+    assert.equal(out.batch_id, 'broken-7');
+    assert.equal(out.items.length, 9);
+    assert.equal(chatCalls, 0);
   });
 
   it('gatherContext 汇集双方与避雷池', async () => {

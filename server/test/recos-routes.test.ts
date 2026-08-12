@@ -2,6 +2,7 @@
 import request from 'supertest';
 import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
+import { whenRegenSettled } from '../src/recos/service.js';
 import { makeTestDb, makeFakeTmdb, makeFakeBangumi, makeFakeDouban, makeFakeLlm } from './helpers.js';
 
 const FAKE_MOVIE = (id: any) => ({
@@ -34,12 +35,45 @@ describe('recos routes', () => {
     assert.equal(res.body.error, null);
   });
 
-  it('POST /api/recos/refresh 强制重生', async () => {
-    const app = appWith(db);
-    await request(app).get('/api/recos');
-    const res = await request(app).post('/api/recos/refresh');
-    assert.equal(res.status, 200);
-    assert.ok(res.body.batch_id);
+  it('POST /api/recos/refresh 秒回旧批次，后台生成且连续点击只启动一次', async () => {
+    let calls = 0;
+    let releaseRefresh: ((value: string) => void) | undefined;
+    const chat = async () => {
+      calls++;
+      if (calls === 1) {
+        return JSON.stringify([...Array(9)].map((_, i) => ({ title: `片${101 + i}`, year: 2020, type: 'movie', reason: '首批' })));
+      }
+      return new Promise<string>((resolve) => { releaseRefresh = resolve; });
+    };
+    const app = appWith(db, { chat });
+    const first = (await request(app).get('/api/recos')).body;
+
+    const firstRefresh = request(app).post('/api/recos/refresh').then(res => res);
+    const quick = await Promise.race([
+      firstRefresh,
+      new Promise<null>(resolve => setTimeout(() => resolve(null), 100)),
+    ]);
+    if (!quick) {
+      releaseRefresh?.(JSON.stringify([...Array(9)].map((_, i) => ({ title: `片${201 + i}`, year: 2020, type: 'movie', reason: '新批' }))));
+      await firstRefresh;
+      assert.fail('refresh 不应同步等待 LLM 完成');
+    }
+
+    assert.equal(quick.status, 202);
+    assert.equal(quick.body.batch_id, first.batch_id);
+    assert.equal(quick.body.stale, true);
+    assert.equal(quick.body.generating, true);
+
+    const second = await request(app).post('/api/recos/refresh');
+    assert.equal(second.status, 202);
+    assert.equal(calls, 2, '同一时间只能有一个后台生成任务');
+
+    releaseRefresh?.(JSON.stringify([...Array(9)].map((_, i) => ({ title: `片${201 + i}`, year: 2020, type: 'movie', reason: '新批' }))));
+    await whenRegenSettled();
+    const done = (await request(app).get('/api/recos')).body;
+    assert.equal(done.stale, false);
+    assert.equal(done.generating, false);
+    assert.notEqual(done.batch_id, first.batch_id);
   });
 
   it('POST /api/recos/custom 带 prompt → rec_type=custom', async () => {

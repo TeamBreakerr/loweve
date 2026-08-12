@@ -12,6 +12,8 @@ export const SETTING_FIELDS = [
   { key: 'tmdb_token',   env: 'tmdbToken',  secret: true },
   { key: 'tmdb_key',     env: 'tmdbKey',    secret: true },
   { key: 'bangumi_ua',   env: 'bangumiUserAgent', secret: false },
+  { key: 'igdb_client_id', env: 'igdbClientId', secret: false },
+  { key: 'igdb_client_secret', env: 'igdbClientSecret', secret: true },
 ];
 const ALLOWED = new Set(SETTING_FIELDS.map(f => f.key));
 
@@ -39,6 +41,8 @@ export function readForApi(db: any) {
   }
   out.llm_ready = Boolean(eff.llmBaseUrl && eff.llmApiKey && eff.llmModel);
   out.tmdb_ready = Boolean(eff.tmdbToken || eff.tmdbKey);
+  out.igdb_ready = Boolean(eff.igdbClientId && eff.igdbClientSecret);
+  out.steam_ready = true;   // 游戏商店公开数据，无需账号或密钥
   return out;
 }
 
