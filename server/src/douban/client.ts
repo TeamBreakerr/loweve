@@ -83,13 +83,37 @@ export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAU
   }
 
   async function match({ title, year, names }: any) {
-    // 检索仍用中文 title（豆瓣中文库召回最好）；匹配打分用全部名字集合
-    let best = pickBest(await suggest(title), { title, year, names });
-    if (!best) {
-      // 全名搜不到（常见于"片名+年份+特别篇/季"这类冗长标题）→ 退成"片名 年份"再搜一次
-      const simplified = title.replace(/\s*(\d{4})\D.*$/, ' $1').trim();
-      if (simplified && simplified !== title) best = pickBest(await suggest(simplified), { title, year, names });
+    const matchInput = { title, year, names };
+    const queries: string[] = [];
+    const seenQueries = new Set<string>();
+    const addQuery = (value: any) => {
+      const query = String(value || '').trim();
+      const key = norm(query);
+      if (query && key && !seenQueries.has(key)) {
+        seenQueries.add(key);
+        queries.push(query);
+      }
+    };
+    addQuery(title);
+    // 冗长的“片名+年份+特别篇/季”标题先补一个短查询，再尝试原标题和 AKA。
+    addQuery(String(title || '').replace(/\s*(\d{4})\D.*$/, ' $1').trim());
+    for (const name of names || []) addQuery(name);
+
+    // subject_suggest 的召回依赖查询语言；中文名、原标题和英文 AKA 分别检索，
+    // 候选按豆瓣 id 去重后统一打分，避免任何单片特判。
+    const candidates = new Map<string, any>();
+    let successfulQueries = 0;
+    let lastError: any = null;
+    for (const query of queries) {
+      try {
+        for (const candidate of await suggest(query)) candidates.set(String(candidate.id), candidate);
+        successfulQueries++;
+      } catch (error) {
+        lastError = error;
+      }
     }
+    if (!successfulQueries && lastError) throw lastError;
+    const best = pickBest([...candidates.values()], matchInput);
     if (!best) return null;
 
     const id = String(best.id);
@@ -111,5 +135,35 @@ export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAU
     };
   }
 
-  return { match };
+  async function hotReviews(id: any, kind: any = 'movie', limit = 3) {
+    const subjectId = String(id || '').trim();
+    if (!/^\d+$/.test(subjectId)) throw new DoubanError('douban_invalid_subject', 0, null);
+    const subjectKind = kind === 'tv' ? 'tv' : 'movie';
+    const count = Math.max(3, Math.min(20, Number(limit) || 3));
+    const url = new URL(`https://m.douban.com/rexxar/api/v2/${subjectKind}/${subjectId}/interests`);
+    url.searchParams.set('count', String(count));
+    url.searchParams.set('start', '0');
+    url.searchParams.set('order_by', 'hot');
+    url.searchParams.set('for_mobile', '1');
+    const data = await getJson(url.toString(), {
+      'User-Agent': UA_MOBILE,
+      Referer: `https://m.douban.com/movie/subject/${subjectId}/`,
+    });
+    return (data?.interests || [])
+      .filter((item: any) => String(item?.comment || '').trim())
+      .sort((a: any, b: any) => (Number(b?.vote_count) || 0) - (Number(a?.vote_count) || 0))
+      .slice(0, count)
+      .map((item: any) => ({
+        id: String(item.id),
+        author: item.user?.name || item.user?.uid || '豆瓣用户',
+        avatar_url: item.user?.avatar || null,
+        content: String(item.comment).trim(),
+        rating: item.rating?.value != null ? Number(item.rating.value) : null,
+        votes: Number(item.vote_count) || null,
+        created_at: item.create_time || null,
+        url: item.uri && /^https?:\/\//.test(item.uri) ? item.uri : null,
+      }));
+  }
+
+  return { match, hotReviews };
 }

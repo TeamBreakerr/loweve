@@ -25,12 +25,14 @@ export function makeFakeBangumi(impl: any = {}) {
     isConfigured: impl.isConfigured ?? (() => true),
     searchAnime:  impl.searchAnime  ?? (async () => []),
     subjectDetail: impl.subjectDetail ?? (async () => { throw new Error('fake bangumi.subjectDetail not stubbed'); }),
+    hotReviews: impl.hotReviews ?? (async () => []),
   };
 }
 
 export function makeFakeDouban(impl: any = {}) {
   return {
     match: impl.match ?? (async () => null),
+    hotReviews: impl.hotReviews ?? (async () => []),
   };
 }
 
@@ -47,6 +49,7 @@ export function makeFakeSteam(impl: any = {}) {
     search: impl.search ?? (async () => ({ results: [] })),
     searchCandidates: impl.searchCandidates ?? impl.search ?? (async () => ({ results: [] })),
     gameDetail: impl.gameDetail ?? (async () => { throw new Error('fake steam.gameDetail not stubbed'); }),
+    hotReviews: impl.hotReviews ?? (async () => []),
   };
 }
 

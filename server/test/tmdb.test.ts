@@ -15,6 +15,12 @@ describe('isAnime', () => {
   it('无 genres 字段=0', () => {
     assert.equal(isAnime({}), 0);
   });
+  it('TMDB 无 genre 的中文短剧不误归类为动画', () => {
+    assert.equal(isAnime({
+      name: '万古冥王', original_name: '万古冥王', origin_country: ['CN'],
+      genres: [], number_of_episodes: 1,
+    }), 0);
+  });
 });
 
 describe('mapMovie', () => {
@@ -205,4 +211,5 @@ describe('createTmdbClient', () => {
     assert.ok(seen[0].includes('append_to_response=external_ids'));
     assert.ok(seen[1].includes('/tv/456'));
   });
+
 });

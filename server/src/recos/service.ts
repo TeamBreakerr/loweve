@@ -39,14 +39,19 @@ export function gatherContext(db: any) {
   const marks = (uid: any) => db.prepare(`
     SELECT w.tmdb_id, w.tmdb_type, w.title, w.year, w.genres, w.is_anime, m.status, m.rating, m.comment
     FROM user_marks m JOIN works w ON w.id = m.work_id
-    WHERE m.user_id = ? ORDER BY m.marked_at DESC`).all(uid);
+    WHERE m.user_id = ?
+      AND NOT EXISTS (SELECT 1 FROM couple_sessions s WHERE s.work_id = m.work_id)
+    ORDER BY m.marked_at DESC`).all(uid);
   const marksA = marks(1);
   const marksB = marks(2);
 
   const sessions = db.prepare(`
     SELECT w.tmdb_id, w.tmdb_type, w.title, w.year, w.genres, w.is_anime,
-           s.rating_a, s.rating_b, s.review_a, s.review_b, s.joint_note
+           mark_a.rating AS rating_a, mark_b.rating AS rating_b,
+           mark_a.comment AS review_a, mark_b.comment AS review_b, s.joint_note
     FROM couple_sessions s JOIN works w ON w.id = s.work_id
+    LEFT JOIN user_marks mark_a ON mark_a.work_id = s.work_id AND mark_a.user_id = 1
+    LEFT JOIN user_marks mark_b ON mark_b.work_id = s.work_id AND mark_b.user_id = 2
     ORDER BY s.watched_at DESC`).all();
 
   const plan = db.prepare(`

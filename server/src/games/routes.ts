@@ -8,10 +8,9 @@ import {
   verifiedCatalogAliasResults, verifiedSteamReferenceResults, verifiedWikidataAliasResults, withGameLinks,
 } from './service.js';
 import { parseSteamReference } from '../steam/client.js';
+import { ensureExperiencePair, getGameSession, listGameSessions } from '../experiences/service.js';
 
 const MARK_COLS = 'id, user_id, work_id, status, rating, comment, marked_at';
-const SESSION_COLS = 'id, work_id, played_at, completed_at, rating_a, rating_b, review_a, review_b, joint_note, created_at';
-const SESSION_WITH_PLAN_COLS = 's.id, s.work_id, s.played_at, s.completed_at, s.rating_a, s.rating_b, s.review_a, s.review_b, s.joint_note, s.created_at, p.status AS plan_status';
 const PLAN_COLS = 'id, work_id, added_by, note, priority, status, created_at, updated_at';
 const PLAN_STATUS = ['pending', 'playing', 'done', 'dropped'];
 const ACTIONS = { want: 'interested', not_interested: 'not_interested', already_seen: 'already_seen' };
@@ -177,13 +176,19 @@ export function gameRoutes() {
       }
     }
     if (!work) return res.json({ duplicate: false });
-    const found = target === 'played'
-      ? db.prepare('SELECT 1 FROM game_marks WHERE user_id = ? AND work_id = ?').get(req.viewing_user_id, work.id)
-      : target === 'couple_played' || target === 'couple_playing'
-        ? db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(work.id)
-        : db.prepare('SELECT 1 FROM game_plan_items WHERE work_id = ?').get(work.id);
-    const error = target === 'played' ? 'game_mark_exists'
-      : target === 'couple_played' || target === 'couple_playing' ? 'game_session_exists' : 'game_plan_exists';
+    let found: any;
+    let error: string;
+    if (target === 'played') {
+      found = db.prepare('SELECT 1 FROM game_marks WHERE user_id = ? AND work_id = ?').get(req.viewing_user_id, work.id);
+      error = 'game_mark_exists';
+    } else if (target === 'couple_played' || target === 'couple_playing') {
+      found = db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(work.id);
+      error = 'game_session_exists';
+    } else {
+      found = db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(work.id);
+      error = found ? 'game_session_exists' : 'game_plan_exists';
+      found ||= db.prepare('SELECT 1 FROM game_plan_items WHERE work_id = ?').get(work.id);
+    }
     res.json(found ? { duplicate: true, error } : { duplicate: false });
   });
 
@@ -209,9 +214,11 @@ export function gameRoutes() {
     work = await refreshGameWorkIfStale(db, { igdb: req.app.locals.igdb, steam: req.app.locals.steam }, work);
     const all_marks = db.prepare(`SELECT ${MARK_COLS} FROM game_marks WHERE work_id = ?`).all(id);
     const my_mark = req.viewing_user_id ? all_marks.find((m: any) => m.user_id === req.viewing_user_id) || null : null;
-    const plan = db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items WHERE work_id = ?`).get(id) || null;
-    const sessions = db.prepare(`SELECT ${SESSION_COLS} FROM game_sessions WHERE work_id = ?`).all(id)
-      .map((session: any) => ({ ...session, plan_status: plan?.status ?? null }));
+    const plan = db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items
+      WHERE work_id = ? AND status = 'pending'
+        AND NOT EXISTS (SELECT 1 FROM game_sessions WHERE work_id = ?)`)
+      .get(id, id) || null;
+    const sessions = listGameSessions(db, { workId: id });
     const platform_releases = db.prepare(`SELECT igdb_platform_id, platform_name, platform_abbreviation,
       release_date, release_year, region, source FROM game_platform_releases WHERE work_id = ?
       ORDER BY COALESCE(release_date, '9999-99-99'), platform_name`).all(id);
@@ -220,11 +227,40 @@ export function gameRoutes() {
     res.json({ ...work, all_marks, my_mark, sessions, plan, platform_releases, offers });
   });
 
+  router.get('/works/:id/hot-reviews', async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: 'invalid_id' });
+    const work: any = req.app.locals.db.prepare(`SELECT id, steam_appid, igdb_id, igdb_url
+      FROM game_works WHERE id = ?`).get(id);
+    if (!work) return res.status(404).json({ error: 'not_found' });
+    if (!work.steam_appid || !req.app.locals.steam?.hotReviews) {
+      return res.json({
+        source: 'igdb', source_label: 'IGDB', source_url: work.igdb_url || null, reviews: [],
+      });
+    }
+    try {
+      const reviews = await req.app.locals.steam.hotReviews(work.steam_appid, 3);
+      res.json({
+        source: 'steam', source_label: 'Steam',
+        source_url: `https://store.steampowered.com/app/${work.steam_appid}/#app_reviews_hash`,
+        reviews: reviews.slice(0, 3),
+      });
+    } catch (error) {
+      console.warn(`[hot-reviews] steam failed for game ${id}`, error?.message);
+      res.json({
+        source: 'steam', source_label: 'Steam',
+        source_url: `https://store.steampowered.com/app/${work.steam_appid}/#app_reviews_hash`,
+        reviews: [],
+      });
+    }
+  });
+
   // —— 个人玩过 ——
   router.get('/marks', (req, res) => {
     if (!requireViewing(req, res)) return;
-    const rows = req.app.locals.db.prepare(`SELECT ${MARK_COLS} FROM game_marks
-      WHERE user_id = ? ORDER BY marked_at DESC`).all(req.viewing_user_id);
+    const db = req.app.locals.db;
+    const rows = db.prepare(`SELECT ${MARK_COLS} FROM game_marks
+      WHERE user_id = ? ORDER BY marked_at DESC, id DESC`).all(req.viewing_user_id);
     const workMap = worksFor(req.app.locals.db, rows);
     res.json({ marks: rows.map((row: any) => ({ ...row, work: workMap.get(row.work_id) })) });
   });
@@ -248,10 +284,12 @@ export function gameRoutes() {
   });
 
   router.put('/marks/:id', (req, res) => {
+    if (!requireViewing(req, res)) return;
     const id = Number(req.params.id);
     const db = req.app.locals.db;
     const row = db.prepare(`SELECT ${MARK_COLS} FROM game_marks WHERE id = ?`).get(id);
     if (!row) return res.status(404).json({ error: 'not_found' });
+    if (row.user_id !== req.viewing_user_id) return res.status(403).json({ error: 'forbidden' });
     const { rating, comment } = req.body || {};
     if (!validRating(rating)) return res.status(400).json({ error: 'invalid_rating' });
     db.prepare(`UPDATE game_marks SET
@@ -265,7 +303,14 @@ export function gameRoutes() {
   });
 
   router.delete('/marks/:id', (req, res) => {
+    if (!requireViewing(req, res)) return;
     const id = Number(req.params.id);
+    const row = req.app.locals.db.prepare('SELECT user_id, work_id FROM game_marks WHERE id = ?').get(id);
+    if (!row) return res.status(404).json({ error: 'not_found' });
+    if (row.user_id !== req.viewing_user_id) return res.status(403).json({ error: 'forbidden' });
+    if (req.app.locals.db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(row.work_id)) {
+      return res.status(409).json({ error: 'shared_experience_requires_mark' });
+    }
     if (!moveGameToTrash(req.app.locals.db, 'mark', id, req.viewing_user_id)) return res.status(404).json({ error: 'not_found' });
     markGameRecosStale(req.app.locals.db);
     res.status(204).end();
@@ -276,13 +321,9 @@ export function gameRoutes() {
     const db = req.app.locals.db;
     const status = String(req.query.status || '');
     if (status && !['playing', 'completed'].includes(status)) return res.status(400).json({ error: 'invalid_status' });
-    const where = status === 'playing'
-      ? `WHERE s.completed_at IS NULL AND (p.status IS NULL OR p.status <> 'dropped')`
-      : status === 'completed' ? 'WHERE s.completed_at IS NOT NULL' : '';
-    const rows = db.prepare(`SELECT ${SESSION_WITH_PLAN_COLS} FROM game_sessions s
-      LEFT JOIN game_plan_items p ON p.work_id = s.work_id ${where}
-      ORDER BY CASE WHEN s.completed_at IS NULL THEN 0 ELSE 1 END,
-               COALESCE(s.completed_at, s.played_at) DESC, s.id DESC`).all();
+    const rows = listGameSessions(db, {
+      status: status === 'playing' ? 'playing' : status === 'completed' ? 'completed' : undefined,
+    });
     const workMap = worksFor(db, rows);
     res.json({ sessions: rows.map((row: any) => ({ ...row, work: workMap.get(row.work_id) })) });
   });
@@ -308,14 +349,16 @@ export function gameRoutes() {
     if (db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(work.id)) {
       return res.status(409).json({ error: 'game_session_exists' });
     }
-    const isA = req.viewing_user_id === 1;
     const now = Date.now();
     const create = () => {
       const info = db.prepare(`INSERT INTO game_sessions
-        (work_id, played_at, completed_at, rating_a, rating_b, review_a, review_b, joint_note, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(work.id, date, completed_at ?? null, isA ? rating ?? null : null, isA ? null : rating ?? null,
-          isA ? review ?? null : null, isA ? null : review ?? null, joint_note ?? null, now);
+        (work_id, played_at, completed_at, joint_note, created_at)
+        VALUES (?, ?, ?, ?, ?)`)
+        .run(work.id, date, completed_at ?? null, joint_note ?? null, now);
+      const viewer = req.viewing_user_id === 1 ? 1 : 2;
+      ensureExperiencePair(db, 'game', work.id, now, {
+        [viewer]: { rating: rating ?? null, comment: review ?? null },
+      });
       if (Number.isInteger(fromPlanId) && fromPlanId > 0) {
         db.prepare(`UPDATE game_plan_items SET status = ?, updated_at = ? WHERE id = ?`)
           .run(completed_at == null ? 'playing' : 'done', now, fromPlanId);
@@ -327,38 +370,44 @@ export function gameRoutes() {
     };
     const id = db.transaction(create)();
     markGameRecosStale(db);
-    res.json(db.prepare(`SELECT ${SESSION_COLS} FROM game_sessions WHERE id = ?`).get(id));
+    res.json(getGameSession(db, Number(id)));
   });
 
   router.put('/sessions/:id', (req, res) => {
+    if (!requireViewing(req, res)) return;
     const id = Number(req.params.id);
     const db = req.app.locals.db;
-    const row = db.prepare(`SELECT ${SESSION_COLS} FROM game_sessions WHERE id = ?`).get(id);
+    const row = getGameSession(db, id);
     if (!row) return res.status(404).json({ error: 'not_found' });
-    const { played_at, completed_at, rating_a, rating_b } = req.body || {};
-    if (!validRating(rating_a) || !validRating(rating_b)) return res.status(400).json({ error: 'invalid_rating' });
-    if (Object.hasOwn(req.body || {}, 'played_at') && played_at != null && !Number.isInteger(played_at)) {
+    const body = req.body || {};
+    const experienceFields = ['rating', 'review', 'rating_a', 'rating_b', 'review_a', 'review_b'];
+    if (experienceFields.some(field => Object.hasOwn(body, field))) {
+      return res.status(400).json({ error: 'experience_fields_belong_to_marks' });
+    }
+    const { played_at, completed_at } = body;
+    if (Object.hasOwn(body, 'played_at') && played_at != null && !Number.isInteger(played_at)) {
       return res.status(400).json({ error: 'invalid_played_at' });
     }
-    if (Object.hasOwn(req.body || {}, 'completed_at') && completed_at != null && !Number.isInteger(completed_at)) {
+    if (Object.hasOwn(body, 'completed_at') && completed_at != null && !Number.isInteger(completed_at)) {
       return res.status(400).json({ error: 'invalid_completed_at' });
     }
     const patch: any = { id };
-    const fields = ['played_at', 'completed_at', 'rating_a', 'rating_b', 'review_a', 'review_b', 'joint_note'];
-    const assignments = fields.filter(key => Object.hasOwn(req.body || {}, key)).map(key => `${key} = @${key}`);
-    for (const key of fields) patch[key] = req.body?.[key] ?? null;
+    const fields = ['played_at', 'completed_at', 'joint_note'];
+    const assignments = fields.filter(key => Object.hasOwn(body, key)).map(key => `${key} = @${key}`);
+    for (const key of fields) patch[key] = body[key] ?? null;
     db.transaction(() => {
       if (assignments.length) db.prepare(`UPDATE game_sessions SET ${assignments.join(', ')} WHERE id = @id`).run(patch);
-      if (Object.hasOwn(req.body || {}, 'completed_at')) {
+      if (Object.hasOwn(body, 'completed_at')) {
         db.prepare(`UPDATE game_plan_items SET status = ?, updated_at = ? WHERE work_id = ?`)
           .run(completed_at == null ? 'playing' : 'done', Date.now(), row.work_id);
       }
     })();
-    if (fields.slice(1).some(key => Object.hasOwn(req.body || {}, key))) markGameRecosStale(db);
-    res.json(db.prepare(`SELECT ${SESSION_COLS} FROM game_sessions WHERE id = ?`).get(id));
+    if (Object.hasOwn(body, 'joint_note') && body.joint_note !== row.joint_note) markGameRecosStale(db);
+    res.json(getGameSession(db, id));
   });
 
   router.delete('/sessions/:id', (req, res) => {
+    if (!requireViewing(req, res)) return;
     if (!moveGameToTrash(req.app.locals.db, 'session', Number(req.params.id), req.viewing_user_id)) return res.status(404).json({ error: 'not_found' });
     markGameRecosStale(req.app.locals.db);
     res.status(204).end();
@@ -370,8 +419,10 @@ export function gameRoutes() {
     const status = String(req.query.status || '');
     if (status && !PLAN_STATUS.includes(status)) return res.status(400).json({ error: 'invalid_status' });
     const rows = status
-      ? db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items WHERE status = ? ORDER BY priority DESC, created_at DESC`).all(status)
-      : db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items ORDER BY priority DESC, created_at DESC`).all();
+      ? db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items WHERE status = ? ORDER BY created_at DESC, id DESC`).all(status)
+      : db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items WHERE status = 'pending'
+          AND NOT EXISTS (SELECT 1 FROM game_sessions WHERE game_sessions.work_id = game_plan_items.work_id)
+        ORDER BY created_at DESC, id DESC`).all();
     const workMap = worksFor(db, rows);
     res.json({ items: rows.map((row: any) => ({ ...row, work: workMap.get(row.work_id) })) });
   });
@@ -382,13 +433,17 @@ export function gameRoutes() {
     if (!Number.isInteger(priority) || priority < 0 || priority > 3) return res.status(400).json({ error: 'invalid_priority' });
     const work = await resolveWork(req, res);
     if (!work) return;
+    const db = req.app.locals.db;
+    if (db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(work.id)) {
+      return res.status(409).json({ error: 'game_session_exists' });
+    }
     const now = Date.now();
     try {
-      const info = req.app.locals.db.prepare(`INSERT INTO game_plan_items
+      const info = db.prepare(`INSERT INTO game_plan_items
         (work_id, added_by, note, priority, status, created_at, updated_at)
         VALUES (?, ?, ?, ?, 'pending', ?, ?)`)
         .run(work.id, req.viewing_user_id, req.body?.note ?? null, priority, now, now);
-      res.json(req.app.locals.db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items WHERE id = ?`).get(info.lastInsertRowid));
+      res.json(db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items WHERE id = ?`).get(info.lastInsertRowid));
     } catch (e) {
       if (String(e).includes('UNIQUE')) return res.status(409).json({ error: 'game_plan_exists' });
       throw e;
@@ -400,24 +455,36 @@ export function gameRoutes() {
     const db = req.app.locals.db;
     const existing = db.prepare('SELECT * FROM game_plan_items WHERE id = ?').get(id);
     if (!existing) return res.status(404).json({ error: 'not_found' });
-    const { note, priority, status } = req.body || {};
+    const { note, priority, status, played_at, completed_at } = req.body || {};
     if (status !== undefined && !PLAN_STATUS.includes(status)) return res.status(400).json({ error: 'invalid_status' });
     if (priority !== undefined && (!Number.isInteger(priority) || priority < 0 || priority > 3)) return res.status(400).json({ error: 'invalid_priority' });
+    if (played_at != null && !Number.isInteger(played_at)) return res.status(400).json({ error: 'invalid_played_at' });
+    if (completed_at != null && !Number.isInteger(completed_at)) return res.status(400).json({ error: 'invalid_completed_at' });
     const fields = ['note', 'priority', 'status'].filter(key => Object.hasOwn(req.body || {}, key));
     const patch: any = { id, updated_at: Date.now(), note: note ?? null, priority: priority ?? null, status: status ?? null };
-    if ((status === 'playing' || status === 'done')
-      && !db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(existing.work_id)) {
-      return res.status(409).json({ error: 'game_session_required' });
-    }
+    const statusDate = status === 'playing' ? played_at ?? currentDateKey()
+      : status === 'done' ? completed_at ?? currentDateKey() : null;
+    let createdSession = false;
     db.transaction(() => {
+      if ((status === 'playing' || status === 'done')
+        && !db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(existing.work_id)) {
+        db.prepare(`INSERT INTO game_sessions
+          (work_id, played_at, completed_at, joint_note, created_at)
+          VALUES (?, ?, NULL, NULL, ?)`)
+          .run(existing.work_id, status === 'playing' ? statusDate : null, patch.updated_at);
+        ensureExperiencePair(db, 'game', existing.work_id, patch.updated_at);
+        createdSession = true;
+      }
       if (fields.length) db.prepare(`UPDATE game_plan_items SET ${fields.map(key => `${key} = @${key}`).join(', ')}, updated_at = @updated_at WHERE id = @id`).run(patch);
       if (status === 'done') {
-        db.prepare(`UPDATE game_sessions SET completed_at = COALESCE(completed_at, ?) WHERE work_id = ?`)
-          .run(currentDateKey(), existing.work_id);
+        db.prepare(`UPDATE game_sessions SET completed_at = ? WHERE work_id = ?`)
+          .run(statusDate, existing.work_id);
       } else if (status === 'playing') {
-        db.prepare(`UPDATE game_sessions SET completed_at = NULL WHERE work_id = ?`).run(existing.work_id);
+        db.prepare(`UPDATE game_sessions SET played_at = ?, completed_at = NULL WHERE work_id = ?`)
+          .run(statusDate, existing.work_id);
       }
     })();
+    if (createdSession) markGameRecosStale(db);
     res.json(db.prepare(`SELECT ${PLAN_COLS} FROM game_plan_items WHERE id = ?`).get(id));
   });
 
@@ -451,6 +518,10 @@ export function gameRoutes() {
     const db = req.app.locals.db;
     const rec = db.prepare('SELECT id, work_id FROM game_recommendations WHERE id = ?').get(id);
     if (!rec) return res.status(404).json({ error: 'not_found' });
+    if (action === 'want' && rec.work_id
+      && db.prepare('SELECT 1 FROM game_sessions WHERE work_id = ?').get(rec.work_id)) {
+      return res.status(409).json({ error: 'game_session_exists' });
+    }
     const now = Date.now();
     db.prepare(`UPDATE game_recommendations SET feedback = ?, feedback_by = ?, feedback_at = ? WHERE id = ?`)
       .run(feedback, req.viewing_user_id, now, id);

@@ -12,6 +12,7 @@ import Priority from '../components/Priority.vue';
 import AddModal from '../components/AddModal.vue';
 import EditModal from '../components/EditModal.vue';
 import WatchedTimeline from '../components/WatchedTimeline.vue';
+import HorizontalRail from '../components/HorizontalRail.vue';
 import { ratingHref } from '../api/index';
 
 const router = useRouter();
@@ -56,7 +57,7 @@ const watchedModalOpen = ref(false);
 const plan = usePlan();
 onMounted(() => plan.load());
 const visiblePlan = computed(() =>
-  plan.list.filter(p => p.status !== 'done' && p.status !== 'dropped').slice(0, 5));
+  plan.list.filter(p => p.status !== 'done' && p.status !== 'dropped'));
 const planModalOpen = ref(false);
 </script>
 
@@ -116,7 +117,7 @@ const planModalOpen = ref(false);
       <div class="reco-top">
         <article v-if="hero" class="rk rk-hero">
           <span class="rk-num">1</span>
-          <Poster :color="'#2a2a30'" :url="hero.poster_url" :kind="hero.is_anime ? '番剧' : ''" />
+          <Poster :color="'#2a2a30'" :url="hero.poster_url" :kind="hero.is_anime ? '番剧' : ''" @click="openWork(hero)" />
           <div class="rk-hero__body">
             <h3 class="rk-hero__title" @click="openWork(hero)">{{ hero.title }} <span class="year">{{ hero.year }}</span></h3>
             <div class="rk-meta">
@@ -136,7 +137,7 @@ const planModalOpen = ref(false);
         <div class="rk-mids">
           <article v-for="(d, i) in mids" :key="d.id" class="rk rk-mid">
             <span class="rk-num">{{ i + 2 }}</span>
-            <Poster :color="'#2a2a30'" :url="d.poster_url" :kind="d.is_anime ? '番剧' : ''" />
+            <Poster :color="'#2a2a30'" :url="d.poster_url" :kind="d.is_anime ? '番剧' : ''" @click="openWork(d)" />
             <div class="rk-mid__body">
               <h3 class="rk-mid__title" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h3>
               <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" class="rk-rating" />
@@ -152,7 +153,7 @@ const planModalOpen = ref(false);
         <article v-for="(d, i) in minis" :key="d.id" class="rk-mini">
           <div class="rk-mini__pw">
             <span class="rk-num">{{ i + 4 }}</span>
-            <Poster :color="'#2a2a30'" :url="d.poster_url" :kind="d.is_anime ? '番剧' : ''" />
+            <Poster :color="'#2a2a30'" :url="d.poster_url" :kind="d.is_anime ? '番剧' : ''" @click="openWork(d)" />
             <div v-if="d.reason" class="rk-mini__reason">
               <span class="rk-mini__reason-hd">
                 <svg viewBox="0 0 24 24"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>
@@ -202,7 +203,7 @@ const planModalOpen = ref(false);
         </div>
       </div>
 
-      <div class="hrail">
+      <HorizontalRail class="hrail" aria-label="想看就一起看">
         <p v-if="!visiblePlan.length" class="plan-empty-note">
           想看清单还是空的。
         </p>
@@ -222,7 +223,7 @@ const planModalOpen = ref(false);
             </div>
           </div>
         </article>
-      </div>
+      </HorizontalRail>
     </section>
 
     <!-- 推荐爱心 → 选优先级再加入想看 -->
@@ -338,7 +339,7 @@ const planModalOpen = ref(false);
 .rk-reason{ font-size:var(--fs-body); line-height:1.6; color:var(--text-dim); }
 .rk-reason .label{ display:inline-flex; align-items:center; gap:6px; color:var(--rose); font-size:var(--fs-sm); margin-bottom:6px; }
 .rk-reason .label svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; }
-.rk-actions{ display:flex; gap:var(--s-2); margin-top:auto; justify-content:flex-end; }
+.rk-actions{ display:flex; gap:var(--s-2); margin-top:auto; justify-content:flex-end; flex:0 0 auto; }   /* 反馈按钮不参与收缩：卡片高度紧张时挤走的必须是评语，不能是按钮 */
 
 .rk-mids{ display:flex; flex-direction:column; gap:var(--s-4); }
 .rk-mid{ display:flex; gap:0; flex:1; }
@@ -346,7 +347,15 @@ const planModalOpen = ref(false);
 .rk-mid__body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; padding:var(--s-4); }
 .rk-mid__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); line-height:1.2; padding-right:36px; }
 .rk-mid__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
-.rk-mid .rk-reason{ font-size:var(--fs-sm); line-height:1.5; }
+/* 中卡高度由左边 1 号大卡撑定、两张平分，卡片本身 overflow:hidden，评语一长就把最下面
+   的反馈按钮顶出卡外切掉。所以评语钳成 3 行（正好是等分高度里剩给它的空间）并允许继续
+   收缩兜底，与游戏侧 .game-rank__reason-small 同一套做法；窄屏单列时卡片按内容长高，
+   不需要钳制（见下方 max-width:860px）。*/
+.rk-mid .rk-reason{
+  font-size:var(--fs-sm); line-height:1.5;
+  display:-webkit-box; overflow:hidden; min-height:0;
+  -webkit-box-orient:vertical; -webkit-line-clamp:3;
+}
 .rk-mid .rk-actions{ gap:6px; }
 
 /* —— 推荐尾部 4–10：横向小卡轨道 —— */
@@ -381,9 +390,7 @@ const planModalOpen = ref(false);
 .rk-mini__foot{ display:flex; gap:5px; margin-top:auto; }
 
 /* —— 横向卡片轨道：想看就一起看 —— */
-.hrail{ display:flex; gap:var(--s-4); overflow-x:auto; padding:4px 4px var(--s-4); margin:0 -4px; scroll-snap-type:x mandatory; scrollbar-width:thin; }
-.hrail::-webkit-scrollbar{ height:8px; }
-.hrail::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
+.hrail{ --horizontal-rail-gap:var(--s-4); }
 
 @media (max-width:680px){
   .intent{ flex-wrap:wrap; border-radius:var(--r-lg); padding:var(--s-3); }
@@ -394,6 +401,7 @@ const planModalOpen = ref(false);
   .reco-top{ grid-template-columns:1fr; min-height:0; }
   .rk-mid{ gap:var(--s-4); padding:var(--s-4); }
   .rk-mid__body{ padding:0; }
+  .rk-mid .rk-reason{ display:block; overflow:visible; -webkit-line-clamp:none; }
 }
 @media (max-width:680px){
   .rk-hero{ flex-direction:column; gap:var(--s-4); }
@@ -410,6 +418,7 @@ const planModalOpen = ref(false);
    见 primitives.css 与 WatchedTimeline.vue/Plan.vue），为避免误读为「全局改动」，
    改用独立的修饰类名（而非同名类里加声明），双重保险不影响其他实例。 */
 .rk-hero__title, .rk-mid__title, .rk-mini__title{ cursor:pointer; }
+.rk-hero :deep(.poster), .rk-mid :deep(.poster), .rk-mini :deep(.poster){ cursor:pointer; }
 .rk-rating{ align-self:flex-start; }
 .reco-empty-note{ color:var(--text-faint); padding:var(--s-4) var(--s-3); }
 .reco-error-note{ color:var(--rose); padding:0 var(--s-3) var(--s-4); }

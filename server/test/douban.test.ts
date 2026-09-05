@@ -22,6 +22,23 @@ describe('createDoubanClient (HTTP)', () => {
     assert.match(r.url, /subject\/26384741/);
   });
 
+  it('hotReviews 按热度返回前三条短评', async () => {
+    let requested = '';
+    const fetch = async (url: any) => {
+      requested = String(url);
+      return ok({ interests: [
+        { id: 1, comment: '第二热', vote_count: 12, rating: { value: 4 }, create_time: '2026-08-01', user: { name: '乙' } },
+        { id: 2, comment: '最热', vote_count: 30, rating: { value: 5 }, create_time: '2026-08-02', user: { name: '甲' } },
+        { id: 3, comment: '第三热', vote_count: 8, rating: { value: 4 }, create_time: '2026-08-03', user: { name: '丙' } },
+        { id: 4, comment: '第四热', vote_count: 1, rating: { value: 3 }, user: { name: '丁' } },
+      ] });
+    };
+    const reviews = await createDoubanClient({ fetch }).hotReviews('34874432', 'movie', 3);
+    assert.match(requested, /movie\/34874432\/interests/);
+    assert.match(requested, /order_by=hot/);
+    assert.deepEqual(reviews.map((item: any) => item.content), ['最热', '第二热', '第三热']);
+  });
+
   it('豆瓣年份与 TMDB 差 1 仍匹配', async () => {
     const fetch = routed({
       'subject_suggest': ok([{ id: '35597426', title: '稍微想起一些', year: '2021', type: 'movie' }]),
@@ -53,6 +70,34 @@ describe('createDoubanClient (HTTP)', () => {
     const r: any = await createDoubanClient({ fetch }).match({ title: '世界奇妙物语2022年夏之特别篇', year: 2022 });
     assert.equal(r.douban_id, '35914301');
     assert.deepEqual(queries, ['世界奇妙物语2022年夏之特别篇', '世界奇妙物语 2022']);  // 退化查询触发
+  });
+
+  it('中文标题无结果时继续用原标题检索，并从全部候选统一选最佳', async () => {
+    const queries: string[] = [];
+    const fetch = async (url: any) => {
+      if (url.includes('subject_suggest')) {
+        const query = decodeURIComponent(new URL(url).searchParams.get('q') || '');
+        queries.push(query);
+        if (query === '怪谈新耳袋剧场版：幽灵公寓') return ok([]);
+        if (query === '怪談新耳袋 劇場版') {
+          return ok([{ id: '1438790', title: '怪谈新耳袋剧场版 幽灵公寓', year: '2005', type: 'movie' }]);
+        }
+        return ok([]);
+      }
+      if (url.includes('rexxar/api/v2/movie/1438790')) {
+        return ok({ rating: { value: 7.0, count: 9302 } });
+      }
+      throw new Error('unexpected ' + url);
+    };
+
+    const result: any = await createDoubanClient({ fetch }).match({
+      title: '怪谈新耳袋剧场版：幽灵公寓',
+      names: ['怪谈新耳袋剧场版：幽灵公寓', '怪談新耳袋 劇場版'],
+      year: 2005,
+    });
+
+    assert.equal(result.douban_id, '1438790');
+    assert.deepEqual(queries, ['怪谈新耳袋剧场版：幽灵公寓', '怪談新耳袋 劇場版']);
   });
 
   it('标题完全对不上 → null（不错配同名）', async () => {

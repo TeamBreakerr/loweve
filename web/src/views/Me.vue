@@ -50,12 +50,14 @@ onMounted(async () => {
       <div v-else class="grid grid--me">
         <article v-for="m in marks.watched" :key="m.id" class="title-card">
           <div class="title-card__pw">
-            <Poster :color="'#2a2a30'" :url="m.work.primary_poster_url" :kind="m.work.is_anime ? '番剧' : ''" />
+            <router-link class="title-card__poster-link" :to="`/work/${m.work_id}`" :aria-label="`查看《${m.work.title}》详情`">
+              <Poster :color="'#2a2a30'" :url="m.work.primary_poster_url" :kind="m.work.is_anime ? '番剧' : ''" />
+            </router-link>
             <button class="card-edit" data-tip="编辑" data-tip-pos="below" @click="openEdit(m)">
               <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             </button>
           </div>
-          <div class="title-card__name">{{ m.work.title }} <span class="year">{{ m.work.year }}</span></div>
+          <router-link class="title-card__name" :to="`/work/${m.work_id}`">{{ m.work.title }} <span class="year">{{ m.work.year }}</span></router-link>
           <div class="title-card__row">
             <span v-if="m.rating" class="mini-score"><span class="lab">我</span>{{ m.rating }}</span>
             <Rating :source="m.work.rating_source" :score="m.work.primary_rating?.toFixed(1) || '—'" :href="ratingHref(m.work)" />
@@ -82,7 +84,9 @@ onMounted(async () => {
 /* .title-card__pw 从 styles/loweve.css「卡片角标编辑按钮」段搬入（T10 批 5，纯剪切，未改
    声明；批 3 建本 <style scoped> 块时的漏项，本批补上）。*/
 .title-card__pw{ position:relative; }
-.title-card__name{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; }
+.title-card__poster-link{ display:block; border-radius:var(--r-md); }
+.title-card__poster-link:focus-visible, .title-card__name:focus-visible{ outline:2px solid var(--rose-bright); outline-offset:3px; }
+.title-card__name{ display:block; color:inherit; font-family:var(--font-serif); font-weight:600; font-size:var(--fs-body); line-height:1.3; text-decoration:none; }
 .title-card__name .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-sm); }
 .title-card__row{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
 .mini-score{ font-family:var(--font-brand); font-style:italic; font-weight:600; color:var(--gold); font-size:var(--fs-md); }

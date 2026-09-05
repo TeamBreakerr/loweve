@@ -1,6 +1,49 @@
 // 前后端共享的 API 数据形状。web 经 src/types.ts 重导出；server 在路由标注响应类型（T18）。
 export type RatingSource = 'douban' | 'bangumi' | 'tmdb';
 
+export interface WorkDetails {
+  backdrop_url?: string | null;
+  tagline?: string | null;
+  release_date?: string | null;
+  status?: string | null;
+  original_language?: string | null;
+  countries?: string[];
+  spoken_languages?: string[];
+  production_companies?: string[];
+  directors?: string[];
+  cast?: { name: string; character?: string | null }[];
+  tmdb_rating?: number | null;
+  tmdb_rating_count?: number | null;
+  douban_rating?: number | null;
+  douban_rating_count?: number | null;
+  bangumi_rating?: number | null;
+  bangumi_rating_count?: number | null;
+  trailer_url?: string | null;
+  homepage?: string | null;
+  imdb_id?: string | null;
+  tmdb_url?: string | null;
+}
+
+export interface HotReview {
+  id: string;
+  author: string;
+  avatar_url?: string | null;
+  content: string;
+  rating?: number | null;
+  votes?: number | null;
+  created_at?: string | null;
+  url?: string | null;
+  sentiment?: 'positive' | 'negative' | null;
+  playtime_hours?: number | null;
+}
+
+export interface HotReviewResponse {
+  source: 'douban' | 'bangumi' | 'steam' | 'igdb' | null;
+  source_label: string | null;
+  source_url?: string | null;
+  reviews: HotReview[];
+}
+
 export interface Work {
   id: number;
   tmdb_id: number;
@@ -15,6 +58,7 @@ export interface Work {
   overview?: string | null;
   primary_poster_url?: string;
   primary_rating?: number | null;
+  primary_rating_count?: number | null;
   rating_source: RatingSource;
   douban_id?: string | null;
   douban_url?: string | null;
@@ -23,6 +67,7 @@ export interface Work {
   sessions: Session[];
   plan?: PlanItem | null;
   my_mark?: Mark | null;
+  details?: WorkDetails;
 }
 
 export interface Mark {
@@ -176,7 +221,6 @@ export interface GameSession {
   work_id: number;
   played_at?: number | null;
   completed_at?: number | null;
-  plan_status?: 'pending' | 'playing' | 'done' | 'dropped' | null;
   rating_a?: number | null;
   rating_b?: number | null;
   review_a?: string | null;

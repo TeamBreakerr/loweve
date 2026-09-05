@@ -147,6 +147,26 @@ describe('GET /api/marks', () => {
     assert.equal(res.body.marks.length, 1);
     assert.equal(res.body.marks[0].user_id, 2);
   });
+
+  it('一起看过的记录会进入双方各自的个人看过列表', async () => {
+    const app = createApp({ db, tmdb: makeFakeTmdb() });
+    const work_id = seedWork(db);
+    const session = await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1')
+      .send({ work_id, watched_at: 20260820, rating: 9, review: '甲的短评' });
+    const markB: any = db.prepare('SELECT id FROM user_marks WHERE user_id = 2 AND work_id = ?').get(work_id);
+    await request(app).put(`/api/marks/${markB.id}`).set('Cookie', 'loweve_user_id=2')
+      .send({ rating: 8, comment: '乙的短评' });
+    assert.equal(session.status, 200);
+
+    for (const [userId, rating, comment] of [[1, 9, '甲的短评'], [2, 8, '乙的短评']] as const) {
+      const res = await request(app).get('/api/marks').set('Cookie', `loweve_user_id=${userId}`);
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body.marks.map((mark: any) => ({
+        work_id: mark.work_id, user_id: mark.user_id, status: mark.status,
+        rating: mark.rating, comment: mark.comment, has_real_id: mark.id > 0,
+      })), [{ work_id, user_id: userId, status: 'watched', rating, comment, has_real_id: true }]);
+    }
+  });
 });
 
 describe('PUT/DELETE /api/marks/:id', () => {
@@ -158,17 +178,39 @@ describe('PUT/DELETE /api/marks/:id', () => {
     const app = createApp({ db, tmdb: makeFakeTmdb() });
     const work_id = seedWork(db);
     const created = (await request(app).post('/api/marks').set('Cookie', 'loweve_user_id=1').send({ work_id, status: 'wish' })).body;
-    const res = await request(app).put(`/api/marks/${created.id}`).send({ status: 'watched', rating: 10 });
+    const res = await request(app).put(`/api/marks/${created.id}`).set('Cookie', 'loweve_user_id=1')
+      .send({ status: 'watched', rating: 10 });
     assert.equal(res.status, 200);
     assert.equal(res.body.status, 'watched');
     assert.equal(res.body.rating, 10);
+  });
+
+  it('不能编辑对方的个人评分评价', async () => {
+    const app = createApp({ db, tmdb: makeFakeTmdb() });
+    const work_id = seedWork(db);
+    const created = (await request(app).post('/api/marks').set('Cookie', 'loweve_user_id=1')
+      .send({ work_id, status: 'watched', rating: 8 })).body;
+    const res = await request(app).put(`/api/marks/${created.id}`).set('Cookie', 'loweve_user_id=2')
+      .send({ rating: 1 });
+    assert.equal(res.status, 403);
+    assert.equal((db.prepare('SELECT rating FROM user_marks WHERE id = ?').get(created.id) as any).rating, 8);
+  });
+
+  it('共同关系存在时不能删除其中一方的个人体验记录', async () => {
+    const app = createApp({ db, tmdb: makeFakeTmdb() });
+    const work_id = seedWork(db);
+    await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id });
+    const mark: any = db.prepare('SELECT id FROM user_marks WHERE user_id = 1 AND work_id = ?').get(work_id);
+    const res = await request(app).delete(`/api/marks/${mark.id}`).set('Cookie', 'loweve_user_id=1');
+    assert.equal(res.status, 409);
+    assert.equal(res.body.error, 'shared_experience_requires_mark');
   });
 
   it('DELETE → 204 + 库里没了', async () => {
     const app = createApp({ db, tmdb: makeFakeTmdb() });
     const work_id = seedWork(db);
     const created = (await request(app).post('/api/marks').set('Cookie', 'loweve_user_id=1').send({ work_id, status: 'watched' })).body;
-    const res = await request(app).delete(`/api/marks/${created.id}`);
+    const res = await request(app).delete(`/api/marks/${created.id}`).set('Cookie', 'loweve_user_id=1');
     assert.equal(res.status, 204);
     const row = db.prepare('SELECT * FROM user_marks WHERE id = ?').get(created.id);
     assert.equal(row, undefined);

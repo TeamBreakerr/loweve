@@ -162,8 +162,14 @@ try {
     errors.push(`前三名底边未对齐：hero=${metrics.hero.bottom.toFixed(1)}, mids=${metrics.mids.bottom.toFixed(1)}`);
   }
   metrics.miniPosters.forEach((poster, index) => {
+    const card = metrics.miniCards[index];
     const ratio = poster.width / poster.height;
-    if (Math.abs(ratio - 2 / 3) > 0.01) errors.push(`第 ${index + 4} 名海报不是 2:3：${poster.width.toFixed(1)}×${poster.height.toFixed(1)}`);
+    if (viewportWidth > 680 && Math.abs(ratio - 2 / 3) > 0.01) {
+      errors.push(`第 ${index + 4} 名海报不是 2:3：${poster.width.toFixed(1)}×${poster.height.toFixed(1)}`);
+    }
+    if (viewportWidth <= 680 && (Math.abs(poster.top - card.top) > 1 || Math.abs(poster.bottom - card.bottom) > 1)) {
+      errors.push(`第 ${index + 4} 名手机海报没有铺满卡片高度：card=${card.top.toFixed(1)}..${card.bottom.toFixed(1)}, poster=${poster.top.toFixed(1)}..${poster.bottom.toFixed(1)}`);
+    }
     const minPoster = viewportWidth <= 680 ? 80 : 148;
     const maxPoster = viewportWidth <= 680 ? 115 : 158;
     if (poster.width < minPoster || poster.width > maxPoster) errors.push(`第 ${index + 4} 名海报宽度 ${poster.width.toFixed(1)}px，不够紧凑`);
@@ -220,7 +226,16 @@ try {
   if (viewportWidth > 680 && (!hoverReason || hoverReason.opacity < 0.95 || !hoverReason.text)) {
     errors.push(`鼠标悬浮后推荐理由没有显示：${JSON.stringify(hoverReason)}`);
   }
-  if (metrics.imageFits.some(value => value !== 'contain')) errors.push('推荐封面仍存在 object-fit 非 contain，可能裁切画面');
+  if (viewportWidth <= 680) {
+    const miniImageFits = metrics.imageFits.slice(-metrics.miniCards.length);
+    if (miniImageFits.some(value => value !== 'cover')) errors.push(`手机尾部海报没有铺满：object-fit=${miniImageFits.join(', ')}`);
+    const actionBottomInsets = metrics.miniCards.map((card, index) => card.bottom - metrics.miniActionBottoms[index]);
+    if (Math.max(...actionBottomInsets) - Math.min(...actionBottomInsets) > 1) {
+      errors.push(`手机尾部按钮底边距不齐：${actionBottomInsets.join(', ')}`);
+    }
+  } else if (metrics.imageFits.some(value => value !== 'contain')) {
+    errors.push('推荐封面仍存在 object-fit 非 contain，可能裁切画面');
+  }
   rows.forEach((row, rowIndex) => {
     const cardIndexes = row.map(card => metrics.miniCards.indexOf(card));
     const bottoms = cardIndexes.map(index => metrics.miniActionBottoms[index]);

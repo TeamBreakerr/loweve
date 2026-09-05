@@ -21,7 +21,16 @@ export function tvRoutes() {
           poster_path: s.poster_path || null,
           episode_count: s.episode_count || null,
         }));
-      res.json({ seasons });
+      // 季的身份完全遵循 TMDB；服务端不根据标题猜测“真季 / 独立续作”。
+      const trackBySeason = seasons.length > 1;
+      const episodeCount = trackBySeason
+        ? null
+        : seasons[0]?.episode_count || detail.number_of_episodes || null;
+      res.json({
+        seasons: trackBySeason ? seasons : [],
+        track_by_season: trackBySeason,
+        episode_count: episodeCount,
+      });
     } catch (e) {
       res.status(502).json({ error: e.code || 'tmdb_unknown', message: e.message });
     }

@@ -97,6 +97,25 @@ describe('Steam client', () => {
     assert.match(storeCookie, /timezoneOffset=28800,0/);
   });
 
+  it('hotReviews 请求 Steam 高赞评测并映射前三条', async () => {
+    let requested = '';
+    const fetch = async (url: any) => {
+      requested = String(url);
+      return new Response(JSON.stringify({ reviews: [
+        { recommendationid: '1', review: '合作神作', voted_up: true, votes_up: 20, timestamp_created: 1_700_000_000, author: { steamid: '76561198000001234', playtime_forever: 1234 } },
+        { recommendationid: '2', review: '谜题很棒', voted_up: true, votes_up: 10, author: { steamid: '76561198000005678' } },
+        { recommendationid: '3', review: '后半段一般', voted_up: false, votes_up: 3, author: { steamid: '76561198000009012' } },
+      ] }));
+    };
+    const reviews = await createSteamClient({ fetch }).hotReviews(620, 3);
+    assert.match(requested, /appreviews\/620/);
+    assert.match(requested, /filter=toprated/);
+    assert.equal(reviews.length, 3);
+    assert.equal(reviews[0].sentiment, 'positive');
+    assert.equal(reviews[0].playtime_hours, 20.6);
+    assert.equal(reviews[2].sentiment, 'negative');
+  });
+
   it('旧 AppID 重定向后用规范 AppID 重抓评测和商品页并复用缓存', async () => {
     const calls: string[] = [];
     const canonicalAppid = 435150;

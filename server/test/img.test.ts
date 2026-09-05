@@ -12,6 +12,7 @@ describe('img 海报代理', () => {
   it('parseAllowedUrl：白名单 host + https 才通过', () => {
     assert.ok(parseAllowedUrl(tmdb));
     assert.ok(parseAllowedUrl('https://lain.bgm.tv/pic/x.jpg'));
+    assert.ok(parseAllowedUrl('https://img1.doubanio.com/icon/u123.jpg'));
     assert.ok(parseAllowedUrl('https://images.igdb.com/igdb/image/upload/t_cover_big/co1.jpg'));
     assert.equal(parseAllowedUrl('https://evil.com/a.jpg'), null);      // 非白名单
     assert.equal(parseAllowedUrl('http://image.tmdb.org/a.jpg'), null); // 非 https

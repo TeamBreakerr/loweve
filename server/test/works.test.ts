@@ -1,6 +1,7 @@
 import request from 'supertest';
 import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
+import { makeWorkDetails, sweepStuckBangumi } from '../src/routes/works.js';
 import { makeTestDb, makeFakeTmdb, makeFakeBangumi, makeFakeDouban } from './helpers.js';
 
 const FAKE_MOVIE = {
@@ -100,6 +101,122 @@ describe('GET /api/works/:id', () => {
     const res = await request(app).get('/api/works/999');
     assert.equal(res.status, 404);
   });
+
+  it('详情页独立返回前三条豆瓣热评', async () => {
+    const reviews = [
+      { id: 'r1', author: '甲', content: '第一条', votes: 88, rating: 5 },
+      { id: 'r2', author: '乙', content: '第二条', votes: 66, rating: 4 },
+      { id: 'r3', author: '丙', content: '第三条', votes: 33, rating: 5 },
+    ];
+    const douban = makeFakeDouban({
+      hotReviews: async (id: string, kind: string, limit: number) => {
+        assert.equal(id, '34874432');
+        assert.equal(kind, 'movie');
+        assert.equal(limit, 3);
+        return reviews;
+      },
+    });
+    const app = createApp({ db, tmdb: makeFakeTmdb({ movieDetail: async () => FAKE_MOVIE }), douban });
+    const work = (await request(app).post('/api/works').send({ tmdb_id: 695932, tmdb_type: 'movie' })).body;
+    db.prepare(`UPDATE works SET douban_id = '34874432', douban_url = 'https://movie.douban.com/subject/34874432/' WHERE id = ?`).run(work.id);
+
+    const res = await request(app).get(`/api/works/${work.id}/hot-reviews`);
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.source, 'douban');
+    assert.deepEqual(res.body.reviews, reviews);
+  });
+
+  it('动画详情使用 Bangumi 短评且不调用 TMDB 热评', async () => {
+    const reviews = [
+      { id: 'b1', author: '甲', content: '第一条', rating: 9 },
+      { id: 'b2', author: '乙', content: '第二条', rating: 8 },
+      { id: 'b3', author: '丙', content: '第三条', rating: 7 },
+    ];
+    let tmdbReviewCalls = 0;
+    const tmdb = makeFakeTmdb({
+      tvDetail: async () => FAKE_TV_ANIME,
+    });
+    Object.defineProperty(tmdb, 'hotReviews', { get: () => { tmdbReviewCalls++; throw new Error('不应读取 TMDB 热评'); } });
+    const bangumi = makeFakeBangumi({ hotReviews: async () => reviews });
+    const app = createApp({ db, tmdb, bangumi });
+    const work = (await request(app).post('/api/works').send({ tmdb_id: 328609, tmdb_type: 'tv' })).body;
+    db.prepare('UPDATE works SET bangumi_id = 328609 WHERE id = ?').run(work.id);
+
+    const res = await request(app).get(`/api/works/${work.id}/hot-reviews`);
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.source, 'bangumi');
+    assert.deepEqual(res.body.reviews, reviews);
+    assert.equal(tmdbReviewCalls, 0);
+  });
+
+  it('没有豆瓣或 Bangumi 来源时返回空短评，不回退 TMDB', async () => {
+    let tmdbReviewCalls = 0;
+    const tmdb = makeFakeTmdb({
+      movieDetail: async () => FAKE_MOVIE,
+    });
+    Object.defineProperty(tmdb, 'hotReviews', { get: () => { tmdbReviewCalls++; throw new Error('不应读取 TMDB 热评'); } });
+    const app = createApp({ db, tmdb });
+    const work = (await request(app).post('/api/works').send({ tmdb_id: 695932, tmdb_type: 'movie' })).body;
+
+    const res = await request(app).get(`/api/works/${work.id}/hot-reviews`);
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.source, null);
+    assert.equal(res.body.source_label, null);
+    assert.deepEqual(res.body.reviews, []);
+    assert.equal(tmdbReviewCalls, 0);
+  });
+
+  it('详情响应抽取背景图、制作信息和上游评分，不暴露原始 JSON', async () => {
+    const tmdb = makeFakeTmdb({ movieDetail: async () => ({
+      ...FAKE_MOVIE,
+      backdrop_path: '/backdrop.jpg',
+      release_date: '2022-01-21',
+      original_language: 'ja',
+      production_countries: [{ name: '日本' }],
+      production_companies: [{ name: 'Little More' }],
+      credits: { crew: [{ job: 'Director', name: '导演甲' }], cast: [{ name: '演员乙', character: '角色丙' }] },
+      vote_average: 8.2,
+      vote_count: 100,
+    }) });
+    const app = createApp({ db, tmdb });
+    const created = (await request(app).post('/api/works').send({ tmdb_id: 695932, tmdb_type: 'movie' })).body;
+    const res = await request(app).get(`/api/works/${created.id}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.details.backdrop_url, 'https://image.tmdb.org/t/p/w1280/backdrop.jpg');
+    assert.deepEqual(res.body.details.directors, ['导演甲']);
+    assert.deepEqual(res.body.details.cast, [{ name: '演员乙', character: '角色丙' }]);
+    assert.equal(res.body.details.countries[0], '日本');
+    assert.equal(res.body.tmdb_raw, undefined);
+  });
+
+  it('双方各自标记同一作品时，详情同时返回双方的评分和短评', async () => {
+    const app = createApp({ db, tmdb: makeFakeTmdb({ movieDetail: async () => FAKE_MOVIE }) });
+    const work = (await request(app).post('/api/works').send({ tmdb_id: 695932, tmdb_type: 'movie' })).body;
+    await request(app).post('/api/marks').set('Cookie', 'loweve_user_id=1')
+      .send({ work_id: work.id, status: 'watched', rating: 9, comment: '甲的短评' });
+    await request(app).post('/api/marks').set('Cookie', 'loweve_user_id=2')
+      .send({ work_id: work.id, status: 'watched', rating: 8, comment: '乙的短评' });
+
+    for (const userId of [1, 2]) {
+      const detail = await request(app).get(`/api/works/${work.id}`).set('Cookie', `loweve_user_id=${userId}`);
+      assert.deepEqual(detail.body.all_marks.map((mark: any) => [mark.user_id, mark.rating, mark.comment]), [
+        [1, 9, '甲的短评'], [2, 8, '乙的短评'],
+      ]);
+    }
+  });
+});
+
+describe('makeWorkDetails', () => {
+  it('缺少原始数据时仍返回可渲染的安全默认值', () => {
+    const details = makeWorkDetails({ tmdb_id: 1, tmdb_type: 'movie', imdb_id: null });
+    assert.equal(details.backdrop_url, null);
+    assert.deepEqual(details.directors, []);
+    assert.deepEqual(details.cast, []);
+    assert.equal(details.tmdb_url, 'https://www.themoviedb.org/movie/1');
+  });
 });
 
 const FAKE_TV_ANIME_BGM = {
@@ -193,6 +310,58 @@ describe('upsertWork Bangumi 升级', () => {
     assert.equal(w2.rating_source, 'bangumi');
     assert.equal(w2.primary_rating, 8.4);
     assert.equal(w2.bangumi_id, 328609);
+  });
+
+  it('Bangumi 匹配会依次尝试 TMDB 原名、中文名和英文 AKA', async () => {
+    const searched: string[] = [];
+    const tmdb = makeFakeTmdb({ movieDetail: async () => ({
+      id: 71883,
+      name: '红线',
+      original_name: 'レッドライン',
+      title: '红线',
+      original_title: 'レッドライン',
+      release_date: '2009-08-14',
+      overview: '...', genres: [{ id: 16, name: '动画' }],
+      origin_country: ['JP'], vote_average: 8, vote_count: 10, poster_path: null,
+      external_ids: { imdb_id: 'tt1483797' },
+      translations: { translations: [{ iso_639_1: 'en', data: { title: 'Redline' } }] },
+    }) });
+    const bangumi = makeFakeBangumi({ searchAnime: async (keyword: string) => {
+      searched.push(keyword);
+      return keyword === 'Redline' ? [{
+        bangumi_id: 8726, name: 'REDLINE', name_cn: '红线', year: 2009,
+        score: 8.7, votes: 1000, poster_url: null,
+      }] : [];
+    } });
+    const { upsertWork } = await import('../src/routes/works.js');
+    const work: any = await upsertWork(db, tmdb, bangumi, makeFakeDouban(), { tmdb_id: 71883, tmdb_type: 'movie' });
+    assert.equal(work.bangumi_id, 8726);
+    assert.deepEqual(searched, ['レッドライン', '红线', 'Redline']);
+  });
+
+  it('启动自愈只扫描仍停留 TMDB 的动画，不误触碰非动画', async () => {
+    const anime = await (async () => {
+      const tmdb = makeFakeTmdb({ tvDetail: async () => FAKE_TV_ANIME });
+      return (await import('../src/routes/works.js')).upsertWork(db, tmdb, makeFakeBangumi(), makeFakeDouban(), {
+        tmdb_id: 328609, tmdb_type: 'tv', skipUpgrade: true,
+      });
+    })();
+    const nonAnime = await (async () => {
+      const tmdb = makeFakeTmdb({ movieDetail: async () => FAKE_MOVIE });
+      return (await import('../src/routes/works.js')).upsertWork(db, tmdb, makeFakeBangumi(), makeFakeDouban(), {
+        tmdb_id: 695932, tmdb_type: 'movie', skipUpgrade: true,
+      });
+    })();
+    const calls: number[] = [];
+    const bangumi = makeFakeBangumi({ searchAnime: async () => {
+      calls.push(1);
+      return [BGM_HIT];
+    } });
+    const sweep = sweepStuckBangumi(db, bangumi, { delayMs: 0 });
+    await sweep.done;
+    assert.ok(sweep.ids.includes(anime.id));
+    assert.ok(!sweep.ids.includes(nonAnime.id));
+    assert.equal(db.prepare('SELECT rating_source FROM works WHERE id = ?').get(anime.id).rating_source, 'bangumi');
   });
 });
 

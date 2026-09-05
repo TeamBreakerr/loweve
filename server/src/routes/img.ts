@@ -9,6 +9,8 @@ import { paths } from '../config.js';
 
 const ALLOW = new Set([
   'image.tmdb.org', 'lain.bgm.tv',
+  'img1.doubanio.com', 'img2.doubanio.com', 'img3.doubanio.com',
+  'img9.doubanio.com',
   'shared.fastly.steamstatic.com', 'shared.akamai.steamstatic.com',
   'cdn.cloudflare.steamstatic.com', 'steamcdn-a.akamaihd.net',
   'images.igdb.com',

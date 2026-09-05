@@ -249,14 +249,17 @@ export function createSteamClient({ fetch = globalThis.fetch, now = () => Date.n
     return url;
   };
 
-  const reviewsUrl = (appid: number) => {
+  const reviewsUrl = (appid: number, {
+    language = 'all', filter = 'all', numPerPage = 1,
+  }: { language?: string; filter?: string; numPerPage?: number } = {}) => {
     const url = new URL(`${STORE}/appreviews/${appid}`);
     url.searchParams.set('json', '1');
-    url.searchParams.set('language', 'all');
+    url.searchParams.set('language', language);
     url.searchParams.set('purchase_type', 'all');
-    url.searchParams.set('filter', 'all');
+    url.searchParams.set('review_type', 'all');
+    url.searchParams.set('filter', filter);
     url.searchParams.set('day_range', '365');
-    url.searchParams.set('num_per_page', '1');
+    url.searchParams.set('num_per_page', String(numPerPage));
     return url;
   };
 
@@ -361,6 +364,40 @@ export function createSteamClient({ fetch = globalThis.fetch, now = () => Date.n
     finally { searchInflight.delete(cacheKey); }
   }
 
+  async function hotReviews(appid: any, limit = 3) {
+    const id = Number(appid);
+    if (!Number.isInteger(id) || id <= 0) throw new SteamError('invalid_steam_appid');
+    const count = Math.max(3, Math.min(20, Number(limit) || 3));
+    let payload = await getJson(reviewsUrl(id, {
+      language: 'schinese', filter: 'toprated', numPerPage: count,
+    }));
+    if (!(payload?.reviews || []).length) {
+      payload = await getJson(reviewsUrl(id, {
+        language: 'all', filter: 'toprated', numPerPage: count,
+      }));
+    }
+    return (payload?.reviews || [])
+      .filter((item: any) => String(item?.review || '').trim())
+      .slice(0, count)
+      .map((item: any) => {
+        const steamId = String(item.author?.steamid || '');
+        return {
+          id: String(item.recommendationid),
+          author: steamId ? `Steam 玩家 · ${steamId.slice(-4)}` : 'Steam 玩家',
+          avatar_url: null,
+          content: String(item.review).trim(),
+          rating: null,
+          votes: Number(item.votes_up) || null,
+          created_at: Number(item.timestamp_created)
+            ? new Date(Number(item.timestamp_created) * 1000).toISOString() : null,
+          url: `${STORE}/app/${id}/#app_reviews_hash`,
+          sentiment: item.voted_up === false ? 'negative' : 'positive',
+          playtime_hours: Number(item.author?.playtime_forever)
+            ? Math.round(Number(item.author.playtime_forever) / 6) / 10 : null,
+        };
+      });
+  }
+
   /** 仅用于中文别名身份桥：拿商店搜索中的 AppID 与中英文标题，不抓详情/评测/商品页。 */
   async function searchCandidates(query: any) {
     const q = String(query || '').trim();
@@ -413,5 +450,5 @@ export function createSteamClient({ fetch = globalThis.fetch, now = () => Date.n
     finally { candidateInflight.delete(cacheKey); }
   }
 
-  return { isConfigured: () => true, search, searchCandidates, gameDetail };
+  return { isConfigured: () => true, search, searchCandidates, gameDetail, hotReviews };
 }

@@ -25,21 +25,20 @@ export function marksRoutes() {
     if (!requireViewing(req, res)) return;
     const db = req.app.locals.db;
     const status = req.query.status || 'all';
-    let rows: any;
-    if (status === 'all') {
-      rows = db.prepare(`SELECT ${MARK_COLS} FROM user_marks WHERE user_id = ? ORDER BY marked_at DESC`).all(req.viewing_user_id);
-    } else if (validateStatus(status)) {
-      rows = db.prepare(`SELECT ${MARK_COLS} FROM user_marks WHERE user_id = ? AND status = ? ORDER BY marked_at DESC`).all(req.viewing_user_id, status);
-    } else {
+    if (status !== 'all' && !validateStatus(status)) {
       return res.status(400).json({ error: 'invalid_status' });
     }
+
+    const filteredRows = status === 'all'
+      ? db.prepare(`SELECT ${MARK_COLS} FROM user_marks WHERE user_id = ? ORDER BY marked_at DESC, id DESC`).all(req.viewing_user_id)
+      : db.prepare(`SELECT ${MARK_COLS} FROM user_marks WHERE user_id = ? AND status = ? ORDER BY marked_at DESC, id DESC`).all(req.viewing_user_id, status);
     // 附 work 联表（一次查所有需要的 work）
-    const workIds = [...new Set(rows.map((r: any) => r.work_id))];
+    const workIds = [...new Set(filteredRows.map((r: any) => r.work_id))];
     const works = workIds.length
       ? db.prepare(`SELECT * FROM works WHERE id IN (${workIds.map(() => '?').join(',')})`).all(...workIds)
       : [];
     const workMap = new Map(works.map((w: any) => [w.id, w]));
-    res.json({ marks: rows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) satisfies Mark[] });
+    res.json({ marks: filteredRows.map((r: any) => ({ ...r, work: workMap.get(r.work_id) })) satisfies Mark[] });
   });
 
   router.post('/', async (req, res) => {
@@ -77,28 +76,42 @@ export function marksRoutes() {
   });
 
   router.put('/:id', (req, res) => {
+    if (!requireViewing(req, res)) return;
     const db = req.app.locals.db;
     const id = parseInt(req.params.id, 10);
     const existing = db.prepare(`SELECT ${MARK_COLS} FROM user_marks WHERE id = ?`).get(id);
     if (!existing) return res.status(404).json({ error: 'not_found' });
+    if (existing.user_id !== req.viewing_user_id) return res.status(403).json({ error: 'forbidden' });
 
     const { status, rating, comment } = req.body || {};
     if (status !== undefined && !validateStatus(status)) return res.status(400).json({ error: 'invalid_status' });
     if (rating !== undefined && !validateRating(rating)) return res.status(400).json({ error: 'invalid_rating' });
 
     db.prepare(`UPDATE user_marks SET
-      status = COALESCE(@status, status),
-      rating = CASE WHEN @rating IS NOT NULL THEN @rating ELSE rating END,
-      comment = CASE WHEN @comment IS NOT NULL THEN @comment ELSE comment END
-      WHERE id = @id`).run({ status: status ?? null, rating: rating ?? null, comment: comment ?? null, id });
+      status = CASE WHEN @setStatus = 1 THEN @status ELSE status END,
+      rating = CASE WHEN @setRating = 1 THEN @rating ELSE rating END,
+      comment = CASE WHEN @setComment = 1 THEN @comment ELSE comment END
+      WHERE id = @id`).run({
+        setStatus: Object.hasOwn(req.body || {}, 'status') ? 1 : 0, status: status ?? null,
+        setRating: Object.hasOwn(req.body || {}, 'rating') ? 1 : 0, rating: rating ?? null,
+        setComment: Object.hasOwn(req.body || {}, 'comment') ? 1 : 0, comment: comment ?? null,
+        id,
+      });
     const row = db.prepare(`SELECT ${MARK_COLS} FROM user_marks WHERE id = ?`).get(id);
     markRecosStale(db);
     res.json(row);
   });
 
   router.delete('/:id', (req, res) => {
+    if (!requireViewing(req, res)) return;
     const db = req.app.locals.db;
     const id = parseInt(req.params.id, 10);
+    const existing = db.prepare(`SELECT user_id, work_id FROM user_marks WHERE id = ?`).get(id);
+    if (!existing) return res.status(404).json({ error: 'not_found' });
+    if (existing.user_id !== req.viewing_user_id) return res.status(403).json({ error: 'forbidden' });
+    if (db.prepare('SELECT 1 FROM couple_sessions WHERE work_id = ?').get(existing.work_id)) {
+      return res.status(409).json({ error: 'shared_experience_requires_mark' });
+    }
     if (!moveToTrash(db, 'mark', id, req.viewing_user_id)) return res.status(404).json({ error: 'not_found' });
     markRecosStale(db);
     res.status(204).end();

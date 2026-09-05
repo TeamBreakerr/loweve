@@ -55,10 +55,6 @@ CREATE TABLE IF NOT EXISTS couple_sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   work_id INTEGER NOT NULL REFERENCES works(id),
   watched_at INTEGER,                       -- 可空：有时忘了哪天看的
-  rating_a INTEGER CHECK(rating_a BETWEEN 1 AND 10),
-  rating_b INTEGER CHECK(rating_b BETWEEN 1 AND 10),
-  review_a TEXT,
-  review_b TEXT,
   joint_note TEXT,
   created_at INTEGER NOT NULL
 );
@@ -257,10 +253,6 @@ CREATE TABLE IF NOT EXISTS game_sessions (
   work_id INTEGER NOT NULL UNIQUE REFERENCES game_works(id),
   played_at INTEGER,
   completed_at INTEGER,
-  rating_a INTEGER CHECK(rating_a BETWEEN 1 AND 10),
-  rating_b INTEGER CHECK(rating_b BETWEEN 1 AND 10),
-  review_a TEXT,
-  review_b TEXT,
   joint_note TEXT,
   created_at INTEGER NOT NULL
 );

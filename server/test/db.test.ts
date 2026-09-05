@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { makeTestDb } from './helpers.js';
 import { openDb } from '../src/db/index.js';
 import { migrate, migrateNullableWatchedAt, migrateAddGameCompletedAt, migrateAddGameContentType, migrateAddGameDiscountEndDate, migrateAddSeasonNumber, migrateGameCatalogSchema } from '../src/db/migrate.js';
+import { migrateSessionExperiences } from '../src/experiences/service.js';
 
 describe('db migration', () => {
   it('创建影视与游戏两套隔离业务表', () => {
@@ -43,6 +44,61 @@ describe('db migration', () => {
       { id: 1, display_name: '小爱' },
       { id: 2, display_name: '小波' },
     ]);
+    db.close();
+  });
+
+  it('把共同记录评分评价迁入双方唯一个人记录，并删除重复列且保持幂等', () => {
+    const db = openDb(':memory:');
+    db.exec(`
+      CREATE TABLE users (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL);
+      INSERT INTO users VALUES (1, 'A'), (2, 'B');
+      CREATE TABLE works (id INTEGER PRIMARY KEY);
+      CREATE TABLE game_works (id INTEGER PRIMARY KEY);
+      INSERT INTO works VALUES (10);
+      INSERT INTO game_works VALUES (20);
+      CREATE TABLE user_marks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, work_id INTEGER NOT NULL,
+        status TEXT NOT NULL, rating INTEGER, comment TEXT, marked_at INTEGER NOT NULL,
+        UNIQUE(user_id, work_id));
+      CREATE TABLE game_marks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, work_id INTEGER NOT NULL,
+        status TEXT NOT NULL, rating INTEGER, comment TEXT, marked_at INTEGER NOT NULL,
+        UNIQUE(user_id, work_id));
+      CREATE TABLE couple_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, work_id INTEGER NOT NULL, watched_at INTEGER,
+        rating_a INTEGER, rating_b INTEGER, review_a TEXT, review_b TEXT, joint_note TEXT,
+        created_at INTEGER NOT NULL);
+      CREATE TABLE game_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, work_id INTEGER NOT NULL UNIQUE, played_at INTEGER,
+        completed_at INTEGER, rating_a INTEGER, rating_b INTEGER, review_a TEXT, review_b TEXT,
+        joint_note TEXT, created_at INTEGER NOT NULL);
+      INSERT INTO user_marks (user_id, work_id, status, rating, comment, marked_at)
+        VALUES (1, 10, 'watched', 10, NULL, 1);
+      INSERT INTO game_marks (user_id, work_id, status, rating, comment, marked_at)
+        VALUES (2, 20, 'played', NULL, '个人评价优先', 1);
+      INSERT INTO couple_sessions
+        (work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at)
+        VALUES (10, 20260101, 8, 9, '旧共同评价 A', '旧共同评价 B', '一起看的', 100);
+      INSERT INTO game_sessions
+        (work_id, played_at, completed_at, rating_a, rating_b, review_a, review_b, joint_note, created_at)
+        VALUES (20, 20260201, NULL, 7, 6, '旧游戏评价 A', '旧游戏评价 B', NULL, 200);
+    `);
+
+    assert.equal(migrateSessionExperiences(db), true);
+    assert.deepEqual(db.prepare(`SELECT user_id, status, rating, comment FROM user_marks ORDER BY user_id`).all(), [
+      { user_id: 1, status: 'watched', rating: 10, comment: '旧共同评价 A' },
+      { user_id: 2, status: 'watched', rating: 9, comment: '旧共同评价 B' },
+    ]);
+    assert.deepEqual(db.prepare(`SELECT user_id, status, rating, comment FROM game_marks ORDER BY user_id`).all(), [
+      { user_id: 1, status: 'played', rating: 7, comment: '旧游戏评价 A' },
+      { user_id: 2, status: 'played', rating: 6, comment: '个人评价优先' },
+    ]);
+    for (const table of ['couple_sessions', 'game_sessions']) {
+      const names = db.prepare(`SELECT name FROM pragma_table_info('${table}')`).all().map((row: any) => row.name);
+      assert.equal(names.some((name: string) => ['rating_a', 'rating_b', 'review_a', 'review_b'].includes(name)), false);
+    }
+    assert.equal((db.prepare('SELECT joint_note FROM couple_sessions').get() as any).joint_note, '一起看的');
+    assert.equal(migrateSessionExperiences(db), false);
     db.close();
   });
 

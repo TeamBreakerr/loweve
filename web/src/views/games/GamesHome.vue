@@ -14,6 +14,7 @@ import Priority from '../../components/Priority.vue';
 import Dual from '../../components/Dual.vue';
 import GameAddModal from '../../components/games/GameAddModal.vue';
 import GameEditModal from '../../components/games/GameEditModal.vue';
+import HorizontalRail from '../../components/HorizontalRail.vue';
 import { fmtWatchedShort } from '../../utils/watchedDate';
 import { groupRecoTail, platformLabels, releaseLabel } from '../../utils/games';
 
@@ -27,9 +28,9 @@ const hero = computed(() => recos.items[0]);
 const mids = computed(() => recos.items.slice(1, 3));
 const minis = computed(() => recos.items.slice(3));
 const miniRows = computed(() => groupRecoTail(minis.value));
-const playingSessions = computed(() => sessions.list.filter(item => item.completed_at == null && item.plan_status !== 'dropped').slice(0, 6));
-const completedSessions = computed(() => sessions.list.filter(item => item.completed_at != null).slice(0, 6));
-const visiblePlan = computed(() => plan.list.filter(item => item.status === 'pending').slice(0, 6));
+const playingSessions = computed(() => sessions.list.filter(item => item.completed_at == null));
+const completedSessions = computed(() => sessions.list.filter(item => item.completed_at != null));
+const visiblePlan = computed(() => plan.list.filter(item => item.status === 'pending'));
 const modalOpen = ref(false);
 const modalTarget = ref('couple_played');
 const editOpen = ref(false);
@@ -78,20 +79,17 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
 
     <section class="section game-section">
       <div class="section__head"><div><span class="game-section__index">02</span><h2 class="section__title">正在玩</h2></div><div class="section__actions"><button class="btn btn--rose" @click="openAdd('couple_playing')"><svg class="btn__ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>添加</button><router-link class="link-more" to="/games/playing">查看全部</router-link></div></div>
-      <p v-if="!sessions.loading && !playingSessions.length" class="game-empty">现在没有共同进行中的游戏。</p>
-      <div v-else class="game-history"><article v-for="item in playingSessions" :key="item.id" class="game-history__card"><GamePoster :url="item.work.cover_url" :fallback="item.work.header_url" :state="item.work.release_state" @click="work(item.work_id)"/><button class="game-card-edit" @click="openEdit('session',item)">✎</button><h3 @click="work(item.work_id)">{{ item.work.title }}</h3><GameContentBadge :work="item.work" compact/><Dual :rating-a="item.rating_a ?? '–'" :rating-b="item.rating_b ?? '–'"/><span v-if="item.played_at" class="game-history__date">{{ fmtWatchedShort(item.played_at) }} 开始</span></article></div>
+      <HorizontalRail class="game-history" data-home-rail="games-playing" aria-label="正在一起玩"><p v-if="!sessions.loading && !playingSessions.length" class="game-empty">现在没有共同进行中的游戏。</p><article v-for="item in playingSessions" :key="item.id" class="game-history__card"><GamePoster :url="item.work.cover_url" :fallback="item.work.header_url" :state="item.work.release_state" @click="work(item.work_id)"/><button class="game-card-edit" @click="openEdit('session',item)">✎</button><h3 @click="work(item.work_id)">{{ item.work.title }}</h3><GameContentBadge :work="item.work" compact/><Dual :rating-a="item.rating_a ?? '–'" :rating-b="item.rating_b ?? '–'"/><span v-if="item.played_at" class="game-history__date">{{ fmtWatchedShort(item.played_at) }} 开始</span></article></HorizontalRail>
     </section>
 
     <section class="section game-section">
       <div class="section__head"><div><span class="game-section__index">03</span><h2 class="section__title">一起玩过</h2></div><div class="section__actions"><button class="btn btn--rose" @click="openAdd('couple_played')"><svg class="btn__ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>添加</button><router-link class="link-more" to="/games/together">查看全部</router-link></div></div>
-      <p v-if="!sessions.loading && !completedSessions.length" class="game-empty">还没有记录通关的共同游戏。</p>
-      <div v-else class="game-history"><article v-for="item in completedSessions" :key="item.id" class="game-history__card"><GamePoster :url="item.work.cover_url" :fallback="item.work.header_url" :state="item.work.release_state" @click="work(item.work_id)"/><button class="game-card-edit" @click="openEdit('session',item)">✎</button><h3 @click="work(item.work_id)">{{ item.work.title }}</h3><GameContentBadge :work="item.work" compact/><Dual :rating-a="item.rating_a ?? '–'" :rating-b="item.rating_b ?? '–'"/><span class="game-history__date">{{ fmtWatchedShort(item.completed_at) }} 通关</span></article></div>
+      <HorizontalRail class="game-history" data-home-rail="games-completed" aria-label="一起玩过"><p v-if="!sessions.loading && !completedSessions.length" class="game-empty">还没有记录通关的共同游戏。</p><article v-for="item in completedSessions" :key="item.id" class="game-history__card"><GamePoster :url="item.work.cover_url" :fallback="item.work.header_url" :state="item.work.release_state" @click="work(item.work_id)"/><button class="game-card-edit" @click="openEdit('session',item)">✎</button><h3 @click="work(item.work_id)">{{ item.work.title }}</h3><GameContentBadge :work="item.work" compact/><Dual :rating-a="item.rating_a ?? '–'" :rating-b="item.rating_b ?? '–'"/><span class="game-history__date">{{ fmtWatchedShort(item.completed_at) }} 通关</span></article></HorizontalRail>
     </section>
 
     <section class="section game-section">
       <div class="section__head"><div><span class="game-section__index">04</span><h2 class="section__title">想和你一起玩</h2></div><div class="section__actions"><button class="btn btn--rose" @click="openAdd('couple_plan')"><svg class="btn__ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>添加</button><router-link class="link-more" to="/games/plan">查看全部</router-link></div></div>
-      <p v-if="!visiblePlan.length" class="game-empty">共同游戏清单还是空的。</p>
-      <div v-else class="game-history"><article v-for="item in visiblePlan" :key="item.id" class="game-history__card"><GamePoster :url="item.work.cover_url" :fallback="item.work.header_url" :state="item.work.release_state" @click="work(item.work_id)"/><button class="game-card-edit" @click="openEdit('plan',item)">✎</button><h3 @click="work(item.work_id)">{{ item.work.title }}</h3><GameContentBadge :work="item.work" compact/><div class="game-plan-row"><Priority :value="item.priority"/><span class="game-status">{{ item.status === 'playing' ? '在玩' : '待玩' }}</span></div><small>{{ identity.userById(item.added_by)?.display_name }} 添加</small></article></div>
+      <HorizontalRail class="game-history" data-home-rail="games-plan" aria-label="想和你一起玩"><p v-if="!visiblePlan.length" class="game-empty">共同游戏清单还是空的。</p><article v-for="item in visiblePlan" :key="item.id" class="game-history__card"><GamePoster :url="item.work.cover_url" :fallback="item.work.header_url" :state="item.work.release_state" @click="work(item.work_id)"/><button class="game-card-edit" @click="openEdit('plan',item)">✎</button><h3 @click="work(item.work_id)">{{ item.work.title }}</h3><GameContentBadge :work="item.work" compact/><div class="game-plan-row"><Priority :value="item.priority"/><span class="game-status">{{ item.status === 'playing' ? '在玩' : '待玩' }}</span></div><small>{{ identity.userById(item.added_by)?.display_name }} 添加</small></article></HorizontalRail>
     </section>
 
     <GameAddModal v-model="modalOpen" :initial-target="modalTarget" :lock-target="modalTarget === 'couple_plan'" @added="() => { sessions.load(); plan.load(); }" />
@@ -251,6 +249,12 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
 .game-rank-rail :deep(.game-poster img) {
   object-fit: contain;
   background: var(--surface-2);
+}
+
+.game-rank-top :deep(.game-poster),
+.game-rank-rail :deep(.game-poster),
+.game-history__card :deep(.game-poster) {
+  cursor: pointer;
 }
 
 .game-rank__body {
@@ -582,11 +586,11 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
 }
 
 .game-history {
-  display: flex;
-  gap: var(--s-4);
-  overflow-x: auto;
-  padding: var(--s-5) 2px var(--s-4);
-  scroll-snap-type: x mandatory;
+  --horizontal-rail-gap: var(--s-4);
+  --horizontal-rail-padding: var(--s-5) 2px var(--s-4);
+  --horizontal-rail-margin: 0;
+  --horizontal-rail-thumb: var(--game-accent-dim, var(--game-accent));
+  --horizontal-rail-thumb-hover: var(--game-accent);
 }
 
 .game-history__card {
@@ -733,6 +737,21 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
   .game-mini {
     grid-template-columns: 112px minmax(0, 1fr);
     min-height: 178px;
+  }
+
+  .game-mini__poster {
+    align-self: stretch;
+    height: auto;
+    aspect-ratio: auto;
+  }
+
+  .game-mini__poster :deep(.game-poster) {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .game-rank-rail :deep(.game-poster img) {
+    object-fit: cover;
   }
 
   .game-rank--mid {
