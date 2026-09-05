@@ -16,6 +16,12 @@ let mutationObserver: MutationObserver | null = null;
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
 const HIDE_DELAY_MS = 1200;
+// 停手后多久开始对齐：要盖过滚轮/触控板惯性里两次 scroll 事件的间隔，又不能久到让人先看到半张海报。
+const SETTLE_DELAY_MS = 150;
+// 落点与最近卡边界差在这个像素数以内就算已经对齐：对齐动画自己派发的 scroll 事件会再排一次
+// 检查，靠这个阈值收敛成一次空转，而不是来回拉扯。
+const SETTLE_TOLERANCE_PX = 2;
+let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
 function clearHideTimer() {
   if (hideTimer == null) return;
@@ -57,9 +63,48 @@ function updateBar() {
   thumbLeft.value = (scrollLeft / (scrollWidth - clientWidth)) * (100 - thumbWidth.value);
 }
 
+function clearSettleTimer() {
+  if (settleTimer == null) return;
+  clearTimeout(settleTimer);
+  settleTimer = null;
+}
+
+// 滑动过程中不干预（吸附会顿挫），停手后才把最近的一张卡对齐到内容左缘，
+// 不让海报停在被切一半的位置。末尾一屏对齐到右缘，避免把最后一张卡拉回去。
+function settleToNearestCard() {
+  const el = viewport.value;
+  if (!el || drag) return;
+  const max = el.scrollWidth - el.clientWidth;
+  if (max <= 0) return;
+  const paddingLeft = parseFloat(getComputedStyle(el).paddingLeft) || 0;
+  const contentLeft = el.getBoundingClientRect().left + paddingLeft;
+  const current = el.scrollLeft;
+  let target: number | null = null;
+  for (const child of Array.from(el.children) as HTMLElement[]) {
+    const offset = child.getBoundingClientRect().left - contentLeft;
+    const candidate = Math.min(Math.max(current + offset, 0), max);
+    if (target == null || Math.abs(candidate - current) < Math.abs(target - current)) target = candidate;
+  }
+  if (target == null || Math.abs(target - current) <= SETTLE_TOLERANCE_PX) return;
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion:reduce)').matches;
+  el.scrollTo({ left: target, behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+
+// 对齐期间用户又滑了，浏览器会取消这次平滑滚动；这里不设「动画中不排队」的锁，
+// 就是为了让新滑动照样能在停手后拿到自己的对齐。
+function scheduleSettle() {
+  if (drag) return;
+  clearSettleTimer();
+  settleTimer = setTimeout(() => {
+    settleTimer = null;
+    settleToNearestCard();
+  }, SETTLE_DELAY_MS);
+}
+
 function onScroll() {
   updateBar();
   revealBar();
+  scheduleSettle();
 }
 
 function onDown(event: PointerEvent) {
@@ -82,6 +127,7 @@ function onMove(event: PointerEvent) {
 function onUp() {
   drag = null;
   scheduleHide();
+  scheduleSettle();   // 拖滚动条松手同样对齐
 }
 
 onMounted(() => nextTick(() => {
@@ -97,6 +143,7 @@ onMounted(() => nextTick(() => {
 
 onBeforeUnmount(() => {
   clearHideTimer();
+  clearSettleTimer();
   resizeObserver?.disconnect();
   mutationObserver?.disconnect();
 });
@@ -135,10 +182,10 @@ onBeforeUnmount(() => {
 .horizontal-rail__bar.is-visible{ opacity:1; pointer-events:auto; }
 .horizontal-rail__thumb{
   position:absolute; top:0; height:6px; min-width:24px; border-radius:999px;
-  background:var(--horizontal-rail-thumb, var(--rose-dim)); cursor:grab; touch-action:none;
+  background:var(--horizontal-rail-thumb, var(--rose-dim)); cursor:ew-resize; touch-action:none;
   transition:background .15s;
 }
 .horizontal-rail__thumb:hover{ background:var(--horizontal-rail-thumb-hover, var(--rose)); }
-.horizontal-rail__thumb:active{ background:var(--horizontal-rail-thumb-active, var(--rose-bright)); cursor:grabbing; }
+.horizontal-rail__thumb:active{ background:var(--horizontal-rail-thumb-active, var(--rose-bright)); }
 @media (prefers-reduced-motion:reduce){ .horizontal-rail__bar{ transition:none; } }
 </style>
