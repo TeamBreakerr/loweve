@@ -1,3 +1,5 @@
+import { ensureExperiencePair } from '../experiences/service.js';
+
 export type GameTrashEntityType = 'mark' | 'session' | 'plan';
 
 const TABLES: Record<GameTrashEntityType, string> = {
@@ -35,7 +37,11 @@ export function restoreGameTrashItem(db: any, trashId: number): any {
   const table = TABLES[entityType];
   const conflict = entityType === 'mark'
     ? db.prepare(`SELECT 1 FROM ${table} WHERE user_id = ? AND work_id = ?`).get(payload.user_id, payload.work_id)
-    : db.prepare(`SELECT 1 FROM ${table} WHERE work_id = ?`).get(payload.work_id);
+    : entityType === 'plan'
+      ? db.prepare(`SELECT 1 FROM game_plan_items WHERE work_id = ?
+          UNION ALL SELECT 1 FROM game_sessions WHERE work_id = ? LIMIT 1`)
+        .get(payload.work_id, payload.work_id)
+      : db.prepare(`SELECT 1 FROM ${table} WHERE work_id = ?`).get(payload.work_id);
   if (conflict) return { status: 'conflict' };
 
   const id = db.transaction(() => {
@@ -46,10 +52,14 @@ export function restoreGameTrashItem(db: any, trashId: number): any {
         .run(payload.user_id, payload.work_id, payload.status, payload.rating, payload.comment, payload.marked_at);
     } else if (entityType === 'session') {
       info = db.prepare(`INSERT INTO game_sessions
-        (work_id, played_at, completed_at, rating_a, rating_b, review_a, review_b, joint_note, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(payload.work_id, payload.played_at, payload.completed_at ?? null, payload.rating_a, payload.rating_b,
-          payload.review_a, payload.review_b, payload.joint_note, payload.created_at);
+        (work_id, played_at, completed_at, joint_note, created_at)
+        VALUES (?, ?, ?, ?, ?)`)
+        .run(payload.work_id, payload.played_at, payload.completed_at ?? null,
+          payload.joint_note, payload.created_at);
+      ensureExperiencePair(db, 'game', payload.work_id, payload.created_at, {
+        1: { rating: payload.rating_a, comment: payload.review_a },
+        2: { rating: payload.rating_b, comment: payload.review_b },
+      });
     } else {
       info = db.prepare(`INSERT INTO game_plan_items
         (work_id, added_by, note, priority, status, created_at, updated_at)

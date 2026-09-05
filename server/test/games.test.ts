@@ -7,6 +7,7 @@ import { gameOfferNeedsRefresh, isDefaultRecommendationEligible } from '../src/g
 import { buildGameMessages, customAllowsDlc, customAllowsSolo, customAllowsUnreleased, customPriceCeiling } from '../src/games/prompt.js';
 import { gameReviewQualityTier, isGameRecommendationEligible, rankGameCandidates } from '../src/games/recos.js';
 import { resolveCatalogGame } from '../src/games/service.js';
+import { currentDateKey } from '../src/routes/sessions.js';
 
 function game(appid: number, overrides: any = {}) {
   const now = Date.now();
@@ -119,6 +120,50 @@ describe('游戏空间 API', () => {
     assert.equal(list.body.marks[0].work.store_url, 'https://store.steampowered.com/app/620/');
   });
 
+  it('共同游玩记录会进入双方各自的个人游戏记录', async () => {
+    const { app } = setup();
+    const session = await request(app).post('/api/games/sessions').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620, played_at: 20260820, rating: 9, review: '甲的短评' });
+    assert.equal(session.status, 200);
+
+    for (const [userId, rating, comment] of [[1, 9, '甲的短评'], [2, null, null]] as const) {
+      const res = await request(app).get('/api/games/marks').set('Cookie', `loweve_user_id=${userId}`);
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body.marks.map((mark: any) => ({
+        work_id: mark.work_id, user_id: mark.user_id, status: mark.status,
+        rating: mark.rating, comment: mark.comment, has_real_id: mark.id > 0,
+      })), [{ work_id: session.body.work_id, user_id: userId, status: 'played', rating, comment, has_real_id: true }]);
+    }
+  });
+
+  it('双方各自标记同一游戏时，详情同时返回双方的评分和短评', async () => {
+    const { app } = setup();
+    const first = await request(app).post('/api/games/marks').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620, rating: 9, comment: '甲的短评' });
+    const second = await request(app).post('/api/games/marks').set('Cookie', 'loweve_user_id=2')
+      .send({ work_id: first.body.work_id, rating: 8, comment: '乙的短评' });
+    assert.equal(second.status, 200);
+
+    for (const userId of [1, 2]) {
+      const detail = await request(app).get(`/api/games/works/${first.body.work_id}`)
+        .set('Cookie', `loweve_user_id=${userId}`);
+      assert.deepEqual(detail.body.all_marks.map((mark: any) => [mark.user_id, mark.rating, mark.comment]), [
+        [1, 9, '甲的短评'], [2, 8, '乙的短评'],
+      ]);
+    }
+  });
+
+  it('个人游戏评分评价只能由本人编辑', async () => {
+    const { app, db } = setup();
+    const mark = await request(app).post('/api/games/marks').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620, rating: 9, comment: '甲的记录' });
+    const forbidden = await request(app).put(`/api/games/marks/${mark.body.id}`)
+      .set('Cookie', 'loweve_user_id=2').send({ rating: 1, comment: '越权修改' });
+    assert.equal(forbidden.status, 403);
+    const stored: any = db.prepare('SELECT rating, comment FROM game_marks WHERE id = ?').get(mark.body.id);
+    assert.deepEqual(stored, { rating: 9, comment: '甲的记录' });
+  });
+
   it('DLC 可作为独立作品加入清单并保留所属本体', async () => {
     const dlc = game(2138330, {
       content_type: 'dlc', parent_steam_appid: 1091500, parent_title: '赛博朋克 2077',
@@ -133,6 +178,43 @@ describe('游戏空间 API', () => {
     assert.equal(listed.body.items[0].work.parent_title, '赛博朋克 2077');
     const stored: any = db.prepare('SELECT content_type, parent_steam_appid FROM game_works WHERE steam_appid = ?').get(2138330);
     assert.deepEqual(stored, { content_type: 'dlc', parent_steam_appid: 1091500 });
+  });
+
+  it('游戏共同计划只按添加时间倒序，不让旧的高优先级盖过新添加作品', async () => {
+    const { app, db } = setup();
+    const oldItem = (await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620, priority: 3 })).body;
+    const newItem = (await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 621, priority: 0 })).body;
+    db.prepare('UPDATE game_plan_items SET created_at = ? WHERE id = ?').run(100, oldItem.id);
+    db.prepare('UPDATE game_plan_items SET created_at = ? WHERE id = ?').run(200, newItem.id);
+
+    const listed = await request(app).get('/api/games/plan');
+
+    assert.deepEqual(listed.body.items.map((item: any) => item.work.steam_appid), [621, 620]);
+  });
+
+  it('游戏详情页独立返回前三条 Steam 热评', async () => {
+    const reviews = [
+      { id: 's1', author: '玩家甲', content: '第一条', votes: 88, sentiment: 'positive' },
+      { id: 's2', author: '玩家乙', content: '第二条', votes: 66, sentiment: 'positive' },
+      { id: 's3', author: '玩家丙', content: '第三条', votes: 33, sentiment: 'negative' },
+    ];
+    const { app } = setup({
+      hotReviews: async (appid: number, limit: number) => {
+        assert.equal(appid, 620);
+        assert.equal(limit, 3);
+        return reviews;
+      },
+    });
+    const mark = await request(app).post('/api/games/marks').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620 });
+
+    const res = await request(app).get(`/api/games/works/${mark.body.work_id}/hot-reviews`);
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.source, 'steam');
+    assert.deepEqual(res.body.reviews, reviews);
   });
 
   it('IGDB 搜索并保存没有 Steam 版本的 GBA 游戏，价格保持为空', async () => {
@@ -384,6 +466,72 @@ describe('游戏空间 API', () => {
     assert.equal(db.prepare('SELECT status FROM game_plan_items WHERE id = ?').get(plan.body.id).status, 'playing');
   });
 
+  it('直接把共同计划改为在玩时会创建共同游玩记录', async () => {
+    const { app, db } = setup();
+    const plan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620, priority: 2 });
+
+    const started = await request(app).put(`/api/games/plan/${plan.body.id}`).set('Cookie', 'loweve_user_id=1')
+      .send({ status: 'playing', played_at: 20260802 });
+
+    assert.equal(started.status, 200);
+    assert.equal(started.body.status, 'playing');
+    const session: any = db.prepare('SELECT * FROM game_sessions WHERE work_id = ?').get(plan.body.work_id);
+    assert.ok(session);
+    assert.equal(session.played_at, 20260802);
+    assert.equal(session.completed_at, null);
+  });
+
+  it('直接把共同计划改为玩完时会补建带通关日的共同游玩记录', async () => {
+    const { app, db } = setup();
+    const plan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620 });
+
+    const completed = await request(app).put(`/api/games/plan/${plan.body.id}`).set('Cookie', 'loweve_user_id=1')
+      .send({ status: 'done', completed_at: 20260810 });
+
+    assert.equal(completed.status, 200);
+    assert.equal(completed.body.status, 'done');
+    const session: any = db.prepare('SELECT * FROM game_sessions WHERE work_id = ?').get(plan.body.work_id);
+    assert.ok(session);
+    assert.equal(session.played_at, null);
+    assert.equal(session.completed_at, 20260810);
+  });
+
+  it('计划状态日期留空时默认为今天', async () => {
+    const { app, db } = setup();
+    const playingPlan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620 });
+    const donePlan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 621 });
+
+    await request(app).put(`/api/games/plan/${playingPlan.body.id}`)
+      .send({ status: 'playing', played_at: null }).expect(200);
+    await request(app).put(`/api/games/plan/${donePlan.body.id}`)
+      .send({ status: 'done', completed_at: null }).expect(200);
+
+    const playingSession: any = db.prepare('SELECT * FROM game_sessions WHERE work_id = ?').get(playingPlan.body.work_id);
+    const doneSession: any = db.prepare('SELECT * FROM game_sessions WHERE work_id = ?').get(donePlan.body.work_id);
+    assert.equal(playingSession.played_at, currentDateKey());
+    assert.equal(playingSession.completed_at, null);
+    assert.equal(doneSession.played_at, null);
+    assert.equal(doneSession.completed_at, currentDateKey());
+  });
+
+  it('计划状态日期非法时不改变状态或创建共同记录', async () => {
+    const { app, db } = setup();
+    const plan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620 });
+
+    const invalid = await request(app).put(`/api/games/plan/${plan.body.id}`)
+      .send({ status: 'playing', played_at: '昨天' });
+
+    assert.equal(invalid.status, 400);
+    assert.equal(invalid.body.error, 'invalid_played_at');
+    assert.equal((db.prepare('SELECT status FROM game_plan_items WHERE id = ?').get(plan.body.id) as any).status, 'pending');
+    assert.equal((db.prepare('SELECT count(*) AS n FROM game_sessions').get() as any).n, 0);
+  });
+
   it('通关日期在“正在玩”和“一起玩过”之间切换，并同步共同计划状态', async () => {
     const { app, db } = setup();
     const plan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
@@ -393,14 +541,15 @@ describe('游戏空间 API', () => {
     assert.equal((await request(app).get('/api/games/sessions?status=playing')).body.sessions.length, 1);
     assert.equal((await request(app).get('/api/games/sessions?status=completed')).body.sessions.length, 0);
 
-    const completed = await request(app).put(`/api/games/sessions/${created.body.id}`)
+    const completed = await request(app).put(`/api/games/sessions/${created.body.id}`).set('Cookie', 'loweve_user_id=1')
       .send({ completed_at: 20260810 });
     assert.equal(completed.status, 200);
     assert.equal(completed.body.completed_at, 20260810);
     assert.equal(db.prepare('SELECT status FROM game_plan_items WHERE id = ?').get(plan.body.id).status, 'done');
     assert.equal((await request(app).get('/api/games/sessions?status=completed')).body.sessions.length, 1);
 
-    await request(app).put(`/api/games/sessions/${created.body.id}`).send({ completed_at: null });
+    await request(app).put(`/api/games/sessions/${created.body.id}`).set('Cookie', 'loweve_user_id=1')
+      .send({ completed_at: null });
     assert.equal(db.prepare('SELECT status FROM game_plan_items WHERE id = ?').get(plan.body.id).status, 'playing');
     assert.equal((await request(app).get('/api/games/sessions?status=playing')).body.sessions.length, 1);
   });
@@ -412,6 +561,53 @@ describe('游戏空间 API', () => {
     assert.equal(created.status, 200);
     assert.equal(created.body.played_at, null);
     assert.equal(created.body.completed_at, 20260701);
+  });
+
+  it('共同游玩开始后详情只返回共同记录，不再返回历史计划', async () => {
+    const { app } = setup();
+    const plan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620, note: '周末一起玩' });
+    await request(app).post(`/api/games/sessions?from_plan=${plan.body.id}`)
+      .set('Cookie', 'loweve_user_id=1').send({ played_at: 20260801 }).expect(200);
+
+    const detail = await request(app).get(`/api/games/works/${plan.body.work_id}`)
+      .set('Cookie', 'loweve_user_id=1');
+    assert.equal(detail.status, 200);
+    assert.equal(detail.body.sessions.length, 1);
+    assert.equal(detail.body.plan, null);
+  });
+
+  it('已有共同游玩时，重复探测与直接新增计划都返回共同记录冲突', async () => {
+    const { app, db } = setup();
+    const session = await request(app).post('/api/games/sessions').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620, played_at: 20260801 });
+    assert.equal(session.status, 200);
+
+    const duplicate = await request(app)
+      .get(`/api/games/works/duplicate?target=couple_plan&work_id=${session.body.work_id}`)
+      .set('Cookie', 'loweve_user_id=1');
+    assert.deepEqual(duplicate.body, { duplicate: true, error: 'game_session_exists' });
+
+    const created = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ work_id: session.body.work_id });
+    assert.equal(created.status, 409);
+    assert.equal(created.body.error, 'game_session_exists');
+    assert.equal((db.prepare('SELECT count(*) AS n FROM game_plan_items').get() as any).n, 0);
+  });
+
+  it('历史计划状态不会隐藏仍然存在的正在玩记录', async () => {
+    const { app } = setup();
+    const plan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620 });
+    await request(app).post(`/api/games/sessions?from_plan=${plan.body.id}`)
+      .set('Cookie', 'loweve_user_id=1').send({ played_at: 20260801 }).expect(200);
+    await request(app).put(`/api/games/plan/${plan.body.id}`).set('Cookie', 'loweve_user_id=1')
+      .send({ status: 'dropped' }).expect(200);
+
+    const playing = await request(app).get('/api/games/sessions?status=playing');
+    assert.equal(playing.status, 200);
+    assert.equal(playing.body.sessions.length, 1);
+    assert.equal(playing.body.sessions[0].work_id, plan.body.work_id);
   });
 
   it('重复项按个人/共同/计划分别探测', async () => {
@@ -429,6 +625,22 @@ describe('游戏空间 API', () => {
     const trash = await request(app).get('/api/games/trash').set('Cookie', 'loweve_user_id=1');
     assert.equal(trash.body.items[0].work.steam_appid, 620);
     assert.equal((await request(app).post(`/api/games/trash/${trash.body.items[0].id}/restore`).set('Cookie', 'loweve_user_id=1')).status, 200);
+  });
+
+  it('已有共同游玩时不能从回收站恢复共同计划', async () => {
+    const { app, db } = setup();
+    const plan = await request(app).post('/api/games/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620 });
+    await request(app).delete(`/api/games/plan/${plan.body.id}`).set('Cookie', 'loweve_user_id=1').expect(204);
+    await request(app).post('/api/games/sessions').set('Cookie', 'loweve_user_id=1')
+      .send({ work_id: plan.body.work_id, played_at: 20260801 }).expect(200);
+    const trash: any = db.prepare("SELECT id FROM game_trash_items WHERE entity_type = 'plan'").get();
+
+    const restored = await request(app).post(`/api/games/trash/${trash.id}/restore`)
+      .set('Cookie', 'loweve_user_id=1');
+    assert.equal(restored.status, 409);
+    assert.equal(restored.body.error, 'restore_conflict');
+    assert.equal((db.prepare('SELECT count(*) AS n FROM game_plan_items').get() as any).n, 0);
   });
 
   it('默认 AI 资格排除 DLC、未发售、抢先体验、纯单人和差评', () => {
@@ -455,6 +667,21 @@ describe('游戏空间 API', () => {
       .set('Cookie', 'loweve_user_id=1').send({ action: 'want', priority: 3 });
     assert.equal(feedback.status, 200);
     assert.equal(db.prepare('SELECT priority FROM game_plan_items').get().priority, 3);
+  });
+
+  it('AI 推荐的想玩反馈不能把已经共同玩过的游戏重新加入计划', async () => {
+    const { app, db } = setup();
+    const session = await request(app).post('/api/games/sessions').set('Cookie', 'loweve_user_id=1')
+      .send({ steam_appid: 620, played_at: 20260801 });
+    const info = db.prepare(`INSERT INTO game_recommendations
+      (batch_id, rec_type, work_id, raw_title, reason, validated, created_at)
+      VALUES ('stale', 'standing', ?, '游戏620', '旧推荐', 1, ?)`).run(session.body.work_id, Date.now());
+
+    const feedback = await request(app).post(`/api/games/recos/${info.lastInsertRowid}/feedback`)
+      .set('Cookie', 'loweve_user_id=1').send({ action: 'want' });
+    assert.equal(feedback.status, 409);
+    assert.equal(feedback.body.error, 'game_session_exists');
+    assert.equal((db.prepare('SELECT count(*) AS n FROM game_plan_items').get() as any).n, 0);
   });
 
   it('首个常驻推荐不足 9 条时不发布残缺批次', async () => {

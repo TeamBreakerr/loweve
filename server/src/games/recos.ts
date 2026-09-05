@@ -98,17 +98,24 @@ export function gatherGameContext(db: any) {
     SELECT w.id, w.igdb_id, w.steam_appid, w.title, w.original_title, w.release_year, w.genres,
            m.status, m.rating, m.comment
     FROM game_marks m JOIN game_works w ON w.id = m.work_id
-    WHERE m.user_id = ? ORDER BY m.marked_at DESC`).all(uid);
+    WHERE m.user_id = ?
+      AND NOT EXISTS (SELECT 1 FROM game_sessions s WHERE s.work_id = m.work_id)
+    ORDER BY m.marked_at DESC`).all(uid);
   const marksA = marks(1);
   const marksB = marks(2);
   const sessions = db.prepare(`
     SELECT w.id, w.igdb_id, w.steam_appid, w.title, w.release_year, w.genres,
-           s.rating_a, s.rating_b, s.review_a, s.review_b, s.joint_note
+           mark_a.rating AS rating_a, mark_b.rating AS rating_b,
+           mark_a.comment AS review_a, mark_b.comment AS review_b, s.joint_note
     FROM game_sessions s JOIN game_works w ON w.id = s.work_id
+    LEFT JOIN game_marks mark_a ON mark_a.work_id = s.work_id AND mark_a.user_id = 1
+    LEFT JOIN game_marks mark_b ON mark_b.work_id = s.work_id AND mark_b.user_id = 2
     ORDER BY s.played_at DESC, s.id DESC`).all();
   const plan = db.prepare(`
     SELECT w.id, w.igdb_id, w.steam_appid, w.title, w.release_year, p.status
     FROM game_plan_items p JOIN game_works w ON w.id = p.work_id
+    WHERE p.status = 'pending'
+      AND NOT EXISTS (SELECT 1 FROM game_sessions s WHERE s.work_id = p.work_id)
     ORDER BY p.created_at DESC`).all();
   const avoidTitles = db.prepare(`SELECT DISTINCT raw_title FROM game_recommendations
     WHERE feedback IN ('not_interested', 'already_seen')`).all().map((r: any) => r.raw_title);

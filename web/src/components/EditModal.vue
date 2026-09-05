@@ -2,7 +2,6 @@
 // 编辑/删除已添加的记录。type: mark(个人看过) | session(共看) | plan(想看就一起看)
 // 评分用 ScorePicker；session 只编辑当前 viewer 那侧；后端 PUT/DELETE 已就绪。
 import { ref, watch, computed } from 'vue';
-import { useIdentity } from '../stores/identity';
 import { useMarks } from '../stores/marks';
 import { useSessions } from '../stores/sessions';
 import { usePlan } from '../stores/plan';
@@ -10,6 +9,7 @@ import Poster from './Poster.vue';
 import ScorePicker from './ScorePicker.vue';
 import DatePicker from './DatePicker.vue';
 import { encodeWatched } from '../utils/watchedDate';
+import { vAutoGrow } from '../directives/autoGrow';
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -18,13 +18,12 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:modelValue', 'changed']);
 
-const identity = useIdentity();
 const marks = useMarks();
 const sessions = useSessions();
 const plan = usePlan();
 
 const rating = ref<number | null>(null);
-const text = ref('');         // mark.comment / session.review(我那侧) / plan.note
+const text = ref('');         // mark.comment / plan.note
 const watchedAt = ref<number | null>(null);
 const status = ref('');       // mark: watched|wish ; plan: pending|watching|done|dropped
 const priority = ref(0);
@@ -32,7 +31,6 @@ const saving = ref(false);
 const errorMsg = ref('');
 
 const work = computed(() => props.record?.work || null);
-const isViewerA = computed(() => identity.viewing === 1);
 const titleLabel = computed(() => ({ mark: '编辑记录', session: '编辑共看记录', plan: '编辑计划' }[props.type]));
 
 function fillFrom(r: any) {
@@ -42,8 +40,6 @@ function fillFrom(r: any) {
     text.value = r.comment || '';
     status.value = r.status;
   } else if (props.type === 'session') {
-    rating.value = (isViewerA.value ? r.rating_a : r.rating_b) ?? null;
-    text.value = (isViewerA.value ? r.review_a : r.review_b) || '';
     // 空则默认今天（回填在输入框里，可见可清空）
     const t = new Date();
     watchedAt.value = r.watched_at ?? encodeWatched(t.getFullYear(), t.getMonth() + 1, t.getDate());
@@ -65,10 +61,7 @@ async function save() {
     if (props.type === 'mark') {
       await marks.update(props.record.id, { rating: rating.value, comment: text.value || null, status: status.value });
     } else if (props.type === 'session') {
-      const patch: any = { watched_at: watchedAt.value };   // 联合备注已下线：不下发，后端按"为空则保留"逻辑不会抹除旧值
-      if (isViewerA.value) { patch.rating_a = rating.value; patch.review_a = text.value || null; }
-      else { patch.rating_b = rating.value; patch.review_b = text.value || null; }
-      await sessions.update(props.record.id, patch);
+      await sessions.update(props.record.id, { watched_at: watchedAt.value });
     } else if (props.type === 'plan') {
       await plan.update(props.record.id, { note: text.value || null, priority: priority.value, status: status.value });
     }
@@ -120,7 +113,7 @@ function close() { emit('update:modelValue', false); }
           </div>
           <div class="field">
             <span class="field__label">短评</span>
-            <textarea class="review-input" v-model="text" placeholder="写一句感想…"></textarea>
+            <textarea v-auto-grow class="review-input" v-model="text" placeholder="写一句感想…"></textarea>
           </div>
         </template>
 
@@ -129,13 +122,6 @@ function close() { emit('update:modelValue', false); }
           <div class="field">
             <span class="field__label">看完日期（可空，只记到年或月也行）</span>
             <DatePicker v-model="watchedAt" />
-          </div>
-          <div class="field">
-            <ScorePicker v-model="rating" :label="`${identity.viewingName} 的评分`" />
-          </div>
-          <div class="field">
-            <span class="field__label">{{ identity.viewingName }} 的短评</span>
-            <textarea class="review-input" v-model="text" :placeholder="`${identity.viewingName} 的短评…`"></textarea>
           </div>
         </template>
 
@@ -155,7 +141,7 @@ function close() { emit('update:modelValue', false); }
           </div>
           <div class="field">
             <span class="field__label">备注</span>
-            <textarea class="review-input" v-model="text" placeholder="为什么想一起看…"></textarea>
+            <textarea v-auto-grow class="review-input" v-model="text" placeholder="为什么想一起看…"></textarea>
           </div>
         </template>
 

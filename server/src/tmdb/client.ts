@@ -150,11 +150,11 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
     },
 
     movieDetail(id: any) {
-      return request(`/movie/${id}`, { append_to_response: 'external_ids,alternative_titles,translations' });
+      return request(`/movie/${id}`, { append_to_response: 'external_ids,alternative_titles,translations,credits,videos' });
     },
 
     tvDetail(id: any) {
-      return request(`/tv/${id}`, { append_to_response: 'external_ids,alternative_titles,translations' });
+      return request(`/tv/${id}`, { append_to_response: 'external_ids,alternative_titles,translations,credits,videos' });
     },
 
     tvSeasonDetail(id: any, seasonNumber: any) {

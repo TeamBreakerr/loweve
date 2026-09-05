@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { migrateSessionExperiences } from '../experiences/service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -278,6 +279,8 @@ export function migrate(db: any, { userA, userB }: any) {
   migrateAddGameContentType(db);
   migrateAddGameDiscountEndDate(db);
   migrateAddGameCompletedAt(db);
+  seedUsers(db, { userA, userB });
+  migrateSessionExperiences(db);
   // 身份唯一索引：整部(NULL→-1)与各季各自唯一。放在此处（列已确保存在）而非 schema.sql，
   // 避免老库 applySchema 阶段 season_number 尚不存在导致 COALESCE 报错。
   db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_works_identity ON works(tmdb_id, tmdb_type, COALESCE(season_number, -1));`);
@@ -285,5 +288,4 @@ export function migrate(db: any, { userA, userB }: any) {
   db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_game_works_steam ON game_works(steam_appid) WHERE steam_appid IS NOT NULL;`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_game_works_rating ON game_works(review_percent DESC, review_total DESC);`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_game_works_release ON game_works(release_state, release_year DESC);`);
-  seedUsers(db, { userA, userB });
 }

@@ -204,7 +204,7 @@
    （死类 .hcard__note/.hcard__foot(+.feedback)/.hcard.is-hidden 已随 T11 删除）。
    .hcard__corner/.hcard__date(+svg)/.hcard__edit(+:hover/+svg) 只在 WatchedTimeline.vue
    出现，随该组件一并搬入其 <style scoped> 块。*/
-.hcard{ scroll-snap-align:start; flex:0 0 205px; background:var(--surface); border-radius:var(--r-lg); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
+.hcard{ flex:0 0 205px; background:var(--surface); border-radius:var(--r-lg); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
 .hcard:hover{ transform:translateY(-4px); }
 .hcard__pw{ position:relative; }
 .hcard__body{ padding:var(--s-3) var(--s-4) var(--s-4); display:flex; flex-direction:column; gap:var(--s-2); }

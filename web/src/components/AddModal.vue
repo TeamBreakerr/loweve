@@ -50,20 +50,23 @@ watch(query, (q) => {
 const selected = ref<any>(null);
 const seasons = ref<any[]>([]);                  // 选中 TV 时拉到的季列表
 const seasonNumber = ref<number | null>(null);   // null=整部；N=第N季
+const episodeCount = ref<number | null>(null);   // TMDB 只有一个可追踪季时显示总集数
 
 // 选中一个候选：收起候选列表（模板据 selected 收起），若是剧集拉季列表供分季
 async function onSelect(c: any) {
   selected.value = c;
   seasons.value = [];
   seasonNumber.value = null;
+  episodeCount.value = null;
   if (c.tmdb_type === 'tv') {
     try {
       const data = await api('/api/tv/' + c.tmdb_id + '/seasons');
       seasons.value = data.seasons || [];
+      episodeCount.value = data.track_by_season ? null : data.episode_count || null;
     } catch { seasons.value = []; }   // 拉季失败不挡添加，退化为整部
   }
 }
-function reselect() { selected.value = null; seasons.value = []; seasonNumber.value = null; }
+function reselect() { selected.value = null; seasons.value = []; seasonNumber.value = null; episodeCount.value = null; }
 
 // —— Step 3 选目标列表 ——
 const target = ref(props.initialTarget);
@@ -101,6 +104,7 @@ function reset() {
   candidates.value = [];
   seasons.value = [];
   seasonNumber.value = null;
+  episodeCount.value = null;
   rating.value = null;
   comment.value = '';
   watchedAt.value = null;
@@ -285,12 +289,12 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
             </div>
             <div class="result__info">
               <div class="result__name">{{ selected.title }} <span class="year">{{ selected.year }}</span></div>
-              <div class="result__sub">{{ selected.tmdb_type === 'movie' ? '电影' : '剧/番' }}</div>
+              <div class="result__sub">{{ selected.tmdb_type === 'movie' ? '电影' : '剧/番' }}<span v-if="episodeCount"> · 全 {{ episodeCount }} 集</span></div>
             </div>
             <button class="reselect-btn" @click="reselect">换一个</button>
           </div>
           <div v-if="seasons.length" class="season-pick">
-            <button class="target season-opt" :class="{ 'is-active': seasonNumber === null }" @click="seasonNumber = null">整部</button>
+            <button class="target season-all-opt" :class="{ 'is-active': seasonNumber === null }" @click="seasonNumber = null">整部（非单季）</button>
             <button v-for="s in seasons" :key="s.season_number" class="target season-opt"
                     :class="{ 'is-active': seasonNumber === s.season_number }" @click="seasonNumber = s.season_number">第{{ s.season_number }}季</button>
           </div>
@@ -403,5 +407,5 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
 .reselect-btn{ margin-left:auto; flex-shrink:0; font-size:var(--fs-sm); color:var(--rose); padding:4px 12px; border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface-2); transition:all .18s; }
 .reselect-btn:hover{ color:oklch(0.16 0.02 30); background:var(--rose); border-color:var(--rose); }
 .season-pick{ display:flex; flex-wrap:wrap; gap:6px; margin-top:var(--s-3); }
-.season-opt{ flex:0 0 auto; padding:6px 12px; }
+.season-all-opt,.season-opt{ flex:0 0 auto; padding:6px 12px; }
 </style>

@@ -59,6 +59,54 @@ describe('createBangumiClient', () => {
     assert.equal(r[0].poster_url, null);
   });
 
+  it('hotReviews 保持官方吐槽页默认顺序，点赞数只作为附加信息', async () => {
+    let requested = '';
+    const fakeFetch = async (url: any) => {
+      requested = String(url);
+      return {
+        ok: true, status: 200, text: async () => `
+          <div id="comment_box">
+            <div class="item clearit" data-item-user="u1">
+              <a href="/user/u1" class="avatar"><span style="background-image:url('//lain.bgm.tv/a.jpg')"></span></a>
+              <a href="/user/u1" class="l">甲&amp;一</a>
+              <span class="starlight stars9"></span>
+              <p class="comment">演出&lt;太棒&gt;了</p><div class="likes_grid" id="likes_grid_11"></div>
+            </div>
+            <div class="item clearit" data-item-user="u2">
+              <a href="/user/u2" class="l">乙</a><span class="starlight stars8"></span>
+              <p class="comment">音乐很好<br>值得重听</p><div class="likes_grid" id="likes_grid_12"></div>
+            </div>
+            <div class="item clearit" data-item-user="u3">
+              <a href="/user/u3" class="l">丙</a><span class="starlight stars7"></span>
+              <p class="comment">值得一看</p><div class="likes_grid" id="likes_grid_13"></div>
+            </div>
+            <div class="item clearit" data-item-user="u4">
+              <a href="/user/u4" class="l">丁</a><p class="comment">第四条</p>
+              <div class="likes_grid" id="likes_grid_14"></div>
+            </div>
+          </div>
+          <script>
+            var data_likes_list = {
+              "11":{"1":{"total":5}},
+              "12":{"1":{"total":18},"2":{"total":2}},
+              "13":{"1":{"total":9}},
+              "14":{}
+            };
+          </script>`,
+        };
+    };
+    const reviews = await createBangumiClient({ userAgent: 'X', fetch: fakeFetch }).hotReviews(328609, 3);
+    assert.equal(requested, 'https://bgm.tv/subject/328609/comments');
+    assert.equal(reviews.length, 3);
+    assert.deepEqual(reviews[0], {
+      id: '11', author: '甲&一', avatar_url: 'https://lain.bgm.tv/a.jpg', content: '演出<太棒>了', rating: 9,
+      votes: 5, created_at: null, url: 'https://bgm.tv/subject/328609/comments',
+    });
+    assert.equal(reviews[1]!.id, '12');
+    assert.equal(reviews[1]!.votes, 20);
+    assert.equal(reviews[2]!.id, '13');
+  });
+
   it('5xx → 抛 BangumiError（不重试）', async () => {
     let calls = 0;
     const fakeFetch = async () => { calls++; return { ok: false, status: 502, json: async () => ({}) }; };
@@ -144,6 +192,44 @@ describe('matchAnime', () => {
       candidates
     );
     assert.equal(best?.bangumi_id, 10);
+  });
+
+  it('日文标题末尾大写 S 识别为第二季', () => {
+    const best = matchAnime(
+      {
+        title: '小林家的龙女仆 第二季',
+        original_title: '小林さんちのメイドラゴン',
+        names: ['小林さんちのメイドラゴン', '小林家的龙女仆 第二季', 'Miss Kobayashi\'s Dragon Maid S'],
+        year: 2021,
+        season_number: 2,
+      },
+      [cand({
+        bangumi_id: 274234,
+        name: '小林さんちのメイドラゴンS',
+        name_cn: '小林家的龙女仆S',
+        year: 2021,
+      })]
+    );
+    assert.equal(best?.bangumi_id, 274234);
+  });
+
+  it('英文 AKA 可命中 Vivy 与 Redline 等中文译名不同的动画', () => {
+    const vivy = matchAnime(
+      {
+        title: '薇薇 -萤石眼之歌-',
+        original_title: 'Vivy -Fluorite Eye\'s Song-',
+        names: ['Vivy -Fluorite Eye\'s Song-', '薇薇 -萤石眼之歌-', 'Vivy'],
+        year: 2021,
+      },
+      [cand({ bangumi_id: 282241, name: 'Vivy -Fluorite Eye\'s Song-', name_cn: 'Vivy -Fluorite Eye\'s Song-', year: 2021 })]
+    );
+    assert.equal(vivy?.bangumi_id, 282241);
+
+    const redline = matchAnime(
+      { title: '红线', original_title: 'レッドライン', names: ['レッドライン', '红线', 'Redline'], year: 2009 },
+      [cand({ bangumi_id: 8726, name: 'REDLINE', name_cn: '红线', year: 2009 })]
+    );
+    assert.equal(redline?.bangumi_id, 8726);
   });
 
   it('名称差太远（蒙年份）→ null', () => {

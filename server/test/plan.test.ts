@@ -60,6 +60,22 @@ describe('GET /api/plan', () => {
     assert.equal(r.body.items.length, 1);
     assert.equal(r.body.items[0].status, 'watching');
   });
+
+  it('首页清单只按添加时间倒序，不让旧的高优先级盖过新添加作品', async () => {
+    const app = createApp({ db, tmdb: makeFakeTmdb() });
+    const oldWork = seedWork(db, 11);
+    const newWork = seedWork(db, 12);
+    const oldItem = (await request(app).post('/api/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ work_id: oldWork, priority: 3 })).body;
+    const newItem = (await request(app).post('/api/plan').set('Cookie', 'loweve_user_id=1')
+      .send({ work_id: newWork, priority: 0 })).body;
+    db.prepare('UPDATE plan_items SET created_at = ? WHERE id = ?').run(100, oldItem.id);
+    db.prepare('UPDATE plan_items SET created_at = ? WHERE id = ?').run(200, newItem.id);
+
+    const res = await request(app).get('/api/plan');
+
+    assert.deepEqual(res.body.items.map((item: any) => item.work_id), [newWork, oldWork]);
+  });
 });
 
 describe('PUT/DELETE /api/plan/:id', () => {

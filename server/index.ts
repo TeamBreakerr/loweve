@@ -14,6 +14,7 @@ import { effectiveConfig } from './src/settings.js';
 import { createSteamClient } from './src/steam/client.js';
 import { createIgdbClient } from './src/igdb/client.js';
 import { createWikidataClient } from './src/wikidata/client.js';
+import { sweepStuckBangumi } from './src/routes/works.js';
 
 async function main() {
   // 必须在任何 fetch 之前装代理（外网请求经 HTTPS_PROXY 走代理，内网 cli-proxy-api 经 NO_PROXY 直连）
@@ -45,6 +46,8 @@ async function main() {
     console.log(`loweve listening on :${config.port}, db=${paths.dbFile}, tmdb=${tmdb.isConfigured() ? 'ok' : 'unconfigured'}, igdb=${igdb.isConfigured() ? 'ok' : 'unconfigured'}, steam=ok, bangumi=ok, douban=http, llm=${llm.isConfigured() ? 'ok' : 'off'}`);
     const ids = sweepStuckDouban(db, douban);   // 后台补抓卡在 tmdb 的电影
     if (ids.length) console.log(`[douban] 自愈补抓 ${ids.length} 部卡在 tmdb 的电影`);
+    const bangumiSweep = sweepStuckBangumi(db, bangumi); // 后台补抓卡在 tmdb 的动画
+    if (bangumiSweep.ids.length) console.log(`[bangumi] 自愈补抓 ${bangumiSweep.ids.length} 部卡在 tmdb 的动画`);
   });
 }
 

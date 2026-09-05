@@ -113,25 +113,31 @@ describe('PUT/DELETE /api/sessions/:id', () => {
   beforeEach(() => { db = makeTestDb(); });
   afterEach(() => db.close());
 
-  it('PUT 允许同时改两侧（不像 POST 限制）', async () => {
+  it('评分评价只能改个人记录，修改后共同记录立即读取同一值', async () => {
     const app = createApp({ db, tmdb: makeFakeTmdb() });
     const work_id = seedWork(db);
     const created = (await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: 20240315, rating: 9 })).body;
-    const res = await request(app).put(`/api/sessions/${created.id}`).send({
-      rating_b: 8, review_b: 'Bob 后补', joint_note: '我们的备注'
-    });
+    const rejected = await request(app).put(`/api/sessions/${created.id}`).set('Cookie', 'loweve_user_id=2')
+      .send({ rating_b: 8, review_b: 'Bob 后补' });
+    assert.equal(rejected.status, 400);
+    assert.equal(rejected.body.error, 'experience_fields_belong_to_marks');
+
+    const markB: any = db.prepare('SELECT id FROM user_marks WHERE user_id = 2 AND work_id = ?').get(work_id);
+    await request(app).put(`/api/marks/${markB.id}`).set('Cookie', 'loweve_user_id=2')
+      .send({ rating: 8, comment: 'Bob 后补' }).expect(200);
+    const res = await request(app).get('/api/sessions');
     assert.equal(res.status, 200);
-    assert.equal(res.body.rating_a, 9);     // 原值保留
-    assert.equal(res.body.rating_b, 8);     // 后补
-    assert.equal(res.body.review_b, 'Bob 后补');
-    assert.equal(res.body.joint_note, '我们的备注');
+    assert.equal(res.body.sessions[0].rating_a, 9);
+    assert.equal(res.body.sessions[0].rating_b, 8);
+    assert.equal(res.body.sessions[0].review_b, 'Bob 后补');
   });
 
   it('PUT watched_at: null → 清空日期（之前 COALESCE 清不掉）', async () => {
     const app = createApp({ db, tmdb: makeFakeTmdb() });
     const work_id = seedWork(db);
     const created = (await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: 20240315 })).body;
-    const res = await request(app).put(`/api/sessions/${created.id}`).send({ watched_at: null });
+    const res = await request(app).put(`/api/sessions/${created.id}`).set('Cookie', 'loweve_user_id=1')
+      .send({ watched_at: null });
     assert.equal(res.status, 200);
     assert.equal(res.body.watched_at, null);
   });
@@ -140,7 +146,8 @@ describe('PUT/DELETE /api/sessions/:id', () => {
     const app = createApp({ db, tmdb: makeFakeTmdb() });
     const work_id = seedWork(db);
     const created = (await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: 20240315 })).body;
-    const res = await request(app).put(`/api/sessions/${created.id}`).send({ joint_note: '只改备注' });
+    const res = await request(app).put(`/api/sessions/${created.id}`).set('Cookie', 'loweve_user_id=1')
+      .send({ joint_note: '只改备注' });
     assert.equal(res.body.watched_at, 20240315);
   });
 
@@ -148,7 +155,7 @@ describe('PUT/DELETE /api/sessions/:id', () => {
     const app = createApp({ db, tmdb: makeFakeTmdb() });
     const work_id = seedWork(db);
     const created = (await request(app).post('/api/sessions').set('Cookie', 'loweve_user_id=1').send({ work_id, watched_at: 20240315 })).body;
-    const res = await request(app).delete(`/api/sessions/${created.id}`);
+    const res = await request(app).delete(`/api/sessions/${created.id}`).set('Cookie', 'loweve_user_id=1');
     assert.equal(res.status, 204);
   });
 });

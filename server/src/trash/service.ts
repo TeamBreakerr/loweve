@@ -1,3 +1,5 @@
+import { ensureExperiencePair } from '../experiences/service.js';
+
 export type TrashEntityType = 'mark' | 'session' | 'plan';
 
 const TABLES: Record<TrashEntityType, string> = {
@@ -66,10 +68,13 @@ export function restoreTrashItem(db: any, trashId: number):
         .run(payload.user_id, payload.work_id, payload.status, payload.rating, payload.comment, payload.marked_at);
     } else if (entityType === 'session') {
       info = db.prepare(`INSERT INTO couple_sessions
-        (work_id, watched_at, rating_a, rating_b, review_a, review_b, joint_note, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(payload.work_id, payload.watched_at, payload.rating_a, payload.rating_b,
-          payload.review_a, payload.review_b, payload.joint_note, payload.created_at);
+        (work_id, watched_at, joint_note, created_at)
+        VALUES (?, ?, ?, ?)`)
+        .run(payload.work_id, payload.watched_at, payload.joint_note, payload.created_at);
+      ensureExperiencePair(db, 'movie', payload.work_id, payload.created_at, {
+        1: { rating: payload.rating_a, comment: payload.review_a },
+        2: { rating: payload.rating_b, comment: payload.review_b },
+      });
     } else {
       info = db.prepare(`INSERT INTO plan_items
         (work_id, added_by, note, priority, status, created_at, updated_at)

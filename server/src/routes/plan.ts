@@ -16,9 +16,9 @@ export function planRoutes() {
     let rows: any;
     if (status) {
       if (!VALID_STATUS.includes(status)) return res.status(400).json({ error: 'invalid_status' });
-      rows = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items WHERE status = ? ORDER BY priority DESC, created_at DESC`).all(status);
+      rows = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items WHERE status = ? ORDER BY created_at DESC, id DESC`).all(status);
     } else {
-      rows = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items ORDER BY priority DESC, created_at DESC`).all();
+      rows = db.prepare(`SELECT ${PLAN_COLS} FROM plan_items ORDER BY created_at DESC, id DESC`).all();
     }
     const workIds = [...new Set(rows.map((r: any) => r.work_id))];
     const works = workIds.length

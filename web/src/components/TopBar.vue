@@ -13,9 +13,7 @@ const mePath = computed(() => space.isGames ? '/games/me' : '/me');
 
 function switchSpace(next: 'media' | 'games') {
   space.set(next);
-  const page = route.meta.page;
-  const target = page === 'me' ? (next === 'games' ? '/games/me' : '/me') : (next === 'games' ? '/games' : '/');
-  router.push(target);
+  router.push(next === 'games' ? '/games' : '/');
 }
 
 function pickWho(id: any) {

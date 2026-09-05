@@ -13,7 +13,7 @@ const router = useRouter();
 const plan = usePlan();
 const identity = useIdentity();
 
-// 扁平清单：只显示还想看的（看过/弃了不展示），按优先级排序由后端给
+// 扁平清单：只显示还想看的（看过/弃了不展示），后端按添加时间从新到旧返回。
 const visible = computed(() => plan.list.filter(p => p.status !== 'done' && p.status !== 'dropped'));
 const addModalOpen = ref(false);
 
@@ -28,7 +28,7 @@ onMounted(() => plan.load());
     <div class="page-hero">
       <span class="page-hero__kicker">Want to Watch</span>
       <h1 class="page-hero__title">想看就一起看</h1>
-      <p class="page-hero__lead">两个人共同的待看清单。按优先级排个序，挑一部当下都想看的，今晚就开始。点开海报进详情可调优先级或移除。</p>
+      <p class="page-hero__lead">两个人共同的待看清单，最近添加的排在前面。挑一部当下都想看的，今晚就开始。点开海报进详情可调优先级或移除。</p>
     </div>
 
     <div class="section__head section__head--plan-actions">
