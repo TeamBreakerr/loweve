@@ -5,6 +5,7 @@ import { ref, watch, computed } from 'vue';
 import { useMarks } from '../stores/marks';
 import { useSessions } from '../stores/sessions';
 import { usePlan } from '../stores/plan';
+import { confirm } from '../composables/useConfirm';
 import Poster from './Poster.vue';
 import ScorePicker from './ScorePicker.vue';
 import DatePicker from './DatePicker.vue';
@@ -72,7 +73,7 @@ async function save() {
 }
 
 async function del() {
-  if (!window.confirm('确定移入回收站？之后可在「设置 → 回收站」恢复。')) return;
+  if (!await confirm({ title: '移入回收站？', message: '之后可在「设置 → 回收站」恢复。', confirmLabel: '移入回收站' })) return;
   saving.value = true; errorMsg.value = '';
   try {
     if (props.type === 'mark') await marks.remove(props.record.id);

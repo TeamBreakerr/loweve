@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { api } from '../api/index';
 import { useIdentity } from '../stores/identity';
+import { confirm } from '../composables/useConfirm';
 import Poster from '../components/Poster.vue';
 import type { TrashItem } from '../types';
 
@@ -60,7 +61,7 @@ async function restore(item: TrashItem) {
 }
 
 async function removeForever(item: TrashItem) {
-  if (!window.confirm(`永久删除“${item.work.title}”？此操作无法恢复。`)) return;
+  if (!await confirm({ title: `永久删除「${item.work.title}」？`, message: '这条记录将被彻底删除，无法恢复。', confirmLabel: '永久删除', danger: true })) return;
   busyId.value = item.id;
   error.value = '';
   try {

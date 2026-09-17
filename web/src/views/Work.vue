@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, imgProxy, ratingHref } from '../api/index';
 import { useIdentity } from '../stores/identity';
+import { confirm } from '../composables/useConfirm';
 import type { Work, WorkDetails } from '../types';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
@@ -58,7 +59,7 @@ async function setPriority(n: number) {
 }
 async function removePlan() {
   if (!planActive.value) return;
-  if (!window.confirm('确定从清单移入回收站？之后可在「设置 → 回收站」恢复。')) return;
+  if (!await confirm({ title: '从清单移入回收站？', message: '之后可在「设置 → 回收站」恢复。', confirmLabel: '移入回收站' })) return;
   await api(`/api/plan/${planActive.value.id}`, { method: 'DELETE' });
   await loadWork();
 }

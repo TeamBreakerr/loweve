@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { api } from '../../api/index';
+import { confirm } from '../../composables/useConfirm';
 import GamePoster from '../../components/games/GamePoster.vue';
 import GameContentBadge from '../../components/games/GameContentBadge.vue';
 
@@ -9,7 +10,7 @@ const LABEL:any={mark:'个人玩过',session:'一起玩过',plan:'想和你一�
 async function load(){ loading.value=true; try{items.value=(await api('/api/games/trash')).items||[];}finally{loading.value=false;} }
 onMounted(load);
 async function restore(item:any){ error.value=''; try{await api(`/api/games/trash/${item.id}/restore`,{method:'POST'}); await load();}catch(e){error.value=e.body?.error==='restore_conflict'?'目标列表中已经有这款游戏，无法重复恢复。':(e.body?.error||e.message);} }
-async function remove(item:any){ if(!window.confirm('永久删除这条游戏记录快照？此操作无法恢复。'))return; await api(`/api/games/trash/${item.id}`,{method:'DELETE'}); await load(); }
+async function remove(item:any){ if(!await confirm({ title: `永久删除「${item.work?.title || '这条记录'}」？`, message: '游戏记录快照将被彻底删除，无法恢复。', confirmLabel: '永久删除', danger: true }))return; await api(`/api/games/trash/${item.id}`,{method:'DELETE'}); await load(); }
 </script>
 
 <template>

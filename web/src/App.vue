@@ -5,6 +5,7 @@ import { useIdentity } from './stores/identity';
 import { useSpace } from './stores/space';
 import TopBar from './components/TopBar.vue';
 import ProxyBanner from './components/ProxyBanner.vue';
+import ConfirmDialog from './components/ConfirmDialog.vue';
 
 const identity = useIdentity();
 const route = useRoute();
@@ -36,6 +37,7 @@ watchEffect(() => {
   </svg>
   <TopBar />
   <ProxyBanner />
+  <ConfirmDialog />
   <router-view v-if="identity.loaded" />
   <footer v-if="identity.loaded">
     <div class="brand__mark">loweve</div>

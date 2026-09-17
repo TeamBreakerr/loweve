@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useGameMarks } from '../../stores/gameMarks';
 import { useGameSessions } from '../../stores/gameSessions';
 import { useGamePlan } from '../../stores/gamePlan';
+import { confirm } from '../../composables/useConfirm';
 import GamePoster from './GamePoster.vue';
 import GameContentBadge from './GameContentBadge.vue';
 import ScorePicker from '../ScorePicker.vue';
@@ -60,7 +61,7 @@ async function save() {
   finally { saving.value = false; }
 }
 async function remove() {
-  if (!window.confirm('确定移入游戏回收站？之后可以恢复。')) return;
+  if (!await confirm({ title: '移入游戏回收站？', message: '之后可在「设置 → 游戏回收站」恢复。', confirmLabel: '移入回收站' })) return;
   saving.value = true;
   try {
     if (props.type === 'mark') await marks.remove(props.record.id);
