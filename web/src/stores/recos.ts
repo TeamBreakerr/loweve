@@ -13,6 +13,7 @@ export const useRecos = defineStore('recos', () => {
   const items = ref<Reco[]>([]);
   const batchId = ref<string | null>(null);
   const recType = ref('standing');
+  const userPrompt = ref<string | null>(null);   // 生成当前批次的自定义要求；默认推荐为 null
   const loading = ref(false);
   const generating = ref(false);
   const error = ref<string | null>(null);
@@ -21,6 +22,7 @@ export const useRecos = defineStore('recos', () => {
     items.value = data.items || [];
     batchId.value = data.batch_id ?? null;
     recType.value = data.rec_type || 'standing';
+    userPrompt.value = data.user_prompt ?? null;
     error.value = data.error || null;
     generating.value = Boolean(data.generating);
     if (data.stale && data.generating) schedulePoll(); // 后端正在后台重生成，静默轮询换新
@@ -81,5 +83,5 @@ export const useRecos = defineStore('recos', () => {
     } catch (e) { error.value = e.body?.error || e.message; }
   }
 
-  return { items, batchId, recType, loading, generating, error, load, refresh, custom, feedback };
+  return { items, batchId, recType, userPrompt, loading, generating, error, load, refresh, custom, feedback };
 });

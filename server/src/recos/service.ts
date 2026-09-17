@@ -31,6 +31,17 @@ export function readBatch(db: any, batchId: any): Reco[] {
   return db.prepare(READ_SQL).all({ batch: batchId });
 }
 
+// 当前批次的类型与生成它的自定义要求：从批次自身的行读取（自定义批次每行都带 user_prompt），
+// 不另存 app_state，避免 batch_id 与 prompt 两个键失步。
+export function batchMeta(db: any, batchId: any): { rec_type: 'standing' | 'custom'; user_prompt: string | null } {
+  const row = batchId
+    ? db.prepare('SELECT rec_type, user_prompt FROM recommendations WHERE batch_id = ? LIMIT 1').get(batchId)
+    : null;
+  return row?.rec_type === 'custom'
+    ? { rec_type: 'custom', user_prompt: row.user_prompt ?? null }
+    : { rec_type: 'standing', user_prompt: null };
+}
+
 export function gatherContext(db: any) {
   const users = db.prepare('SELECT id, display_name FROM users ORDER BY id').all();
   const userA = users.find((u: any) => u.id === 1)?.display_name || 'A';
@@ -141,6 +152,8 @@ function fillStandingBatch(db: any, {
 // 不启动 LLM，也不改变 batch_id，让修复部署后立即自愈。
 export function ensureStandingBatchSize(db: any, batchId: string | null) {
   if (!batchId) return [];
+  // 自定义要求生成的批次条数由要求决定，不用历史/片库补齐——补进来的不满足要求。
+  if (batchMeta(db, batchId).rec_type === 'custom') return readBatch(db, batchId);
   const current = db.prepare(`
     SELECT r.work_id, w.tmdb_id, w.tmdb_type
     FROM recommendations r JOIN works w ON w.id = r.work_id
@@ -163,12 +176,14 @@ export function ensureStandingBatchSize(db: any, batchId: string | null) {
   return readBatch(db, batchId);
 }
 
-export async function generateStanding(db: any, deps: any, { userPrompt = null } = {}) {
+// background=true 表示后台重生成：起飞后若用户已按要求生成了新批次，完成时不得覆盖它。
+export async function generateStanding(db: any, deps: any,
+  { userPrompt = null, background = false }: { userPrompt?: string | null; background?: boolean } = {}) {
   const ctx = gatherContext(db);
   const llmDeadline = Date.now() + GENERATION_LLM_BUDGET_MS;
   const batch_id = nextBatchId();
   const rec_type = userPrompt ? 'custom' : 'standing';
-  const previousBatchId = rec_type === 'standing' ? getStandingBatchId(db) : null;
+  const previousBatchId = getStandingBatchId(db);
   const now = Date.now();
   const insert = db.prepare(INSERT_SQL);
 
@@ -243,10 +258,19 @@ export async function generateStanding(db: any, deps: any, { userPrompt = null }
   if (rec_type === 'standing') {
     // 有旧批时绝不把不足 9 条的新批切成当前批次；后台调用会回落旧批并显示错误。
     if (shown < SHOW && previousBatchId) throw new Error('recos_insufficient');
-    setStandingBatchId(db, batch_id);
-    clearRecosStale(db);
+  } else if (shown === 0) {
+    // 自定义要求一条都没核实出来：不切当前批次，让调用方回落旧批并提示换个说法。
+    throw Object.assign(new Error('recos_empty'), { code: 'recos_empty' });
   }
-  return { items: readBatch(db, batch_id), batch_id, rec_type };
+  // 后台任务在飞期间用户主动按要求生成过新批次：用户要的优先，本批作废不切换。
+  if (background && getStandingBatchId(db) !== previousBatchId) {
+    throw Object.assign(new Error('recos_superseded'), { code: 'recos_superseded' });
+  }
+  // 自定义批次同样落为当前批次：刷新页面仍是这一批，后续 stale 重生成也沿用同一要求。
+  setStandingBatchId(db, batch_id);
+  clearRecosStale(db);
+  regenLastError = null;   // 新批次已就位，之前后台失败的提示作废
+  return { items: readBatch(db, batch_id), batch_id, user_prompt: userPrompt ?? null, rec_type };
 }
 
 // 后台重生成的在飞守卫：手动刷新与 stale GET 共用，避免连续点击/轮询重复启动。
@@ -259,8 +283,11 @@ function startStandingRegeneration(db: any, deps: any, reason: 'manual' | 'stale
   regenLastError = null;
   const startedAt = Date.now();
   const model = deps.llm?.getModel?.() || 'unknown';
-  console.info('[recos] 后台生成开始', { reason, model });
-  regenInflight = generateStanding(db, deps, {})
+  // 数据变更触发的 stale 重生成沿用当前批次的自定义要求（要求未变，只是口味数据更新了）；
+  // 手动「换一批」由前端在输入框为空时调用，明确回到默认推荐。
+  const userPrompt = reason === 'stale' ? batchMeta(db, getStandingBatchId(db)).user_prompt : null;
+  console.info('[recos] 后台生成开始', { reason, model, custom: Boolean(userPrompt) });
+  regenInflight = generateStanding(db, deps, { userPrompt, background: true })
     .then((result) => {
       console.info('[recos] 后台生成完成', {
         reason, model, elapsed_ms: Date.now() - startedAt,
@@ -268,6 +295,11 @@ function startStandingRegeneration(db: any, deps: any, reason: 'manual' | 'stale
       });
     })
     .catch((e: any) => {
+      if (e?.code === 'recos_superseded') {
+        // 用户在此期间按要求生成了新批次，本批让位，不算失败
+        console.info('[recos] 后台生成让位于自定义批次', { reason, model, elapsed_ms: Date.now() - startedAt });
+        return;
+      }
       regenLastError = 'llm_unavailable';
       // 停止前端轮询风暴；下一次手动刷新或新的数据变更仍可重新触发。
       clearRecosStale(db);
@@ -280,10 +312,10 @@ function startStandingRegeneration(db: any, deps: any, reason: 'manual' | 'stale
   return true;
 }
 
-function currentStandingPayload(db: any, { stale, error = null }: { stale: boolean; error?: string | null }) {
+export function currentStandingPayload(db: any, { stale, error = null }: { stale: boolean; error?: string | null }) {
   const batchId = getStandingBatchId(db);
   return {
-    items: ensureStandingBatchSize(db, batchId), batch_id: batchId, rec_type: 'standing',
+    items: ensureStandingBatchSize(db, batchId), batch_id: batchId, ...batchMeta(db, batchId),
     stale, generating: Boolean(regenInflight), error,
   };
 }
@@ -300,7 +332,7 @@ export function requestStandingRefresh(db: any, deps: any) {
 export async function getCurrentRecos(db: any, deps: any) {
   const batchId = getStandingBatchId(db);
   if (!deps.llm?.isConfigured?.()) {
-    return { items: ensureStandingBatchSize(db, batchId), batch_id: batchId, rec_type: 'standing', stale: false, generating: false, error: batchId ? null : 'llm_unconfigured' };
+    return { items: ensureStandingBatchSize(db, batchId), batch_id: batchId, ...batchMeta(db, batchId), stale: false, generating: false, error: batchId ? null : 'llm_unconfigured' };
   }
   if (regenInflight) {
     return currentStandingPayload(db, { stale: true });
@@ -311,7 +343,7 @@ export async function getCurrentRecos(db: any, deps: any) {
       const r = await generateStanding(db, deps, {});
       return { ...r, stale: false, generating: false, error: null };
     } catch {
-      return { items: [], batch_id: null, rec_type: 'standing', stale: false, generating: false, error: 'llm_unavailable' };
+      return { items: [], batch_id: null, rec_type: 'standing', user_prompt: null, stale: false, generating: false, error: 'llm_unavailable' };
     }
   }
   if (isRecosStale(db)) {

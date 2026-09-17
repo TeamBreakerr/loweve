@@ -1,6 +1,6 @@
 // server/src/routes/recos.js
 import { Router } from 'express';
-import { getCurrentRecos, generateStanding, requestStandingRefresh } from '../recos/service.js';
+import { getCurrentRecos, generateStanding, requestStandingRefresh, currentStandingPayload } from '../recos/service.js';
 import { markRecosStale } from '../recos/state.js';
 import { upsertWork } from './works.js';
 import type { Mark, PlanItem } from '../../../shared/types.js';
@@ -28,12 +28,15 @@ export function recosRoutes() {
     res.status(result.generating ? 202 : 200).json(result);
   });
 
+  // 按要求生成的批次会落为当前批次（与「换一批」一致），刷新页面不丢。
   router.post('/custom', async (req, res) => {
     const prompt = (req.body?.prompt || '').trim();
     if (!prompt) return res.status(400).json({ error: 'prompt_required' });
     try {
-      res.json({ ...(await generateStanding(req.app.locals.db, depsOf(req), { userPrompt: prompt })), error: null });
+      res.json({ ...(await generateStanding(req.app.locals.db, depsOf(req), { userPrompt: prompt })), stale: false, generating: false, error: null });
     } catch (e) {
+      // 一条都没核实出来：保留当前批次，前端提示换个说法
+      if (e.code === 'recos_empty') return res.json(currentStandingPayload(req.app.locals.db, { stale: false, error: 'custom_empty' }));
       res.status(502).json({ error: 'llm_unavailable', message: e.message });
     }
   });

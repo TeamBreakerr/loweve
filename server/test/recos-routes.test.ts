@@ -76,10 +76,31 @@ describe('recos routes', () => {
     assert.notEqual(done.batch_id, first.batch_id);
   });
 
-  it('POST /api/recos/custom 带 prompt → rec_type=custom', async () => {
-    const res = await request(appWith(db)).post('/api/recos/custom').send({ prompt: '90分钟治愈' });
+  it('POST /api/recos/custom 带 prompt → rec_type=custom，刷新后 GET 仍是这一批', async () => {
+    const app = appWith(db);
+    const res = await request(app).post('/api/recos/custom').send({ prompt: '90分钟治愈' });
     assert.equal(res.status, 200);
     assert.equal(res.body.rec_type, 'custom');
+    assert.equal(res.body.user_prompt, '90分钟治愈');
+    assert.equal(res.body.error, null);
+    const again = (await request(app).get('/api/recos')).body;
+    assert.equal(again.batch_id, res.body.batch_id);
+    assert.equal(again.rec_type, 'custom');
+    assert.equal(again.user_prompt, '90分钟治愈');
+    assert.equal(again.items[0].title, '片101');
+  });
+
+  it('POST /api/recos/custom 一条都没核实出来 → 保留当前批次 + error=custom_empty', async () => {
+    let calls = 0;
+    const app = appWith(db, { chat: async () => (++calls === 1 ? JSON.stringify([{ title: '片101', year: 2020, type: 'movie', reason: 'r' }]) : '[]') });
+    const first = (await request(app).get('/api/recos')).body;
+    const res = await request(app).post('/api/recos/custom').send({ prompt: '不存在的片' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.error, 'custom_empty');
+    assert.equal(res.body.batch_id, first.batch_id);
+    assert.equal(res.body.rec_type, 'standing');
+    assert.equal(res.body.user_prompt, null);
+    assert.equal(res.body.items.length, 1);
   });
 
   it('feedback want → 写 interested + 建 plan_item（默认优先级 0）', async () => {

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 死代码，延后统一删除
 import { makeTestDb, makeFakeTmdb, makeFakeBangumi, makeFakeDouban, makeFakeLlm } from './helpers.js';
-import { generateStanding, getCurrentRecos, gatherContext, whenRegenSettled } from '../src/recos/service.js';
+import { generateStanding, getCurrentRecos, gatherContext, whenRegenSettled, requestStandingRefresh } from '../src/recos/service.js';
 import { markRecosStale, isRecosStale, getStandingBatchId, setStandingBatchId } from '../src/recos/state.js';
 
 const FAKE_MOVIE = (id: any) => ({
@@ -182,6 +182,90 @@ describe('recos/service', () => {
     assert.equal(out.batch_id, 'broken-7');
     assert.equal(out.items.length, 9);
     assert.equal(chatCalls, 0);
+  });
+
+  it('自定义要求生成的批次落为当前批次：再次 GET 仍是这一批并带 user_prompt', async () => {
+    await generateStanding(db, deps({ chat: async () => mkChat(101, 9) }), {});
+    const custom = await generateStanding(db, deps({ chat: async () => mkChat(201, 3) }), { userPrompt: '90 分钟治愈' });
+    assert.equal(custom.rec_type, 'custom');
+    assert.equal(custom.user_prompt, '90 分钟治愈');
+    assert.equal(custom.items.length, 3);
+    assert.equal(getStandingBatchId(db), custom.batch_id);
+    assert.equal(isRecosStale(db), false);
+
+    let chatCalls = 0;
+    const r = await getCurrentRecos(db, deps({ chat: async () => { chatCalls++; return '[]'; } }));
+    assert.equal(chatCalls, 0);
+    assert.equal(r.batch_id, custom.batch_id);
+    assert.equal(r.rec_type, 'custom');
+    assert.equal(r.user_prompt, '90 分钟治愈');
+    assert.equal(r.items.length, 3);            // 自定义批次不用片库补齐到 9
+    assert.deepEqual(r.items.map((i: any) => i.title), ['片201', '片202', '片203']);
+  });
+
+  it('自定义要求一条都没核实出来 → 抛 recos_empty，当前批次不变', async () => {
+    const initial = await generateStanding(db, deps({ chat: async () => mkChat(101, 9) }), {});
+    await assert.rejects(
+      generateStanding(db, deps({ chat: async () => '[]' }), { userPrompt: '不存在的片' }),
+      (e: any) => e.code === 'recos_empty');
+    assert.equal(getStandingBatchId(db), initial.batch_id);
+  });
+
+  it('stale 后台重生成沿用当前批次的自定义要求；手动换一批回到默认推荐', async () => {
+    const prompts: string[] = [];
+    const d = deps({ chat: async (messages: any) => {
+      prompts.push(messages[1].content);
+      return mkChat(101 + prompts.length * 20, 9);
+    } });
+    await generateStanding(db, d, {});
+    const custom = await generateStanding(db, d, { userPrompt: '轻松喜剧' });
+    assert.match(prompts[1], /轻松喜剧/);
+
+    markRecosStale(db);
+    const r = await getCurrentRecos(db, d);              // stale → 秒回自定义批 + 后台按同一要求重生成
+    assert.equal(r.batch_id, custom.batch_id);
+    assert.equal(r.user_prompt, '轻松喜剧');
+    await whenRegenSettled();
+    assert.match(prompts[2], /轻松喜剧/);
+    const r2 = await getCurrentRecos(db, d);
+    assert.notEqual(r2.batch_id, custom.batch_id);
+    assert.equal(r2.rec_type, 'custom');
+    assert.equal(r2.user_prompt, '轻松喜剧');
+
+    requestStandingRefresh(db, d);                       // 手动换一批 → 默认推荐，要求清空
+    await whenRegenSettled();
+    assert.doesNotMatch(prompts[3], /轻松喜剧/);
+    const r3 = await getCurrentRecos(db, d);
+    assert.equal(r3.rec_type, 'standing');
+    assert.equal(r3.user_prompt, null);
+    assert.equal(r3.items.length, 9);
+  });
+
+  it('后台失败后按要求生成成功 → GET 不再带上次失败的 error', async () => {
+    await generateStanding(db, deps({ chat: async () => mkChat(101, 9) }), {});
+    markRecosStale(db);
+    await getCurrentRecos(db, deps({ chat: async () => { throw new Error('llm down'); } }));
+    await whenRegenSettled();
+    const custom = await generateStanding(db, deps({ chat: async () => mkChat(201, 2) }), { userPrompt: '短番' });
+    const r = await getCurrentRecos(db, deps());
+    assert.equal(r.batch_id, custom.batch_id);
+    assert.equal(r.error, null);
+  });
+
+  it('后台重生成在飞期间用户按要求生成了新批次 → 后台批让位，不覆盖', async () => {
+    await generateStanding(db, deps({ chat: async () => mkChat(101, 9) }), {});
+    let release: ((v: string) => void) | undefined;
+    const slow = deps({ chat: async () => new Promise<string>(resolve => { release = resolve; }) });
+    markRecosStale(db);
+    await getCurrentRecos(db, slow);                     // 后台 standing 重生成起飞并卡住
+    const custom = await generateStanding(db, deps({ chat: async () => mkChat(301, 2) }), { userPrompt: '短番' });
+    assert.equal(getStandingBatchId(db), custom.batch_id);
+    release?.(mkChat(201, 9));
+    await whenRegenSettled();
+    assert.equal(getStandingBatchId(db), custom.batch_id);
+    const r = await getCurrentRecos(db, slow);
+    assert.equal(r.error, null);                         // 让位不算失败
+    assert.equal(r.user_prompt, '短番');
   });
 
   it('gatherContext 汇集双方与避雷池', async () => {

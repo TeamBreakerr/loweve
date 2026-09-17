@@ -27,7 +27,9 @@ const identity = useIdentity();
 // —— AI 推荐排片榜 ——
 const recos = useRecos();
 const intent = ref('');
-onMounted(() => recos.load());
+// 当前批次若是按要求生成的，进页面时把那条要求回填到输入框：刷新后看到的推荐和要求一致，
+// 此时「换一批」会按同一要求重来；清空输入框再点才回到默认推荐。
+onMounted(async () => { await recos.load(); intent.value = recos.userPrompt || ''; });
 const hero = computed(() => recos.items[0]);
 const mids = computed(() => recos.items.slice(1, 3));
 const minis = computed(() => recos.items.slice(3));
@@ -79,7 +81,7 @@ const planModalOpen = ref(false);
         <svg class="intent__ic" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M7 7 5.5 5.5M17 17l1.5 1.5M17 7l1.5-1.5M7 17l-1.5 1.5"/><circle cx="12" cy="12" r="4"/></svg>
         <input class="intent__input" type="text" v-model="intent" @keyup.enter="submitIntent"
                placeholder='想看什么？例如「今晚 90 分钟内的轻松治愈片」「完结的短番 12 集左右」' />
-        <button class="intent__btn" data-tip="按要求推荐" @click="submitIntent">
+        <button class="intent__btn" data-tip="按要求推荐" @click="submitIntent" :disabled="recos.loading || recos.generating">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
       </div>
@@ -106,7 +108,9 @@ const planModalOpen = ref(false);
         <span class="reco-think__txt">{{ recos.generating ? '正在后台为你们换一批，当前推荐仍可浏览…' : '正在加载推荐…' }}</span>
       </div>
       <p v-if="recos.error && recos.items.length" class="reco-error-note">
-        {{ recos.error === 'generation_timeout' ? '生成时间过长，已保留上一批推荐，请稍后重试。' : '推荐更新失败，已保留上一批推荐，请稍后重试。' }}
+        {{ recos.error === 'generation_timeout' ? '生成时间过长，已保留上一批推荐，请稍后重试。'
+         : recos.error === 'custom_empty' ? '没找到符合这条要求的作品，已保留当前推荐，换个说法试试？'
+         : '推荐更新失败，已保留上一批推荐，请稍后重试。' }}
       </p>
       <p v-if="!recos.items.length && !recos.loading && !recos.generating" class="reco-empty-note">
         {{ recos.error === 'llm_unconfigured' ? '推荐未启用' : '推荐暂时不可用，点右上角换一批重试' }}
@@ -318,6 +322,7 @@ const planModalOpen = ref(false);
   transition:background .2s, transform .2s;
 }
 .intent__btn:hover{ background:var(--rose-bright); border-color:var(--rose-bright); transform:translateY(-1px); }
+.intent__btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
 
 /* ============================================================
    首页改版：推荐「排片榜」（按名次定大小）+ 横向卡片轨道
