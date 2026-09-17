@@ -1,5 +1,5 @@
 // 放映机滚筒引擎：3D 滚筒渲染/拖拽惯性/滚轮/列表联动吸附/咔哒音效。
-// 从 TogetherReel.vue 原样抽出（「放映机引擎」注释段全部），行为不变。
+// 从 TogetherReel.vue 抽出；吸附/跳月的程序滚动已改为可打断的 rAF 动画（见 programScrollTo 旁注）。
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import type { DrumCell } from '../utils/reelGroups';
 
@@ -16,7 +16,7 @@ const gateEl = ref<HTMLElement | null>(null);
 const muted = ref(false);
 
 let rotB = 0, vel = 0, dragging = false, y0 = 0, rot0 = 0, lastActive = -1;
-let programScroll = false, scrollTimer: any = null, lastSpyTop = -1, spyT: any = null, snapT: any = null, pollTimer: any = null;
+let programScroll = false, snapRaf = 0, lastSpyTop = -1, spyT: any = null, snapT: any = null, pollTimer: any = null;
 let cells: HTMLElement[] = [];
 let cards: HTMLElement[] = [];
 const N = () => getGroups().length;
@@ -42,6 +42,11 @@ function nearestCard(): HTMLElement | null {
   for (const c of cards) { const ctr = c.offsetTop + c.offsetHeight / 2 - t.scrollTop; const d = Math.abs(ctr - line); if (d < bd) { bd = d; best = c; } }
   return best;
 }
+// 卡片对准光束线的目标 scrollTop。卡片很高（长短评）时"居中"会把标题顶出列表顶部，
+// 这时改为让卡片顶边贴着列表顶——光束线仍落在卡片内部，标题也看得见。
+function snapTargetFor(card: HTMLElement) {
+  return Math.min(card.offsetTop + card.offsetHeight / 2 - lineWithinTl(), card.offsetTop - 8);
+}
 function updateLit(rotateDrum: boolean) {
   const t = tlEl.value; if (!t) return;
   const best = nearestCard(); if (!best) return;
@@ -66,22 +71,46 @@ function renderDrum() {
   cells.forEach((c, i) => c.classList.toggle('is-active', i === act));
   if (act !== lastActive) { lastActive = act; if (!suppressTick) tick(); }
 }
+// 程序滚动（吸附/跳月）自己用 rAF 驱动而不是 scrollTo({behavior:'smooth'})：
+// 原生平滑滚动一旦被用户滚轮打断就再也到不了目标，旧实现等 1.3s 后硬写 scrollTop 把列表
+// 拽回去（实测一次跳 900px），期间还冻结了点亮/滚筒联动——这就是"回弹卡顿"的来源。
+// 现在任何用户输入（滚轮/触摸/拖滚动条/键盘）立刻取消程序滚动，用户永远优先。
+function cancelProgramScroll() {
+  if (snapRaf) cancelAnimationFrame(snapRaf);
+  snapRaf = 0; programScroll = false;
+}
 function programScrollTo(top: number) {
   const t = tlEl.value; if (!t) return;
-  const max = t.scrollHeight - t.clientHeight;
-  top = Math.max(0, Math.min(top, max));
-  programScroll = true; clearTimeout(scrollTimer);
-  t.scrollTo({ top, behavior: 'smooth' });
-  const t0 = Date.now();
-  (function check() {
-    const arrived = Math.abs(t.scrollTop - top) < 2;
-    if (arrived || Date.now() - t0 > 1300) {
-      if (!arrived) t.scrollTop = top;
-      lastSpyTop = t.scrollTop; updateLit(false); programScroll = false; return;
-    }
-    scrollTimer = setTimeout(check, 60);
-  })();
+  cancelProgramScroll();
+  top = clamp(top, 0, t.scrollHeight - t.clientHeight);
+  const from = t.scrollTop, dist = top - from;
+  if (Math.abs(dist) < 1) { lastSpyTop = t.scrollTop; updateLit(false); return; }
+  programScroll = true;
+  const dur = clamp(Math.abs(dist) * 0.9, 180, 420);   // 距离越远略久，封顶 420ms
+  const ease = (x: number) => 1 - Math.pow(1 - x, 3);   // easeOutCubic，收尾柔和
+  const t0 = performance.now();
+  const frame = (now: number) => {
+    const pgs = Math.min(1, (now - t0) / dur);
+    t.scrollTop = from + dist * ease(pgs);
+    if (pgs < 1) { snapRaf = requestAnimationFrame(frame); return; }
+    snapRaf = 0;
+    lastSpyTop = t.scrollTop; updateLit(false);
+    // 最后一次写 scrollTop 的 scroll 事件下一帧才派发，等它过去再解除标记，避免被当成用户滚动
+    requestAnimationFrame(() => { programScroll = false; });
+  };
+  snapRaf = requestAnimationFrame(frame);
 }
+// 停下后把离光束线最近的卡片吸过来；停在列表顶/底边缘是用户的明确意图（想看第一张的完整
+// 标题 / 已经到底），不再往回吸——首卡很高时"居中"意味着标题被顶出视口，旧逻辑会反复把
+// 滚到顶的列表拽回 149px，这正是"从下往上滑会卡"的另一半原因。
+function snapToNearest() {
+  const t = tlEl.value; if (!t || programScroll || dragging) return;
+  const max = t.scrollHeight - t.clientHeight;
+  if (t.scrollTop <= 1 || t.scrollTop >= max - 1) { updateLit(false); return; }
+  const c = nearestCard();
+  if (c) programScrollTo(snapTargetFor(c));
+}
+function onUserScrollIntent() { if (programScroll) cancelProgramScroll(); }
 function selectIdx(i: number, doScroll: boolean) {
   i = clamp(i, 0, N() - 1);
   rotB = i * STEP; renderDrum();
@@ -94,7 +123,7 @@ function selectIdx(i: number, doScroll: boolean) {
   }
   const sec = tlEl.value?.querySelector(`#${CSS.escape(g.gid)}`) as HTMLElement | null;
   const card = sec?.querySelector('.watched-card') as HTMLElement | null;
-  if (card) programScrollTo(card.offsetTop + card.offsetHeight / 2 - lineWithinTl());
+  if (card) programScrollTo(snapTargetFor(card));
 }
 // 移动端：整页滚动时让滚筒静默跟随到当前月（不发声、不归位）
 function onWinScroll() {
@@ -145,11 +174,7 @@ function onListScroll() {
   updateLit(true);
   if (isMobile()) return;   // 移动端：滚动只转滚筒反馈，不做归位吸附（避免遮挡）
   clearTimeout(snapT);
-  snapT = setTimeout(() => {
-    if (programScroll || dragging) return;
-    const c = nearestCard();
-    if (c) programScrollTo(c.offsetTop + c.offsetHeight / 2 - lineWithinTl());
-  }, 220);
+  snapT = setTimeout(snapToNearest, 220);
 }
 function onScrollRaw() { clearTimeout(spyT); spyT = setTimeout(onListScroll, 40); }
 
@@ -185,7 +210,7 @@ function init() {
     requestAnimationFrame(() => { applyTopPad(); selectIdx(0, false); updateLit(false); });
   });
 }
-function onResize() { applyTopPad(); const c = nearestCard(); if (c) programScrollTo(c.offsetTop + c.offsetHeight / 2 - lineWithinTl()); }
+function onResize() { applyTopPad(); snapToNearest(); }
 
 onMounted(() => {
   const dw = drumWrapEl.value, t = tlEl.value;
@@ -197,7 +222,14 @@ onMounted(() => {
     dw.addEventListener('lostpointercapture', endDrag);
     dw.addEventListener('wheel', onWheel, { passive: false });
   }
-  if (t) t.addEventListener('scroll', onScrollRaw);
+  if (t) {
+    t.addEventListener('scroll', onScrollRaw);
+    // 用户一动手就取消进行中的程序滚动（滚轮 / 触摸 / 拖滚动条 / 键盘）
+    t.addEventListener('wheel', onUserScrollIntent, { passive: true });
+    t.addEventListener('touchstart', onUserScrollIntent, { passive: true });
+    t.addEventListener('pointerdown', onUserScrollIntent);
+    t.addEventListener('keydown', onUserScrollIntent);
+  }
   window.addEventListener('resize', onResize);
   window.addEventListener('scroll', onWinScroll, { passive: true });
   pollTimer = setInterval(() => {
@@ -211,7 +243,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize);
   window.removeEventListener('scroll', onWinScroll);
-  clearInterval(pollTimer); clearTimeout(scrollTimer); clearTimeout(snapT); clearTimeout(spyT); clearTimeout(wt);
+  cancelProgramScroll();
+  clearInterval(pollTimer); clearTimeout(snapT); clearTimeout(spyT); clearTimeout(wt);
 });
 return { drumWrapEl, drumEl, tlEl, reelTopEl, gateEl, muted, toggleMute, selectIdx, init };
 }
