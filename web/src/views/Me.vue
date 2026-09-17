@@ -8,11 +8,14 @@ import AddModal from '../components/AddModal.vue';
 import EditModal from '../components/EditModal.vue';
 import { ratingHref } from '../api/index';
 import { usePersistedSort } from '../composables/usePersistedSort';
+import { sortByRating } from '../utils/sortByRating';
 
 const identity = useIdentity();
 const marks = useMarks();
 const sortMode = usePersistedSort('loweve.me-sort');   // 刷新后保持上次选的排序
-const sortedWatched = computed(() => sortMode.value === 'rating' ? [...marks.watched].sort((a:any,b:any) => ((b.rating ?? b.work.primary_rating ?? -1) - (a.rating ?? a.work.primary_rating ?? -1)) || b.id - a.id) : marks.watched);
+const sortedWatched = computed(() => sortMode.value === 'rating'
+  ? sortByRating(marks.watched, (m: any) => m.work.primary_rating)   // 我打过分的在前，未打分的按站点分垫后
+  : marks.watched);
 
 const modalOpen = ref(false);
 function openAdd() { modalOpen.value = true; }

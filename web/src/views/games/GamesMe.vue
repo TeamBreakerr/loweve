@@ -10,12 +10,15 @@ import GameContentBadge from '../../components/games/GameContentBadge.vue';
 import GameAddModal from '../../components/games/GameAddModal.vue';
 import GameEditModal from '../../components/games/GameEditModal.vue';
 import { usePersistedSort } from '../../composables/usePersistedSort';
+import { sortByRating } from '../../utils/sortByRating';
 
 const router = useRouter();
 const identity = useIdentity();
 const marks = useGameMarks();
 const sortMode = usePersistedSort('loweve.games-me-sort');   // 刷新后保持上次选的排序
-const sortedMarks = computed(() => sortMode.value === 'rating' ? [...marks.list].sort((a:any,b:any) => ((b.rating ?? b.work.catalog_rating ?? -1) - (a.rating ?? a.work.catalog_rating ?? -1)) || b.id - a.id) : marks.list);
+const sortedMarks = computed(() => sortMode.value === 'rating'
+  ? sortByRating(marks.list, (item: any) => item.work.catalog_rating)   // 我打过分的在前，未打分的按站点分垫后
+  : marks.list);
 const addOpen = ref(false);
 const editOpen = ref(false);
 const editRecord = ref<any>(null);
