@@ -9,6 +9,7 @@ const ACTION = { want: 'want', no: 'not_interested', seen: 'already_seen' };
 
 export const useGameRecos = defineStore('game-recos', () => {
   const items = ref<GameReco[]>([]);
+  const userPrompt = ref<string | null>(null);   // 生成当前批次的自定义要求；默认推荐为 null
   const loading = ref(false);
   const generating = ref(false);
   const error = ref<string | null>(null);
@@ -21,6 +22,7 @@ export const useGameRecos = defineStore('game-recos', () => {
   }
   function apply(data: any) {
     items.value = data.items || [];
+    userPrompt.value = data.user_prompt ?? null;
     generating.value = Boolean(data.generating);
     error.value = data.error || null;
     if (data.stale && data.generating) schedulePoll(); else stopPoll();
@@ -52,5 +54,5 @@ export const useGameRecos = defineStore('game-recos', () => {
       if (action === 'already_seen') await useGameMarks().load();
     } catch (e) { error.value = e.body?.error || e.message; }
   }
-  return { items, loading, generating, error, load, refresh, custom, feedback };
+  return { items, userPrompt, loading, generating, error, load, refresh, custom, feedback };
 });

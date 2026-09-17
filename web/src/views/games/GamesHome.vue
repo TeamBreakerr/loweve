@@ -40,7 +40,13 @@ const pickerOpen = ref(false);
 const picked = ref<any>(null);
 const pickedPriority = ref(0);
 
-onMounted(() => { recos.load(); sessions.load(); plan.load(); });
+// 当前批次若是按要求生成的，进页面时把那条要求回填到输入框：刷新后看到的推荐和要求一致，
+// 此时「换一批」会按同一要求重来；清空输入框再点才回到默认推荐。
+onMounted(async () => {
+  sessions.load(); plan.load();
+  await recos.load();
+  intent.value = recos.userPrompt || '';
+});
 function submitIntent() { if (intent.value.trim()) recos.custom(intent.value.trim()); }
 function refresh() { intent.value.trim() ? submitIntent() : recos.refresh(); }
 function feedback(item: any, action: 'want' | 'no' | 'seen') {
@@ -59,8 +65,13 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
   <main class="page games-home">
     <section class="section game-section">
       <div class="section__head"><div><span class="game-section__index">01</span><h2 class="section__title">下一款一起玩什么</h2></div><button class="btn btn--icon btn--ghost" data-tip="换一批" :disabled="recos.loading || recos.generating" @click="refresh"><svg class="btn__ic" :class="{ 'spin-loop': recos.loading || recos.generating }" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
-      <div class="game-intent"><svg viewBox="0 0 24 24"><path d="M8 8h8a5 5 0 0 1 4.7 6.7l-1 2.8a2 2 0 0 1-3.3.8L14 16h-4l-2.4 2.3a2 2 0 0 1-3.3-.8l-1-2.8A5 5 0 0 1 8 8Z"/><path d="M7 12v4M5 14h4M17 13h.01M19 15h.01"/></svg><input v-model="intent" @keyup.enter="submitIntent" placeholder="例如「本地双人解谜」「允许单人 RPG」「看看未发售期待作」"/><button @click="submitIntent">推荐<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button></div>
+      <div class="game-intent"><svg viewBox="0 0 24 24"><path d="M8 8h8a5 5 0 0 1 4.7 6.7l-1 2.8a2 2 0 0 1-3.3.8L14 16h-4l-2.4 2.3a2 2 0 0 1-3.3-.8l-1-2.8A5 5 0 0 1 8 8Z"/><path d="M7 12v4M5 14h4M17 13h.01M19 15h.01"/></svg><input v-model="intent" @keyup.enter="submitIntent" placeholder="例如「本地双人解谜」「允许单人 RPG」「看看未发售期待作」"/><button :disabled="recos.loading || recos.generating" @click="submitIntent">推荐<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button></div>
       <div v-if="recos.loading || recos.generating" class="game-loading"><span class="game-loading__pad">✦</span>{{ recos.generating ? '新一批游戏正在后台匹配，当前推荐仍可浏览…' : '正在读取你们的游戏口味…' }}</div>
+      <p v-if="recos.error && recos.items.length" class="game-error-note">
+        {{ recos.error === 'generation_timeout' ? '生成时间过长，已保留上一批推荐，请稍后重试。'
+         : recos.error === 'custom_empty' ? '没找到符合这条要求的游戏，已保留当前推荐，换个说法试试？'
+         : '推荐更新失败，已保留上一批推荐，请稍后重试。' }}
+      </p>
       <p v-if="recos.error && !recos.items.length && !recos.loading" class="game-empty">{{ recos.error === 'llm_unconfigured' ? 'AI 推荐尚未启用，可先手动添加游戏。' : '游戏推荐暂时不可用，请稍后重试。' }}</p>
 
       <template v-if="recos.items.length">
@@ -175,6 +186,16 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
+}
+
+.game-intent button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.game-error-note {
+  padding: 0 var(--s-3) var(--s-4);
+  color: var(--game-accent);
 }
 
 .game-loading,

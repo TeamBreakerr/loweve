@@ -82,6 +82,17 @@ export function readGameBatch(db: any, batchId: any) {
   return db.prepare(READ_SQL).all({ batch: batchId }).map((row: any) => withGameLinks(row));
 }
 
+// 当前批次的类型与生成它的自定义要求：从批次自身的行读取（自定义批次每行都带 user_prompt），
+// 不另存 app_state，避免 batch_id 与 prompt 两个键失步。
+export function gameBatchMeta(db: any, batchId: any): { rec_type: 'standing' | 'custom'; user_prompt: string | null } {
+  const row = batchId
+    ? db.prepare('SELECT rec_type, user_prompt FROM game_recommendations WHERE batch_id = ? LIMIT 1').get(batchId)
+    : null;
+  return row?.rec_type === 'custom'
+    ? { rec_type: 'custom', user_prompt: row.user_prompt ?? null }
+    : { rec_type: 'standing', user_prompt: null };
+}
+
 /** 迁移前生成的推荐批次在首次读取时补抓一次折扣截止日，之后复用已检查标记。 */
 export async function hydrateGameRecoOffers(db: any, deps: any, payload: any) {
   const items = payload?.items || [];
@@ -188,11 +199,13 @@ function fillGameBatch(db: any, { batchId, previousBatchId, ctx, seen, shown, no
   return shown;
 }
 
-export async function generateGameStanding(db: any, deps: any, { userPrompt = null }: any = {}) {
+// background=true 表示后台重生成：起飞后若用户已按要求生成了新批次，完成时不得覆盖它。
+export async function generateGameStanding(db: any, deps: any,
+  { userPrompt = null, background = false }: { userPrompt?: string | null; background?: boolean } = {}) {
   const ctx = gatherGameContext(db);
   const batch_id = nextBatchId();
   const rec_type = userPrompt ? 'custom' : 'standing';
-  const previousBatchId = rec_type === 'standing' ? getGameStandingBatchId(db) : null;
+  const previousBatchId = getGameStandingBatchId(db);
   const now = Date.now();
   const insert = db.prepare(INSERT_SQL);
   const seen = new Set<string>();
@@ -248,34 +261,53 @@ export async function generateGameStanding(db: any, deps: any, { userPrompt = nu
   if (rec_type === 'standing' && shown < SHOW) {
     shown = fillGameBatch(db, { batchId: batch_id, previousBatchId, ctx, seen, shown, now });
   }
-  if (rec_type === 'standing') {
-    if (shown < SHOW) {
-      db.prepare('DELETE FROM game_recommendations WHERE batch_id = ?').run(batch_id);
-      throw new Error('game_recos_insufficient');
-    }
-    setGameStandingBatchId(db, batch_id);
-    clearGameRecosStale(db);
+  if (rec_type === 'standing' && shown < SHOW) {
+    db.prepare('DELETE FROM game_recommendations WHERE batch_id = ?').run(batch_id);
+    throw new Error('game_recos_insufficient');
   }
-  return { items: readGameBatch(db, batch_id), batch_id, rec_type };
+  if (rec_type === 'custom' && shown === 0) {
+    // 自定义要求一条都没核实出来：不切当前批次，让调用方回落旧批并提示换个说法。
+    db.prepare('DELETE FROM game_recommendations WHERE batch_id = ?').run(batch_id);
+    throw Object.assign(new Error('recos_empty'), { code: 'recos_empty' });
+  }
+  // 后台任务在飞期间用户主动按要求生成过新批次：用户要的优先，本批作废不切换。
+  if (background && getGameStandingBatchId(db) !== previousBatchId) {
+    db.prepare('DELETE FROM game_recommendations WHERE batch_id = ?').run(batch_id);
+    throw Object.assign(new Error('recos_superseded'), { code: 'recos_superseded' });
+  }
+  // 自定义批次同样落为当前批次：刷新页面仍是这一批，后续 stale 重生成也沿用同一要求。
+  setGameStandingBatchId(db, batch_id);
+  clearGameRecosStale(db);
+  regenError = null;   // 新批次已就位，之前后台失败的提示作废
+  return { items: readGameBatch(db, batch_id), batch_id, user_prompt: userPrompt ?? null, rec_type };
 }
 
 let regenInflight: Promise<void> | null = null;
 let regenError: string | null = null;
+export function whenGameRegenSettled() { return regenInflight ?? Promise.resolve(); }   // 供测试等待后台完成
 
-function currentPayload(db: any, stale: boolean) {
+export function currentGamePayload(db: any, stale: boolean) {
   const batchId = getGameStandingBatchId(db);
   return {
-    items: readGameBatch(db, batchId), batch_id: batchId, rec_type: 'standing',
+    items: readGameBatch(db, batchId), batch_id: batchId, ...gameBatchMeta(db, batchId),
     stale, generating: Boolean(regenInflight), error: regenError,
   };
 }
 
-function startRegeneration(db: any, deps: any) {
+function startRegeneration(db: any, deps: any, reason: 'manual' | 'stale') {
   if (regenInflight) return false;
   regenError = null;
-  regenInflight = generateGameStanding(db, deps)
+  // 数据变更触发的 stale 重生成沿用当前批次的自定义要求（要求未变，只是口味数据更新了）；
+  // 手动「换一批」由前端在输入框为空时调用，明确回到默认推荐。
+  const userPrompt = reason === 'stale' ? gameBatchMeta(db, getGameStandingBatchId(db)).user_prompt : null;
+  regenInflight = generateGameStanding(db, deps, { userPrompt, background: true })
     .then(() => undefined)
     .catch((e: any) => {
+      if (e?.code === 'recos_superseded') {
+        // 用户在此期间按要求生成了新批次，本批让位，不算失败
+        console.info('[game-recos] 后台生成让位于自定义批次', { reason });
+        return;
+      }
       regenError = 'llm_unavailable';
       clearGameRecosStale(db);
       console.error('[game-recos] 后台生成失败', e?.message || e);
@@ -285,31 +317,32 @@ function startRegeneration(db: any, deps: any) {
 }
 
 export function requestGameStandingRefresh(db: any, deps: any) {
-  if (!deps.llm?.isConfigured?.()) return { ...currentPayload(db, false), error: 'llm_unconfigured' };
+  if (!deps.llm?.isConfigured?.()) return { ...currentGamePayload(db, false), error: 'llm_unconfigured' };
   markGameRecosStale(db);
-  startRegeneration(db, deps);
-  return currentPayload(db, true);
+  startRegeneration(db, deps, 'manual');
+  return currentGamePayload(db, true);
 }
 
 export async function getCurrentGameRecos(db: any, deps: any) {
   const batchId = getGameStandingBatchId(db);
   if (!deps.llm?.isConfigured?.()) {
-    return { ...currentPayload(db, false), error: batchId ? null : 'llm_unconfigured' };
+    return { ...currentGamePayload(db, false), error: batchId ? null : 'llm_unconfigured' };
   }
-  if (regenInflight) return currentPayload(db, true);
+  if (regenInflight) return currentGamePayload(db, true);
   if (!batchId) {
     try { return { ...(await generateGameStanding(db, deps)), stale: false, generating: false, error: null }; }
-    catch { return { items: [], batch_id: null, rec_type: 'standing', stale: false, generating: false, error: 'llm_unavailable' }; }
+    catch { return { items: [], batch_id: null, rec_type: 'standing', user_prompt: null, stale: false, generating: false, error: 'llm_unavailable' }; }
   }
   // 推荐位从 6 扩到 9 后，旧批次首次读取即后台补齐，不要求用户手动换一批。
-  if (readGameBatch(db, batchId).length < SHOW && !regenError) {
+  // 自定义批次条数由要求决定，不足 9 条是常态，不触发补齐。
+  if (gameBatchMeta(db, batchId).rec_type === 'standing' && readGameBatch(db, batchId).length < SHOW && !regenError) {
     markGameRecosStale(db);
-    startRegeneration(db, deps);
-    return currentPayload(db, true);
+    startRegeneration(db, deps, 'stale');
+    return currentGamePayload(db, true);
   }
   if (areGameRecosStale(db)) {
-    startRegeneration(db, deps);
-    return currentPayload(db, true);
+    startRegeneration(db, deps, 'stale');
+    return currentGamePayload(db, true);
   }
-  return currentPayload(db, false);
+  return currentGamePayload(db, false);
 }

@@ -5,7 +5,8 @@ import { createApp } from '../src/app.js';
 import { makeFakeIgdb, makeFakeLlm, makeFakeSteam, makeFakeWikidata, makeTestDb } from './helpers.js';
 import { gameOfferNeedsRefresh, isDefaultRecommendationEligible } from '../src/games/service.js';
 import { buildGameMessages, customAllowsDlc, customAllowsSolo, customAllowsUnreleased, customPriceCeiling } from '../src/games/prompt.js';
-import { gameReviewQualityTier, isGameRecommendationEligible, rankGameCandidates } from '../src/games/recos.js';
+import { gameReviewQualityTier, isGameRecommendationEligible, rankGameCandidates, whenGameRegenSettled } from '../src/games/recos.js';
+import { getGameStandingBatchId } from '../src/games/state.js';
 import { resolveCatalogGame } from '../src/games/service.js';
 import { currentDateKey } from '../src/routes/sessions.js';
 
@@ -718,6 +719,102 @@ describe('游戏空间 API', () => {
     }
     assert.equal(completed.body.items.length, 9);
     assert.equal(completed.body.generating, false);
+  });
+
+  it('按要求生成的游戏批次落为当前批次：刷新后 GET 仍是这一批并带 user_prompt，不足 9 条不触发补齐', async () => {
+    const standing = Array.from({ length: 15 }, (_, i) => ({ title: `游戏${400 + i}`, year: 2024, steam_appid: 400 + i, reason: `合作候选 ${i}` }));
+    const custom = Array.from({ length: 3 }, (_, i) => ({ title: `游戏${500 + i}`, year: 2024, steam_appid: 500 + i, reason: `解谜 ${i}` }));
+    let calls = 0;
+    const { app } = setup({}, { chat: async () => JSON.stringify(++calls === 1 ? standing : custom) });
+    const first = await request(app).get('/api/games/recos');
+    assert.equal(first.body.items.length, 9);
+
+    const res = await request(app).post('/api/games/recos/custom').send({ prompt: '本地双人解谜' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.rec_type, 'custom');
+    assert.equal(res.body.user_prompt, '本地双人解谜');
+    assert.equal(res.body.items.length, 3);
+    assert.notEqual(res.body.batch_id, first.body.batch_id);
+
+    const callsAfterCustom = calls;   // 自定义不足 9 条会问第二轮，属生成期行为
+    const again = await request(app).get('/api/games/recos');
+    assert.equal(again.body.batch_id, res.body.batch_id);
+    assert.equal(again.body.rec_type, 'custom');
+    assert.equal(again.body.user_prompt, '本地双人解谜');
+    assert.equal(again.body.items.length, 3);
+    assert.equal(again.body.generating, false);   // 自定义批次不足 9 条不算残缺，读取时不后台补齐
+    assert.equal(calls, callsAfterCustom);
+  });
+
+  it('按要求一条都没核实出来 → 保留当前批次 + error=custom_empty', async () => {
+    const standing = Array.from({ length: 15 }, (_, i) => ({ title: `游戏${400 + i}`, year: 2024, steam_appid: 400 + i, reason: `合作候选 ${i}` }));
+    let calls = 0;
+    const { app, db } = setup({}, { chat: async () => (++calls === 1 ? JSON.stringify(standing) : '[]') });
+    const first = await request(app).get('/api/games/recos');
+    const res = await request(app).post('/api/games/recos/custom').send({ prompt: '不存在的类型' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.error, 'custom_empty');
+    assert.equal(res.body.batch_id, first.body.batch_id);
+    assert.equal(res.body.rec_type, 'standing');
+    assert.equal(res.body.user_prompt, null);
+    assert.equal(res.body.items.length, 9);
+    assert.equal(getGameStandingBatchId(db), first.body.batch_id);
+  });
+
+  it('stale 后台重生成沿用当前游戏批次的要求；手动换一批回到默认推荐', async () => {
+    const prompts: string[] = [];
+    const { app } = setup({}, { chat: async (messages: any) => {
+      prompts.push(messages[1].content);
+      const base = 600 + prompts.length * 20;
+      return JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ title: `游戏${base + i}`, year: 2024, steam_appid: base + i, reason: 'r' })));
+    } });
+    await request(app).get('/api/games/recos');
+    const custom = await request(app).post('/api/games/recos/custom').send({ prompt: '允许单人 RPG' });
+    assert.match(prompts[1], /允许单人 RPG/);
+
+    // 想玩反馈 → stale → 下一次 GET 秒回自定义批 + 后台按同一要求重生成
+    await request(app).post(`/api/games/recos/${custom.body.items[0].id}/feedback`)
+      .set('Cookie', 'loweve_user_id=1').send({ action: 'want' });
+    const stale = await request(app).get('/api/games/recos');
+    assert.equal(stale.body.batch_id, custom.body.batch_id);
+    assert.equal(stale.body.user_prompt, '允许单人 RPG');
+    assert.equal(stale.body.generating, true);
+    await whenGameRegenSettled();
+    assert.match(prompts[2], /允许单人 RPG/);
+    const regenerated = await request(app).get('/api/games/recos');
+    assert.notEqual(regenerated.body.batch_id, custom.body.batch_id);
+    assert.equal(regenerated.body.rec_type, 'custom');
+    assert.equal(regenerated.body.user_prompt, '允许单人 RPG');
+
+    await request(app).post('/api/games/recos/refresh');
+    await whenGameRegenSettled();
+    assert.doesNotMatch(prompts[3], /允许单人 RPG/);
+    const standing = await request(app).get('/api/games/recos');
+    assert.equal(standing.body.rec_type, 'standing');
+    assert.equal(standing.body.user_prompt, null);
+    assert.equal(standing.body.items.length, 9);
+  });
+
+  it('后台重生成在飞期间用户按要求生成了新游戏批次 → 后台批让位，不覆盖', async () => {
+    const standing = Array.from({ length: 15 }, (_, i) => ({ title: `游戏${400 + i}`, year: 2024, steam_appid: 400 + i, reason: 'r' }));
+    let calls = 0;
+    let release: ((v: string) => void) | undefined;
+    const { app, db } = setup({}, { chat: async () => {
+      calls++;
+      if (calls === 1) return JSON.stringify(standing);
+      if (calls === 2) return new Promise<string>(resolve => { release = resolve; });   // 后台 standing 卡住
+      return JSON.stringify([{ title: '游戏700', year: 2024, steam_appid: 700, reason: 'r' }]);
+    } });
+    await request(app).get('/api/games/recos');
+    await request(app).post('/api/games/recos/refresh');          // 后台重生成起飞并卡住
+    const custom = await request(app).post('/api/games/recos/custom').send({ prompt: '短小解谜' });
+    assert.equal(getGameStandingBatchId(db), custom.body.batch_id);
+    release?.(JSON.stringify(standing.map(item => ({ ...item, steam_appid: item.steam_appid + 100, title: `游戏${item.steam_appid + 100}` }))));
+    await whenGameRegenSettled();
+    assert.equal(getGameStandingBatchId(db), custom.body.batch_id);
+    const after = await request(app).get('/api/games/recos');
+    assert.equal(after.body.error, null);
+    assert.equal(after.body.user_prompt, '短小解谜');
   });
 
   it('只有自定义预算才用真实国区现价硬过滤', async () => {

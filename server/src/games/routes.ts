@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { currentDateKey } from '../routes/sessions.js';
-import { generateGameStanding, getCurrentGameRecos, hydrateGameRecoOffers, requestGameStandingRefresh } from './recos.js';
+import { currentGamePayload, generateGameStanding, getCurrentGameRecos, hydrateGameRecoOffers, requestGameStandingRefresh } from './recos.js';
 import { markGameRecosStale } from './state.js';
 import { moveGameToTrash, parseGameTrashPayload, restoreGameTrashItem } from './trash.js';
 import {
@@ -503,11 +503,16 @@ export function gameRoutes() {
     const result = requestGameStandingRefresh(req.app.locals.db, depsOf(req));
     res.status(result.generating ? 202 : 200).json(result);
   });
+  // 按要求生成的批次会落为当前批次（与「换一批」一致），刷新页面不丢。
   router.post('/recos/custom', async (req, res) => {
     const prompt = String(req.body?.prompt || '').trim();
     if (!prompt) return res.status(400).json({ error: 'prompt_required' });
-    try { res.json({ ...(await generateGameStanding(req.app.locals.db, depsOf(req), { userPrompt: prompt })), error: null }); }
-    catch (e) { res.status(502).json({ error: 'llm_unavailable', message: e?.message }); }
+    try { res.json({ ...(await generateGameStanding(req.app.locals.db, depsOf(req), { userPrompt: prompt })), stale: false, generating: false, error: null }); }
+    catch (e) {
+      // 一条都没核实出来：保留当前批次，前端提示换个说法
+      if (e?.code === 'recos_empty') return res.json({ ...currentGamePayload(req.app.locals.db, false), error: 'custom_empty' });
+      res.status(502).json({ error: 'llm_unavailable', message: e?.message });
+    }
   });
   router.post('/recos/:id/feedback', async (req, res) => {
     if (!requireViewing(req, res)) return;
