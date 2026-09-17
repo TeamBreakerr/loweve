@@ -54,12 +54,31 @@ function updateLit(rotateDrum: boolean) {
   t.classList.add('lit-mode');
   if (rotateDrum) { const idx = cardGroupIdx(best); if (idx >= 0) { rotB = idx * STEP; renderDrum(); } }
 }
-function applyTopPad() {
+// 列表两端留白按光束线实际位置算：顶部让首卡在 scrollTop=0 时正对光束线，底部让末卡在滚到
+// 最底时正对光束线。原先底部固定 46vh，只在约 900px 高的视口碰巧够用——更高的窗口滚到底后
+// 末卡停在光束下方，灯照不到。放映机是 sticky 的，页面本身一滚光束线相对列表就会移动，
+// 所以页面滚动停下后也要重算（见 onWinScroll）。
+let lastLine = -1;
+function applyPads(force = false) {
   const t = tlEl.value; if (!t || !cards.length) return;
-  t.style.paddingTop = '0px';
-  if (isMobile()) return;   // 移动端不加动态顶部留白（否则会把首卡顶到胶片条后面）
-  const pad = lineWithinTl() - cards[0].offsetTop - cards[0].offsetHeight / 2;
-  t.style.paddingTop = Math.max(0, Math.round(pad)) + 'px';
+  if (isMobile()) {   // 移动端整页滚动，不加动态留白（否则会把首卡顶到胶片条后面）
+    t.style.paddingTop = '0px'; t.style.paddingBottom = ''; t.style.removeProperty('--tl2-pad-bottom');
+    lastLine = -1; return;
+  }
+  const line = lineWithinTl();
+  if (!force && Math.abs(line - lastLine) < 1) return;
+  lastLine = line;
+  const first = cards[0], last = cards[cards.length - 1];
+  const prevTop = parseFloat(t.style.paddingTop) || 0;
+  t.style.paddingTop = '0px';   // 先清零再量，offsetTop 不含旧留白
+  const top = Math.max(0, Math.round(line - first.offsetTop - first.offsetHeight / 2));
+  const boxH = parseFloat(getComputedStyle(t).maxHeight) || t.clientHeight;
+  const bottom = Math.max(0, Math.round(boxH - line - last.offsetHeight / 2));
+  t.style.paddingTop = top + 'px';
+  t.style.paddingBottom = bottom + 'px';
+  t.style.setProperty('--tl2-pad-bottom', bottom + 'px');   // 时间脊线跟着留白收尾
+  // 顶部留白变化会把内容整体推移；不在顶部时同步补偿 scrollTop，视觉上内容不动
+  if (t.scrollTop > 0 && top !== prevTop) t.scrollTop += top - prevTop;
 }
 let suppressTick = false;
 function renderDrum() {
@@ -125,9 +144,17 @@ function selectIdx(i: number, doScroll: boolean) {
   const card = sec?.querySelector('.watched-card') as HTMLElement | null;
   if (card) programScrollTo(snapTargetFor(card));
 }
-// 移动端：整页滚动时让滚筒静默跟随到当前月（不发声、不归位）
+// 页面（window）滚动：
+// 桌面端放映机是 sticky 的，页面一滚光束线相对列表就移动了——停下后重算留白并重新对准；
+// 移动端整页滚动时让滚筒静默跟随到当前月（不发声、不归位）
+let winScrollT: any = null;
 function onWinScroll() {
-  if (!isMobile() || dragging) return;
+  if (dragging) return;
+  if (!isMobile()) {
+    clearTimeout(winScrollT);
+    winScrollT = setTimeout(() => { applyPads(); snapToNearest(); }, 120);
+    return;
+  }
   const bar = 116;
   let idx = 0;
   for (let i = 0; i < getGroups().length; i++) {
@@ -207,10 +234,10 @@ function init() {
   nextTick(() => {
     refreshNodes();
     rotB = 0; lastActive = 0; renderDrum();
-    requestAnimationFrame(() => { applyTopPad(); selectIdx(0, false); updateLit(false); });
+    requestAnimationFrame(() => { applyPads(true); selectIdx(0, false); updateLit(false); });
   });
 }
-function onResize() { applyTopPad(); snapToNearest(); }
+function onResize() { applyPads(true); snapToNearest(); }
 
 onMounted(() => {
   const dw = drumWrapEl.value, t = tlEl.value;
@@ -244,7 +271,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize);
   window.removeEventListener('scroll', onWinScroll);
   cancelProgramScroll();
-  clearInterval(pollTimer); clearTimeout(snapT); clearTimeout(spyT); clearTimeout(wt);
+  clearInterval(pollTimer); clearTimeout(snapT); clearTimeout(spyT); clearTimeout(wt); clearTimeout(winScrollT);
 });
 return { drumWrapEl, drumEl, tlEl, reelTopEl, gateEl, muted, toggleMute, selectIdx, init };
 }
