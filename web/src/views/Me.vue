@@ -7,10 +7,11 @@ import Rating from '../components/Rating.vue';
 import AddModal from '../components/AddModal.vue';
 import EditModal from '../components/EditModal.vue';
 import { ratingHref } from '../api/index';
+import { usePersistedSort } from '../composables/usePersistedSort';
 
 const identity = useIdentity();
 const marks = useMarks();
-const sortMode = ref('recent');
+const sortMode = usePersistedSort('loweve.me-sort');   // 刷新后保持上次选的排序
 const sortedWatched = computed(() => sortMode.value === 'rating' ? [...marks.watched].sort((a:any,b:any) => ((b.rating ?? b.work.primary_rating ?? -1) - (a.rating ?? a.work.primary_rating ?? -1)) || b.id - a.id) : marks.watched);
 
 const modalOpen = ref(false);

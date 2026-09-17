@@ -9,11 +9,12 @@ import GamePrice from '../../components/games/GamePrice.vue';
 import GameContentBadge from '../../components/games/GameContentBadge.vue';
 import GameAddModal from '../../components/games/GameAddModal.vue';
 import GameEditModal from '../../components/games/GameEditModal.vue';
+import { usePersistedSort } from '../../composables/usePersistedSort';
 
 const router = useRouter();
 const identity = useIdentity();
 const marks = useGameMarks();
-const sortMode = ref('recent');
+const sortMode = usePersistedSort('loweve.games-me-sort');   // 刷新后保持上次选的排序
 const sortedMarks = computed(() => sortMode.value === 'rating' ? [...marks.list].sort((a:any,b:any) => ((b.rating ?? b.work.catalog_rating ?? -1) - (a.rating ?? a.work.catalog_rating ?? -1)) || b.id - a.id) : marks.list);
 const addOpen = ref(false);
 const editOpen = ref(false);
