@@ -151,6 +151,16 @@ function markChartRecorded(sel: any, t: string) {
   }
 }
 
+// 榜单添加成功后留在弹窗里：清掉选中项和评分/短评等表单，列表原位继续；顶部给一条短暂提示
+const chartNotice = ref('');
+let chartNoticeTimer: any = null;
+function stayOnChart(title: string) {
+  clearSelection();
+  chartNotice.value = `已添加《${title}》到「${targetLabel.value}」`;
+  clearTimeout(chartNoticeTimer);
+  chartNoticeTimer = setTimeout(() => { chartNotice.value = ''; }, 2600);
+}
+
 // —— Step 2 选作品 ——
 const selected = ref<any>(null);
 const seasons = ref<any[]>([]);                  // 选中 TV 时拉到的季列表
@@ -172,6 +182,12 @@ async function onSelect(c: any) {
   }
 }
 function reselect() { selected.value = null; seasons.value = []; seasonNumber.value = null; episodeCount.value = null; }
+// 取消选中并清空详情表单（评分/短评/日期/优先级），回到搜索或榜单列表
+function clearSelection() {
+  reselect();
+  rating.value = null; comment.value = ''; watchedAt.value = null; planNote.value = ''; planPriority.value = 0;
+  saveError.value = ''; duplicateError.value = '';
+}
 
 // —— Step 3 选目标列表 ——
 const target = ref(props.initialTarget);
@@ -217,7 +233,7 @@ function reset() {
   planPriority.value = 0;
   saving.value = false;
   saveError.value = '';
-  resolveError.value = ''; chartError.value = ''; resolvingId.value = null;
+  resolveError.value = ''; chartError.value = ''; resolvingId.value = null; chartNotice.value = '';
   if (!prefillFromPlan()) {   // 普通模式才清空走搜索；from_plan 模式保留预填
     query.value = '';
     selected.value = null;
@@ -333,6 +349,8 @@ async function save() {
     }
     markChartRecorded(selected.value, target.value);
     emit('added', { target: target.value, result });
+    // 从榜单挑的：不关窗，回到榜单原来的位置继续往下补（列表用 v-show 保留滚动位置）
+    if (selected.value._chart) { stayOnChart(selected.value.title); return; }
     close();
   } catch (e) {
     saveError.value = e.body?.error || e.message;
@@ -378,7 +396,8 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
         </div>
 
         <!-- Step 1b: 榜单列表（选中后收起，和搜索候选一样改由"已选"块展示）-->
-        <div class="field" v-if="!fromPlan && mode !== 'search' && !selected">
+        <div class="field" v-if="!fromPlan && mode !== 'search'" v-show="!selected">
+          <p v-if="chartNotice" class="chart-notice">{{ chartNotice }}</p>
           <div class="chart-bar">
             <span class="chart-bar__stat">
               已加载 {{ chartItems.length }}<template v-if="chartMetaCur?.total"> / {{ chartMetaCur.total }}</template>
@@ -565,6 +584,7 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
 /* 榜单页签 + 榜单列表 */
 .mode-tabs{ display:flex; gap:6px; margin-bottom:var(--s-2); }
 .mode-tab{ flex:0 0 auto; padding:6px 12px; border-radius:var(--r-pill); }
+.chart-notice{ padding:9px 12px; border-radius:var(--r-md); font-size:var(--fs-sm); color:var(--rose-bright); background:var(--rose-tint); border:1px solid var(--rose-line); animation:pop .25s var(--ease); }
 .chart-bar{ display:flex; align-items:center; justify-content:space-between; gap:var(--s-3); font-size:var(--fs-sm); color:var(--text-faint); }
 .chart-bar__toggle{ display:inline-flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-dim); }
 .chart-bar__toggle input{ accent-color:var(--rose); }
