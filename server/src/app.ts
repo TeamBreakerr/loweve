@@ -19,6 +19,7 @@ import { recosRoutes } from './routes/recos.js';
 import { imgRoutes } from './routes/img.js';
 import { settingsRoutes } from './routes/settings.js';
 import { trashRoutes } from './routes/trash.js';
+import { chartsRoutes } from './charts/routes.js';
 import { gameRoutes } from './games/routes.js';
 
 export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidata }: { db: any; tmdb?: any; bangumi?: any; douban?: any; llm?: any; steam?: any; igdb?: any; wikidata?: any }) {
@@ -52,6 +53,7 @@ export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidat
   app.use('/api/recos', recosRoutes());            // ← 新增
   app.use('/api/settings', settingsRoutes());      // 运行时服务配置（LLM/TMDB/Bangumi 凭证）
   app.use('/api/trash', trashRoutes());            // 删除记录快照：恢复 / 永久删除
+  app.use('/api/charts', chartsRoutes());          // 榜单添加：豆瓣 Top250 / Bangumi 动画排行 → 直接添加
   app.use('/api/games', gameRoutes());              // 独立游戏空间：Steam / 记录 / 计划 / AI 推荐
   app.get('/api/ping', (_req, res) => res.json({ pong: true }));
 

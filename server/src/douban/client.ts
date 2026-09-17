@@ -135,6 +135,32 @@ export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAU
     };
   }
 
+  // 榜单/片单：m.douban.com 的 subject_collection 接口（如 movie_top250），单页最多 50 条。
+  // 条目没有独立年份字段，从 card_subtitle「1994 / 美国 / 剧情 犯罪 / 导演 / 主演」里取。
+  async function collectionItems(collection: string, { start = 0, count = 50 }: { start?: number; count?: number } = {}) {
+    const data = await getJson(
+      `https://m.douban.com/rexxar/api/v2/subject_collection/${encodeURIComponent(collection)}/items?start=${start}&count=${Math.min(50, count)}&for_mobile=1`,
+      { 'User-Agent': UA_MOBILE, Referer: `https://m.douban.com/subject_collection/${collection}/` });
+    return {
+      total: Number.isInteger(data?.total) ? data.total : null,
+      items: (data?.subject_collection_items || []).map((it: any) => {
+        const subtitle = String(it.card_subtitle || '');
+        return {
+          douban_id: String(it.id),
+          title: it.title || '',
+          year: parseInt(subtitle.match(/^\s*(\d{4})/)?.[1] || '', 10) || (parseInt(it.year, 10) || null),
+          kind: it.type === 'tv' ? 'tv' : 'movie',
+          rank: Number.isInteger(it.rank) ? it.rank : null,
+          score: it.rating?.value > 0 ? Number(it.rating.value) : null,
+          votes: it.rating?.count != null ? Number(it.rating.count) : null,
+          poster_url: it.cover_url || null,
+          subtitle: subtitle || null,
+          url: `https://movie.douban.com/subject/${it.id}/`,
+        };
+      }),
+    };
+  }
+
   async function hotReviews(id: any, kind: any = 'movie', limit = 3) {
     const subjectId = String(id || '').trim();
     if (!/^\d+$/.test(subjectId)) throw new DoubanError('douban_invalid_subject', 0, null);
@@ -165,5 +191,5 @@ export function createDoubanClient({ fetch = globalThis.fetch, timeoutMs = DEFAU
       }));
   }
 
-  return { match, hotReviews };
+  return { match, hotReviews, collectionItems };
 }

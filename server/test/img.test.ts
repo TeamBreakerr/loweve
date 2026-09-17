@@ -49,6 +49,18 @@ describe('img 海报代理', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
+  it('豆瓣图床带 douban.com 页面 Referer（防盗链），其余 CDN 用自身 origin', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'img-'));
+    const seen: Record<string, string> = {};
+    const fetch = async (href: string, init: any) => { seen[new URL(href).hostname] = init.headers.Referer; return { ok: true, arrayBuffer: async () => new Uint8Array([1]).buffer }; };
+    const app = appWith(fetch, dir);
+    await request(app).get('/api/img?u=' + encodeURIComponent('https://img3.doubanio.com/view/photo/m_ratio_poster/public/p1.jpg'));
+    await request(app).get('/api/img?u=' + encodeURIComponent(tmdb));
+    assert.equal(seen['img3.doubanio.com'], 'https://movie.douban.com/');
+    assert.equal(seen['image.tmdb.org'], 'https://image.tmdb.org/');
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
   it('上游失败 → 502', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'img-'));
     const app = appWith(async () => ({ ok: false, status: 404 }), dir);

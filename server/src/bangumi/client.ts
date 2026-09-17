@@ -150,6 +150,23 @@ export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fet
       return mapItem(await request(`/v0/subjects/${id}`));
     },
 
+    // 动画排行榜：按站内 rank 升序分页（API 单页上限 20，可取前 1000 名）
+    async rankAnime({ offset = 0, limit = 20 }: { offset?: number; limit?: number } = {}) {
+      const data = await request(`/v0/search/subjects?limit=${Math.min(20, limit)}&offset=${offset}`, {
+        method: 'POST',
+        body: { keyword: '', sort: 'rank', filter: { type: [2], rank: ['>0'], nsfw: false } },
+      });
+      return {
+        total: Number.isInteger(data.total) ? data.total : null,
+        items: (data.data || []).map((s: any) => ({
+          ...mapItem(s),
+          rank: s.rating?.rank ?? null,
+          platform: s.platform || null,   // TV / 剧场版 / OVA / WEB…
+          url: `${SITE}/subject/${s.id}`,
+        })),
+      };
+    },
+
     async hotReviews(id: any, limit = 3) {
       const subjectId = Number(id);
       if (!Number.isInteger(subjectId) || subjectId <= 0) throw new BangumiError('bangumi_invalid_subject', 0, null);

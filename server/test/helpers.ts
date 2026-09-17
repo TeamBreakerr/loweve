@@ -26,6 +26,7 @@ export function makeFakeBangumi(impl: any = {}) {
     searchAnime:  impl.searchAnime  ?? (async () => []),
     subjectDetail: impl.subjectDetail ?? (async () => { throw new Error('fake bangumi.subjectDetail not stubbed'); }),
     hotReviews: impl.hotReviews ?? (async () => []),
+    rankAnime: impl.rankAnime ?? (async () => ({ total: 0, items: [] })),
   };
 }
 
@@ -33,6 +34,7 @@ export function makeFakeDouban(impl: any = {}) {
   return {
     match: impl.match ?? (async () => null),
     hotReviews: impl.hotReviews ?? (async () => []),
+    collectionItems: impl.collectionItems ?? (async () => ({ total: 0, items: [] })),
   };
 }
 

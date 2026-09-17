@@ -49,7 +49,9 @@ export function imgRoutes({ fetch = globalThis.fetch, dir = path.join(paths.post
     if (fs.existsSync(file)) return send();
 
     try {
-      const r = await fetch(url.href, { headers: { 'User-Agent': UA, Referer: url.origin + '/' } });
+      // 豆瓣图床有防盗链：Referer 必须是 douban.com 页面（带图床自身 origin 会 403）；其余 CDN 用自身 origin 即可
+      const referer = url.hostname.endsWith('.doubanio.com') ? 'https://movie.douban.com/' : url.origin + '/';
+      const r = await fetch(url.href, { headers: { 'User-Agent': UA, Referer: referer } });
       if (!r.ok) return res.status(502).json({ error: 'upstream', status: r.status });
       const buf = Buffer.from(await r.arrayBuffer());
       fs.mkdirSync(dir, { recursive: true });
