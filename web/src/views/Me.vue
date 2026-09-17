@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useIdentity } from '../stores/identity';
 import { useMarks } from '../stores/marks';
 import Poster from '../components/Poster.vue';
@@ -10,6 +10,8 @@ import { ratingHref } from '../api/index';
 
 const identity = useIdentity();
 const marks = useMarks();
+const sortMode = ref('recent');
+const sortedWatched = computed(() => sortMode.value === 'rating' ? [...marks.watched].sort((a:any,b:any) => ((b.rating ?? b.work.primary_rating ?? -1) - (a.rating ?? a.work.primary_rating ?? -1)) || b.id - a.id) : marks.watched);
 
 const modalOpen = ref(false);
 function openAdd() { modalOpen.value = true; }
@@ -34,7 +36,7 @@ onMounted(async () => {
 
     <div class="section__head section__head--me-actions">
       <span class="section__hint">看过 {{ marks.watched.length }} 部</span>
-      <div class="section__actions">
+      <div class="section__actions"><select v-model="sortMode" class="sort-select" aria-label="排序方式"><option value="recent">最近添加</option><option value="rating">按评分</option></select>
         <button class="btn btn--rose" @click="openAdd">
           <svg class="btn__ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>添加
         </button>
@@ -48,7 +50,7 @@ onMounted(async () => {
         还没记录过看过的作品。点右上「添加」开始 →
       </p>
       <div v-else class="grid grid--me">
-        <article v-for="m in marks.watched" :key="m.id" class="title-card">
+        <article v-for="m in sortedWatched" :key="m.id" class="title-card">
           <div class="title-card__pw">
             <router-link class="title-card__poster-link" :to="`/work/${m.work_id}`" :aria-label="`查看《${m.work.title}》详情`">
               <Poster :color="'#2a2a30'" :url="m.work.primary_poster_url" :kind="m.work.is_anime ? '番剧' : ''" />
@@ -102,6 +104,9 @@ onMounted(async () => {
    padding 值不同（var(--s-8) vs var(--s-12) 0），拆成 --loading/--empty 两个修饰类，
    手法同 Plan.vue 的 .plan-state-note。*/
 .section__head--me-actions{ margin-bottom:var(--s-6); }
+/* 排序下拉：原生 select 无基础重置，按 .link-more 同款胶囊样式收进主题 */
+.sort-select{ font-family:inherit; font-size:var(--fs-sm); color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-pill); padding:6px 12px; cursor:pointer; outline:none; }
+.sort-select:hover, .sort-select:focus-visible{ color:var(--text); border-color:var(--rose); }
 .me-state-note{ color:var(--text-faint); text-align:center; }
 .me-state-note--loading{ padding:var(--s-8); }
 .me-state-note--empty{ padding:var(--s-12) 0; }
