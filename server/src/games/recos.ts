@@ -1,8 +1,9 @@
-import { parseJsonArray } from '../llm/client.js';
+import { readDiscovery, saveDiscovery, saveEvidence, attachEvidence } from '../recos/evidence.js';
+import { runRecommendationAgent } from '../recos/agent.js';
 import { nextBatchId } from '../recos/state.js';
 import { buildGameMessages, customAllowsDlc, customAllowsSolo, customAllowsUnreleased, customPriceCeiling } from './prompt.js';
 import {
-  confidenceNote, gameIdentity, isDefaultRecommendationEligible, resolveCatalogGame,
+  confidenceNote, gameIdentity, isDefaultRecommendationEligible, enrichGameSearchResults,
   refreshGameWorkIfStale, upsertResolvedGame, withGameLinks,
 } from './service.js';
 import {
@@ -10,9 +11,9 @@ import {
   markGameRecosStale, setGameStandingBatchId,
 } from './state.js';
 
-const ASK = 15;
+const ASK = 30;
 const SHOW = 9;
-const LLM_BUDGET_MS = 150_000;
+
 
 const READ_SQL = `
   SELECT r.id, r.reason, r.confidence_note, r.work_id,
@@ -28,7 +29,7 @@ const READ_SQL = `
          w.igdb_url, w.external_links
   FROM game_recommendations r JOIN game_works w ON w.id = r.work_id
   WHERE r.batch_id = @batch AND r.validated = 1 AND r.feedback IS NULL
-  ORDER BY r.id ASC LIMIT ${SHOW}`;
+  ORDER BY r.id ASC LIMIT 30`;
 
 const INSERT_SQL = `INSERT INTO game_recommendations
   (batch_id, rec_type, user_prompt, work_id, raw_title, raw_original_title, raw_year,
@@ -79,7 +80,8 @@ export function rankGameCandidates(entries: any[]) {
 
 export function readGameBatch(db: any, batchId: any) {
   if (!batchId) return [];
-  return db.prepare(READ_SQL).all({ batch: batchId }).map((row: any) => withGameLinks(row));
+  const rows = db.prepare(READ_SQL).all({ batch: batchId }).map((row: any) => withGameLinks(row));
+  return attachEvidence(db, batchId, gameBatchMeta(db, batchId).rec_type === 'custom' ? rows : rows.slice(0, SHOW));
 }
 
 // 当前批次的类型与生成它的自定义要求：从批次自身的行读取（自定义批次每行都带 user_prompt），
@@ -135,6 +137,9 @@ export function gatherGameContext(db: any) {
     JOIN game_works w ON w.id = r.work_id
     WHERE r.feedback IN ('not_interested', 'already_seen')`).all();
   for (const work of avoided) knownIdentities.add(gameIdentity(work));
+  for (const work of [...marksA, ...marksB, ...sessions, ...plan, ...avoided]) {
+    if (work.steam_appid) knownIdentities.add(`steam:${work.steam_appid}`);
+  }
   return { userA, userB, marksA, marksB, sessions, plan, avoidTitles, knownIdentities };
 }
 
@@ -211,38 +216,47 @@ export async function generateGameStanding(db: any, deps: any,
   const seen = new Set<string>();
   const extraAvoid: string[] = [];
   let shown = 0;
+  let showLimit = SHOW;
+  let ordered = false;
+  const deadline = Date.now() + 150_000;
 
-  for (let round = 0; round < 2 && shown < SHOW; round++) {
+  for (let round = 0; round < 2 && shown < showLimit; round++) {
+    if (round > 0 && deadline - Date.now() < 30_000) break;
     const messages = buildGameMessages({ ...ctx, avoidTitles: [...ctx.avoidTitles, ...extraAvoid], userPrompt });
     let items: any[];
-    try { items = parseJsonArray(await deps.llm.chat(messages, { timeoutMs: LLM_BUDGET_MS })).slice(0, ASK); }
+    try {
+      const result = await (deps.recommendationAgent || runRecommendationAgent)(deps, { domain: 'game', userPrompt, messages, known: ctx.knownIdentities, timeoutMs: deadline - Date.now() });
+      items = result.items.slice(0, ASK);
+      showLimit = userPrompt ? result.requested : SHOW;
+      ordered = Boolean(result.ordered);
+      saveDiscovery(db, batch_id, result);
+    }
     catch (e) { if (round === 0) throw e; break; }
 
     const resolved = await Promise.all(items.map(async (item: any, sourceIndex: number) => {
       const title = String(item.title || '').trim();
       if (!title) return null;
-      const game = await resolveCatalogGame({ igdb: deps.igdb, steam: deps.steam }, {
-        title, year: Number.isInteger(item.year) ? item.year : null,
-        igdb_id: Number.isInteger(item.igdb_id) ? item.igdb_id : null,
-        steam_appid: Number.isInteger(item.steam_appid) ? item.steam_appid : null,
-      });
+      const game = item.game ? (await enrichGameSearchResults([item.game], deps.steam))[0] : null;
       return { item, title, game, sourceIndex };
     }));
 
     for (const entry of resolved) if (entry) extraAvoid.push(entry.title);
-    const candidates = rankGameCandidates(resolved.filter((entry: any) => {
+    const eligible = resolved.filter((entry: any) => {
       const game = entry?.game;
       const identity = gameIdentity(game);
       return game && isGameRecommendationEligible(game, userPrompt)
-        && !ctx.knownIdentities.has(identity) && !seen.has(identity);
-    }));
+        && (ordered || (!ctx.knownIdentities.has(identity) && !ctx.knownIdentities.has(`steam:${game.steam_appid}`)))
+        && !seen.has(identity) && !seen.has(`steam:${game.steam_appid}`);
+    });
+    const candidates = ordered ? eligible : rankGameCandidates(eligible);
 
     for (const entry of candidates) {
       const game = entry.game;
       // 同一轮可能由不同标题解析到同一个 IGDB/Steam 作品；排序后只取适配更高的那条。
       const identity = gameIdentity(game);
-      if (seen.has(identity)) continue;
+      if (seen.has(identity) || (game.steam_appid && seen.has(`steam:${game.steam_appid}`))) continue;
       seen.add(identity);
+      if (game.steam_appid) seen.add(`steam:${game.steam_appid}`);
       let work: any = null;
       try { work = await upsertResolvedGame(db, { igdb: deps.igdb, steam: deps.steam }, game); }
       catch { /* 未验证行不展示 */ }
@@ -253,9 +267,10 @@ export async function generateGameStanding(db: any, deps: any,
         raw_steam_appid: game.steam_appid, reason: String(entry.item.reason || '').trim() || '适合你们一起尝试',
         confidence_note: confidenceNote(game), validated: work ? 1 : 0, created_at: now,
       });
-      if (work) shown++;
-      if (shown >= SHOW) break;
+      if (work) { saveEvidence(db, batch_id, work.id, entry.item); shown++; }
+      if (shown >= showLimit) break;
     }
+    if (ordered) break;
   }
 
   if (rec_type === 'standing' && shown < SHOW) {
@@ -279,7 +294,7 @@ export async function generateGameStanding(db: any, deps: any,
   setGameStandingBatchId(db, batch_id);
   clearGameRecosStale(db);
   regenError = null;   // 新批次已就位，之前后台失败的提示作废
-  return { items: readGameBatch(db, batch_id), batch_id, user_prompt: userPrompt ?? null, rec_type };
+  return { items: readGameBatch(db, batch_id), discovery: readDiscovery(db, batch_id), batch_id, user_prompt: userPrompt ?? null, rec_type };
 }
 
 let regenInflight: Promise<void> | null = null;
@@ -289,7 +304,7 @@ export function whenGameRegenSettled() { return regenInflight ?? Promise.resolve
 export function currentGamePayload(db: any, stale: boolean) {
   const batchId = getGameStandingBatchId(db);
   return {
-    items: readGameBatch(db, batchId), batch_id: batchId, ...gameBatchMeta(db, batchId),
+    items: readGameBatch(db, batchId), batch_id: batchId, ...gameBatchMeta(db, batchId), discovery: readDiscovery(db, batchId),
     stale, generating: Boolean(regenInflight), error: regenError,
   };
 }

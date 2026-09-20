@@ -381,5 +381,27 @@ export function createIgdbClient({
     return game;
   }
 
-  return { isConfigured: () => { const cfg = config(); return Boolean(cfg.clientId && cfg.clientSecret); }, search, gameDetail };
+  async function discover({ genres = [], themes = [], platforms = [], together = true, allowDlc = false,
+    allowUnreleased = false, minVotes = 20, minScore = 0, yearFrom, yearTo, offset = 0 }: {
+    genres?: number[]; themes?: number[]; platforms?: number[]; together?: boolean; allowDlc?: boolean;
+    allowUnreleased?: boolean; minVotes?: number; minScore?: number; yearFrom?: number; yearTo?: number; offset?: number;
+  } = {}) {
+    const conditions = ['version_parent = null', `total_rating_count >= ${Math.max(1, Math.trunc(minVotes))}`,
+      `total_rating >= ${Math.max(0, Math.min(100, minScore))}`];
+    for (const [key, ids] of Object.entries({ genres, themes, platforms })) {
+      const valid = ids.filter(id => Number.isInteger(id) && id > 0);
+      if (valid.length) conditions.push(`${key} = (${valid.join(',')})`);
+    }
+    if (together) conditions.push('game_modes = (2,3,4)');
+    if (!allowDlc) conditions.push('parent_game = null');
+    if (!allowUnreleased) conditions.push(`first_release_date <= ${Math.floor(now() / 1000)}`);
+    if (yearFrom) conditions.push(`first_release_date >= ${Date.UTC(yearFrom, 0, 1) / 1000}`);
+    if (yearTo) conditions.push(`first_release_date < ${Date.UTC(yearTo + 1, 0, 1) / 1000}`);
+    const rows = await request(`fields ${GAME_FIELDS}; where ${conditions.join(' & ')}; sort total_rating desc; limit 50; offset ${Math.max(0, Math.trunc(offset))};`);
+    const results = rows.map(row => mapIgdbGame(row, { now: now() })).filter(Boolean);
+    for (const game of results) detailCache.set(game!.igdb_id, { value: game, cachedAt: now() });
+    return { results };
+  }
+
+  return { isConfigured: () => { const cfg = config(); return Boolean(cfg.clientId && cfg.clientSecret); }, search, gameDetail, discover };
 }

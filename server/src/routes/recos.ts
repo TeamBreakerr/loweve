@@ -13,6 +13,7 @@ function depsOf(req: any) {
     tmdb: req.app.locals.tmdb,
     bangumi: req.app.locals.bangumi,
     douban: req.app.locals.douban,
+    recommendationAgent: req.app.locals.recommendationAgent,
   };
 }
 
@@ -35,6 +36,7 @@ export function recosRoutes() {
     try {
       res.json({ ...(await generateStanding(req.app.locals.db, depsOf(req), { userPrompt: prompt })), stale: false, generating: false, error: null });
     } catch (e) {
+      if (e.code === 'discovery_failed') return res.status(502).json({ error: 'discovery_failed', message: e.message });
       // 一条都没核实出来：保留当前批次，前端提示换个说法
       if (e.code === 'recos_empty') return res.json(currentStandingPayload(req.app.locals.db, { stale: false, error: 'custom_empty' }));
       res.status(502).json({ error: 'llm_unavailable', message: e.message });

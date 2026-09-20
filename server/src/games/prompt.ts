@@ -82,11 +82,9 @@ export function buildGameMessages({ userA, userB, marksA, marksB, sessions, plan
   if (userPrompt?.trim()) lines.push(`# 本次额外要求（务必满足）：${userPrompt.trim()}`);
   lines.push(
     '',
-    '推荐 15 款，按核心适配从高到低排列，避开上面所有已出现和已拒绝的游戏。不要展开分析过程。',
-    '每项都要给 taste_tier 和 together_tier，均为 1–5 的整数；5 代表非常匹配，1 代表较弱。两个分档都不得考虑价格。',
-    '只输出 JSON 数组，每项形如：',
-    `{"title":"中文或通用名称","original_title":"官方原名或null","year":2024,"igdb_id":12345,"steam_appid":123456,"taste_tier":5,"together_tier":5,"reason":"一句话具体理由，用「${userA}」「${userB}」称呼"}`,
-    'igdb_id 或 steam_appid 确定时填写；不确定可填 null，但绝不能编造。不要输出 JSON 以外的文字。',
+    '请先使用工具检索真实候选，再根据双方口味挑选。默认推荐9款；自定义数量遵从用户要求。',
+    '完成选择时每项给出 taste_tier 和 together_tier，均为1–5整数，两个分档都不得考虑价格。',
+    '所有调用和最终选择遵循工具协议，以 JSON 数组输出；只能返回工具提供的candidate_id，不得自行提供作品ID或评分。',
   );
   return [
     { role: 'system', content: system },

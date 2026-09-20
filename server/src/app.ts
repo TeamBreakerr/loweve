@@ -22,7 +22,7 @@ import { trashRoutes } from './routes/trash.js';
 import { chartsRoutes } from './charts/routes.js';
 import { gameRoutes } from './games/routes.js';
 
-export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidata }: { db: any; tmdb?: any; bangumi?: any; douban?: any; llm?: any; steam?: any; igdb?: any; wikidata?: any }) {
+export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidata, recommendationAgent }: { db: any; tmdb?: any; bangumi?: any; douban?: any; llm?: any; steam?: any; igdb?: any; wikidata?: any; recommendationAgent?: any }) {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
@@ -37,6 +37,7 @@ export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidat
   app.locals.steam = steam;
   app.locals.igdb = igdb;
   app.locals.wikidata = wikidata;
+  app.locals.recommendationAgent = recommendationAgent;
 
   // API 路由
   app.use('/api/health', healthRoutes());

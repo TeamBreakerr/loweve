@@ -64,7 +64,7 @@ async function resolveWork(req: any, res: any) {
 }
 
 function depsOf(req: any) {
-  return { llm: req.app.locals.llm, steam: req.app.locals.steam, igdb: req.app.locals.igdb };
+  return { llm: req.app.locals.llm, steam: req.app.locals.steam, igdb: req.app.locals.igdb, recommendationAgent: req.app.locals.recommendationAgent };
 }
 
 export function gameRoutes() {
@@ -510,6 +510,7 @@ export function gameRoutes() {
     try { res.json({ ...(await generateGameStanding(req.app.locals.db, depsOf(req), { userPrompt: prompt })), stale: false, generating: false, error: null }); }
     catch (e) {
       // 一条都没核实出来：保留当前批次，前端提示换个说法
+      if (e?.code === 'discovery_failed') return res.status(502).json({ error: 'discovery_failed', message: e.message });
       if (e?.code === 'recos_empty') return res.json({ ...currentGamePayload(req.app.locals.db, false), error: 'custom_empty' });
       res.status(502).json({ error: 'llm_unavailable', message: e?.message });
     }

@@ -62,10 +62,8 @@ export function buildMessages({ userA, userB, marksA, marksB, sessions, plan, av
   }
   lines.push(
     '',
-    '请直接推荐 15 部适合他们一起看的作品，避开避雷池与上面已出现的作品；不要展开分析过程。',
-    '只输出 JSON 数组，每项形如：',
-    `{"title":"中文或通用片名","year":2020,"type":"movie或tv","is_anime":false,"reason":"一句话理由，引用他们的具体历史，并用「${userA}」「${userB}」称呼而非 A/B"}`,
-    '不要输出 JSON 以外的任何文字。',
+    '请先使用工具检索真实候选，再根据双方口味挑选。默认推荐9部；自定义数量遵从用户要求。',
+    '所有调用和最终选择均遵循工具协议，以 JSON 数组输出；候选不足时继续查询，不得凭记忆编造清单。',
   );
 
   return [

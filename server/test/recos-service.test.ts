@@ -1,3 +1,4 @@
+import { fixtureRecommendationAgent } from './helpers.js';
 // server/test/recos-service.test.js
 import assert from 'node:assert/strict';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 死代码，延后统一删除
@@ -14,6 +15,7 @@ const FAKE_MOVIE = (id: any) => ({
 // 「片N」按 N 在 TMDB 命中（同 recos-routes 的 fake 手法）
 function deps({ chat }: any = {}) {
   return {
+    recommendationAgent: fixtureRecommendationAgent,
     llm: makeFakeLlm({ chat: chat ?? (async () => JSON.stringify([
       { title: '片101', year: 2020, type: 'movie', is_anime: false, reason: '你们都爱剧情片' },
       { title: '片102', year: 2020, type: 'movie', is_anime: false, reason: '导演同款' },
@@ -58,7 +60,7 @@ describe('recos/service', () => {
       tvDetail: async () => ({ id: 328609, name: '孤独摇滚！', original_name: 'ぼっち・ざ・ろっく！', first_air_date: '2022-10-08', overview: '', genres: [{ id: 16, name: '动画' }], episode_run_time: [23], origin_country: ['JP'], vote_average: 7.9, vote_count: 100, poster_path: '/t.jpg', external_ids: { imdb_id: null } }),
     });
     const bangumi = makeFakeBangumi({ searchAnime: async () => [{ bangumi_id: 328609, name: 'ぼっち・ざ・ろっく！', name_cn: '孤独摇滚！', year: 2022, score: 8.4, votes: 39589, poster_url: 'https://lain.bgm.tv/x.jpg' }] });
-    const out = await generateStanding(db, { llm, tmdb, bangumi, douban: {} }, {});
+    const out = await generateStanding(db, { recommendationAgent: fixtureRecommendationAgent, llm, tmdb, bangumi, douban: {} }, {});
     assert.equal(out.items.length, 1);
     assert.equal(out.items[0].rating_source, 'bangumi');
     assert.equal(out.items[0].primary_rating, 8.4);

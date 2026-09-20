@@ -1,15 +1,16 @@
+import { readDiscovery, saveDiscovery, saveEvidence, attachEvidence } from '../recos/evidence.js';
 // server/src/recos/service.js
 import { upsertWork } from '../routes/works.js';
 import type { Reco } from '../../../shared/types.js';
 import { buildMessages } from './prompt.js';
-import { resolveTmdb } from './validate.js';
-import { parseJsonArray } from '../llm/client.js';
+import { runRecommendationAgent } from './agent.js';
+import { movieIdentity } from './discovery.js';
 import {
   nextBatchId, getStandingBatchId, setStandingBatchId,
   isRecosStale, markRecosStale, clearRecosStale,
 } from './state.js';
 
-const ASK = 15;     // 首轮多给缓冲，抵消已看/避雷/重复项的硬过滤
+const ASK = 30;     // 首轮多给缓冲，抵消已看/避雷/重复项的硬过滤
 const SHOW = 9;     // 展示至多 9 条：1 大卡 + 2 中卡 + 6 小卡（小卡铺满一行）
 const GENERATION_LLM_BUDGET_MS = 150_000;
 const MIN_SUPPLEMENT_BUDGET_MS = 30_000;
@@ -20,7 +21,7 @@ const READ_SQL = `
          w.rating_source, w.primary_rating, w.douban_id, w.douban_url, w.bangumi_id
   FROM recommendations r JOIN works w ON w.id = r.work_id
   WHERE r.batch_id = @batch AND r.validated = 1 AND r.feedback IS NULL
-  ORDER BY r.id ASC LIMIT ${SHOW}`;
+  ORDER BY r.id ASC LIMIT 30`;
 
 const INSERT_SQL = `INSERT INTO recommendations
   (batch_id, rec_type, user_prompt, work_id, raw_title, raw_original_title, raw_year, raw_type, reason, validated, created_at)
@@ -28,7 +29,8 @@ const INSERT_SQL = `INSERT INTO recommendations
 
 export function readBatch(db: any, batchId: any): Reco[] {
   if (!batchId) return [];
-  return db.prepare(READ_SQL).all({ batch: batchId });
+  const items = db.prepare(READ_SQL).all({ batch: batchId });
+  return attachEvidence(db, batchId, batchMeta(db, batchId).rec_type === 'custom' ? items : items.slice(0, SHOW));
 }
 
 // 当前批次的类型与生成它的自定义要求：从批次自身的行读取（自定义批次每行都带 user_prompt），
@@ -190,16 +192,26 @@ export async function generateStanding(db: any, deps: any,
   const seen = new Set();
   const extraAvoid: string[] = [];   // 本批已出过的标题，补充轮塞进避雷池防重复
   let shown = 0;
+  let showLimit = SHOW;
+  let ordered: boolean;
 
   // 命中已看过/避雷池、TMDB 核实失败都会掉条目；掉到不足 SHOW 就再问一轮补齐，两轮封顶。
   // 健康情况下首轮就够，不产生额外 LLM 调用。
-  for (let round = 0; round < 2 && shown < SHOW; round++) {
+  for (let round = 0; round < 2 && shown < showLimit; round++) {
     const remainingMs = llmDeadline - Date.now();
     // 首轮过慢时不再开启补充轮；已有结果直接交付，避免总耗时重新膨胀到两倍。
     if (round > 0 && remainingMs < MIN_SUPPLEMENT_BUDGET_MS) break;
     const messages = buildMessages({ ...ctx, avoidTitles: [...ctx.avoidTitles, ...extraAvoid], userPrompt });
     let items: any[];
-    try { items = parseJsonArray(await deps.llm.chat(messages, { timeoutMs: remainingMs })).slice(0, ASK); }
+    try {
+      const result = await (deps.recommendationAgent || runRecommendationAgent)(deps, {
+        domain: 'movie', userPrompt, messages, known: ctx.knownKeys, timeoutMs: remainingMs,
+      });
+      items = result.items.slice(0, ASK);
+      showLimit = userPrompt ? result.requested : SHOW;
+      ordered = Boolean(result.ordered);
+      saveDiscovery(db, batch_id, result);
+    }
     catch (e) { if (round === 0) throw e; break; }   // 首轮失败照旧上抛给 getCurrentRecos；补充轮失败不作废已有结果
 
     // TMDB 核实并行做（原先逐条串行等网络往返，是生成耗时大头之一）；顺序由 map 保持 LLM 排位
@@ -207,7 +219,7 @@ export async function generateStanding(db: any, deps: any,
       const title = String(it.title || '').trim();
       if (!title) return null;
       const type = it.type === 'tv' ? 'tv' : 'movie';
-      return { it, title, type, hit: await resolveTmdb(deps.tmdb, { title, year: it.year, type }) };
+      return { it, title, type, hit: await movieIdentity(deps, it) };
     }));
 
     const rows: any[] = [];
@@ -216,7 +228,7 @@ export async function generateStanding(db: any, deps: any,
       extraAvoid.push(r.title);
       if (r.hit) {
         const key = `${r.hit.tmdb_type}:${r.hit.tmdb_id}`;
-        if (ctx.knownKeys.has(key) || seen.has(key)) continue;   // 已知/重复跳过，不入库不展示
+        if ((!ordered && ctx.knownKeys.has(key)) || seen.has(key)) continue;   // 已知/重复跳过，不入库不展示
         seen.add(key);
       }
       rows.push(r);
@@ -233,13 +245,18 @@ export async function generateStanding(db: any, deps: any,
     }));
 
     for (const r of rows) {
+      if (shown >= showLimit) break;
       insert.run({
         batch_id, rec_type, user_prompt: userPrompt ?? null, work_id: r.work_id ?? null,
         raw_title: r.title, raw_original_title: r.it.original_title ?? null,
         raw_year: Number.isInteger(r.it.year) ? r.it.year : null, raw_type: r.type,
         reason: String(r.it.reason || '').trim() || '为你们挑的', validated: r.work_id ? 1 : 0, created_at: now,
       });
-      if (r.work_id) shown++;
+      if (r.work_id) { saveEvidence(db, batch_id, r.work_id, r.it); shown++; }
+    }
+    if (ordered) {
+      if (shown < Math.min(showLimit, items.length)) throw Object.assign(new Error('榜单部分条目无法准确匹配本地目录，已保留上一批推荐。'), { code: 'discovery_failed' });
+      break;
     }
   }
 
@@ -270,7 +287,7 @@ export async function generateStanding(db: any, deps: any,
   setStandingBatchId(db, batch_id);
   clearRecosStale(db);
   regenLastError = null;   // 新批次已就位，之前后台失败的提示作废
-  return { items: readBatch(db, batch_id), batch_id, user_prompt: userPrompt ?? null, rec_type };
+  return { items: readBatch(db, batch_id), discovery: readDiscovery(db, batch_id), batch_id, user_prompt: userPrompt ?? null, rec_type };
 }
 
 // 后台重生成的在飞守卫：手动刷新与 stale GET 共用，避免连续点击/轮询重复启动。
@@ -315,7 +332,7 @@ function startStandingRegeneration(db: any, deps: any, reason: 'manual' | 'stale
 export function currentStandingPayload(db: any, { stale, error = null }: { stale: boolean; error?: string | null }) {
   const batchId = getStandingBatchId(db);
   return {
-    items: ensureStandingBatchSize(db, batchId), batch_id: batchId, ...batchMeta(db, batchId),
+    items: ensureStandingBatchSize(db, batchId), batch_id: batchId, ...batchMeta(db, batchId), discovery: readDiscovery(db, batchId),
     stale, generating: Boolean(regenInflight), error,
   };
 }
@@ -332,7 +349,7 @@ export function requestStandingRefresh(db: any, deps: any) {
 export async function getCurrentRecos(db: any, deps: any) {
   const batchId = getStandingBatchId(db);
   if (!deps.llm?.isConfigured?.()) {
-    return { items: ensureStandingBatchSize(db, batchId), batch_id: batchId, ...batchMeta(db, batchId), stale: false, generating: false, error: batchId ? null : 'llm_unconfigured' };
+    return { items: ensureStandingBatchSize(db, batchId), batch_id: batchId, ...batchMeta(db, batchId), discovery: readDiscovery(db, batchId), stale: false, generating: false, error: batchId ? null : 'llm_unconfigured' };
   }
   if (regenInflight) {
     return currentStandingPayload(db, { stale: true });

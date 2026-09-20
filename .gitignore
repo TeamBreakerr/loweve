@@ -1,6 +1,7 @@
 node_modules/
 dist/
 /data/
+/deployment-backups/
 .env
 .env.local
 .superpowers/

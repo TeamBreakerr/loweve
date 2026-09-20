@@ -1,3 +1,4 @@
+import { fixtureRecommendationAgent } from './helpers.js';
 // server/test/recos-routes.test.js
 import request from 'supertest';
 import assert from 'node:assert/strict';
@@ -19,7 +20,7 @@ function appWith(db: any, { chat }: any = {}) {
     search: async (q: any) => ({ results: [{ tmdb_id: Number(q.replace('片', '')), tmdb_type: 'movie', title: q, original_title: q, year: 2020 }] }),
     movieDetail: async (id: any) => FAKE_MOVIE(id),
   });
-  return createApp({ db, tmdb, bangumi: makeFakeBangumi(), douban: {}, llm });   // douban 无 match：feedback/生成不触发异步入队
+  return createApp({ recommendationAgent: fixtureRecommendationAgent, db, tmdb, bangumi: makeFakeBangumi(), douban: {}, llm });   // douban 无 match：feedback/生成不触发异步入队
 }
 
 describe('recos routes', () => {
@@ -162,7 +163,7 @@ describe('recos routes', () => {
 
   it('llm 未配置 → GET 返回空 + error，不 500', async () => {
     const llm = makeFakeLlm({ isConfigured: () => false });
-    const app = createApp({ db, tmdb: makeFakeTmdb(), bangumi: makeFakeBangumi(), douban: makeFakeDouban(), llm });
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent, db, tmdb: makeFakeTmdb(), bangumi: makeFakeBangumi(), douban: makeFakeDouban(), llm });
     const res = await request(app).get('/api/recos');
     assert.equal(res.status, 200);
     assert.equal(res.body.items.length, 0);

@@ -2,6 +2,15 @@ import assert from 'node:assert/strict';
 import { createBangumiClient, BangumiError } from '../src/bangumi/client.js';
 
 describe('createBangumiClient', () => {
+  it('移除env-file保留的外围引号，保持真实应用UA身份', async () => {
+    for (const ua of ['"loweve/0.1 (https://github.com/teambreaker/loweve)"', "'loweve/0.1 (https://github.com/teambreaker/loweve)'", 'loweve/0.1 (https://github.com/teambreaker/loweve)']) {
+      const client = createBangumiClient({ userAgent: ua, fetch: async (_url: any, options: any) => {
+        assert.equal(options.headers['User-Agent'], 'loweve/0.1 (https://github.com/teambreaker/loweve)');
+        return { ok: true, json: async () => ({ data: [] }) };
+      } });
+      await client.discoverAnime();
+    }
+  });
   it('isConfigured 始终 true（有 UA）', () => {
     const c = createBangumiClient({ userAgent: 'loweve/0.1', fetch: async () => {} });
     assert.equal(c.isConfigured(), true);
@@ -37,7 +46,7 @@ describe('createBangumiClient', () => {
     const r = await c.searchAnime('孤独摇滚');
     assert.equal(r.length, 1);
     assert.deepEqual(r[0], {
-      bangumi_id: 328609,
+      bangumi_id: 328609, platform: null, summary: null,
       name: 'ぼっち・ざ・ろっく！',
       name_cn: '孤独摇滚！',
       year: 2022,

@@ -7,6 +7,7 @@ import { usePlan } from '../stores/plan';
 import { useIdentity } from '../stores/identity';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
+import RecommendationSource from '../components/RecommendationSource.vue';
 import FeedbackBtns from '../components/FeedbackBtns.vue';
 import Priority from '../components/Priority.vue';
 import AddModal from '../components/AddModal.vue';
@@ -108,13 +109,14 @@ const planModalOpen = ref(false);
         <span class="reco-think__txt">{{ recos.generating ? '正在后台为你们换一批，当前推荐仍可浏览…' : '正在加载推荐…' }}</span>
       </div>
       <p v-if="recos.error && recos.items.length" class="reco-error-note">
-        {{ recos.error === 'generation_timeout' ? '生成时间过长，已保留上一批推荐，请稍后重试。'
+        {{ recos.errorMessage || (recos.error === 'generation_timeout' ? '生成时间过长，已保留上一批推荐，请稍后重试。'
          : recos.error === 'custom_empty' ? '没找到符合这条要求的作品，已保留当前推荐，换个说法试试？'
-         : '推荐更新失败，已保留上一批推荐，请稍后重试。' }}
+         : '推荐更新失败，已保留上一批推荐，请稍后重试。') }}
       </p>
       <p v-if="!recos.items.length && !recos.loading && !recos.generating" class="reco-empty-note">
-        {{ recos.error === 'llm_unconfigured' ? '推荐未启用' : '推荐暂时不可用，点右上角换一批重试' }}
+        {{ recos.errorMessage || (recos.error === 'llm_unconfigured' ? '推荐未启用' : '推荐暂时不可用，点右上角换一批重试') }}
       </p>
+      <p v-if="recos.discovery?.note" class="reco-empty-note">{{ recos.discovery.note }}</p>
       <template v-if="recos.items.length">
 
       <!-- 1 号大卡 + 2/3 号中卡 -->
@@ -133,7 +135,7 @@ const planModalOpen = ref(false);
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>
                 为什么推给你们
               </span>
-              <div>{{ hero.reason }}</div>
+              <div>{{ hero.reason }}</div><RecommendationSource :evidence="hero.evidence" />
             </div>
             <div class="rk-actions"><FeedbackBtns @want="onFeedback(hero,'want')" @no="onFeedback(hero,'no')" @seen="onFeedback(hero,'seen')" /></div>
           </div>
@@ -145,7 +147,7 @@ const planModalOpen = ref(false);
             <div class="rk-mid__body">
               <h3 class="rk-mid__title" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h3>
               <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" class="rk-rating" />
-              <div class="rk-reason">{{ d.reason }}</div>
+              <div class="rk-reason">{{ d.reason }}</div><RecommendationSource :evidence="d.evidence" />
               <div class="rk-actions"><FeedbackBtns @want="onFeedback(d,'want')" @no="onFeedback(d,'no')" @seen="onFeedback(d,'seen')" /></div>
             </div>
           </article>
@@ -166,7 +168,7 @@ const planModalOpen = ref(false);
               <p>{{ d.reason }}</p>
             </div>
           </div>
-          <div class="rk-mini__body">
+          <div class="rk-mini__body"><RecommendationSource :evidence="d.evidence" />
             <h4 class="rk-mini__title" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h4>
             <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" class="rk-rating" />
             <div class="rk-mini__foot"><FeedbackBtns @want="onFeedback(d,'want')" @no="onFeedback(d,'no')" @seen="onFeedback(d,'seen')" /></div>

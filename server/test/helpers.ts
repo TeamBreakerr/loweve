@@ -1,6 +1,21 @@
 // server/test/helpers.js
 import { openDb } from '../src/db/index.js';
 import { migrate } from '../src/db/migrate.js';
+import { parseJsonArray } from '../src/llm/client.js';
+import { resolveTmdb } from '../src/recos/validate.js';
+import { resolveCatalogGame } from '../src/games/service.js';
+
+// 持久化/路由旧夹具的推荐器替身。真实工具循环在 recommendation-agent.test.ts 单独覆盖。
+// 生产代码不使用这个适配器，也不接受模型直接输出的作品列表。
+export async function fixtureRecommendationAgent(deps: any, { domain, messages }: any) {
+  const items = parseJsonArray(await deps.llm.chat(messages));
+  const candidates = await Promise.all(items.map(async (item: any) => ({
+    ...item, id: `fixture:${item.title}`, source: 'fixture', url: 'https://example.com', score: 8, votes: 100,
+    hit: domain === 'movie' ? await resolveTmdb(deps.tmdb, item) : undefined,
+    game: domain === 'game' ? await resolveCatalogGame(deps, item) : undefined,
+  })));
+  return { items: candidates, requested: 9, ordered: false, note: '测试候选', queries: [], fetched_at: Date.now() };
+}
 
 export function makeTestDb({ userA = 'TestA', userB = 'TestB' } = {}): any {
   const db = openDb(':memory:');

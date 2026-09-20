@@ -14,6 +14,32 @@ const base = {
 };
 
 describe('Steam client', () => {
+  it('按真实标签检索商店候选，解析AppID再获取真实评价', async () => {
+    const calls: string[] = [];
+    const client = createSteamClient({ fetch: async (input: any) => {
+      const url = new URL(String(input)); calls.push(url.pathname);
+      if (url.pathname.includes('/tagdata/')) return new Response(JSON.stringify([{ tagid: 1664, name: '解谜' }]));
+      if (url.pathname === '/search/results/') {
+        assert.equal(url.searchParams.get('tags'), '1664'); assert.equal(url.searchParams.get('start'), '20');
+        assert.equal(url.searchParams.get('sort_by'), 'Reviews_DESC');
+        return new Response(JSON.stringify({ success: 1, total_count: 100, results_html: '<a data-ds-appid="620"></a><a data-ds-appid="620"></a>' }));
+      }
+      if (url.pathname.includes('/appdetails')) return new Response(JSON.stringify({ 620: { success: true, data: base } }));
+      if (url.pathname.includes('/appreviews/')) return new Response(JSON.stringify({ query_summary: { review_score: 9, total_positive: 95, total_negative: 5, total_reviews: 100 } }));
+      return new Response('');
+    } });
+    const data = await client.discover({ tagNames: ['解谜'], offset: 20 });
+    assert.equal(data.results.length, 1); assert.equal(data.results[0].steam_appid, 620);
+    assert.equal(data.results[0].review_percent, 95); assert.equal(data.results[0].review_total, 100);
+    await assert.rejects(client.discover({ tagNames: ['虚构标签'] }), /steam_unknown_tag/);
+    assert.equal(calls.filter(c => c.includes('/tagdata/')).length, 1);
+  });
+
+  it('Steam商店返回格式变化时明确报错', async () => {
+    const client = createSteamClient({ fetch: async (url: any) => new Response(JSON.stringify(String(url).includes('/tagdata/') ? [] : { success: 1, total_count: 10, results_html: '<changed></changed>' })) });
+    await assert.rejects(client.discover(), /steam_search_format_changed/);
+  });
+
   it('识别 AppID 与 Steam 商店链接', () => {
     assert.equal(parseSteamReference('620'), 620);
     assert.equal(parseSteamReference('https://store.steampowered.com/app/620/Portal_2/'), 620);

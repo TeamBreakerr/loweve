@@ -121,6 +121,13 @@ export function createTmdbClient({ token, key, resolve, fetch = globalThis.fetch
   return {
     isConfigured() { const c = getCfg(); return Boolean(c.token || c.key); },
 
+    async discover(type: 'movie' | 'tv', params: Record<string, string> = {}) {
+      const data = await request(`/discover/${type}`, { include_adult: 'false', ...params });
+      return { total: data.total_results, results: (data.results || []).map((r: any) => ({
+        ...mapTitleResult(r, type), vote_count: r.vote_count ?? 0, genre_ids: r.genre_ids || [],
+      })) };
+    },
+
     async search(q: any) {
       // 并行搜电影/剧/人物，开 include_adult（私有 app）。电影/剧失败→整体失败（route 转 502）；
       // 人物是可选增强（按导演/演员维度补充作品），失败静默忽略。

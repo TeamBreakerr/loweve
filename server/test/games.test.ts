@@ -1,3 +1,4 @@
+import { fixtureRecommendationAgent } from './helpers.js';
 import assert from 'node:assert/strict';
 import { describe, it } from 'mocha';
 import request from 'supertest';
@@ -36,7 +37,7 @@ function setup(steamImpl: any = {}, llmImpl: any = {}) {
     ...steamImpl,
   });
   const llm = makeFakeLlm(llmImpl);
-  return { db, app: createApp({ db, steam, llm }) };
+  return { db, app: createApp({ recommendationAgent: fixtureRecommendationAgent, db, steam, llm }) };
 }
 
 describe('游戏空间 API', () => {
@@ -235,7 +236,7 @@ describe('游戏空间 API', () => {
       search: async () => ({ results: [catalogGame] }),
       gameDetail: async () => catalogGame,
     });
-    const app = createApp({ db, igdb, steam: makeFakeSteam(), llm: makeFakeLlm() });
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent, db, igdb, steam: makeFakeSteam(), llm: makeFakeLlm() });
     const search = await request(app).get('/api/games/search?q=Minish%20Cap');
     assert.equal(search.status, 200);
     assert.equal(search.body.results[0].igdb_id, 1234);
@@ -260,7 +261,7 @@ describe('游戏空间 API', () => {
       price_formatted: '免费', review_percent: 83, review_total: 4038,
     });
     let steamSearchCalls = 0;
-    const app = createApp({
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent,
       db,
       igdb: makeFakeIgdb({ search: async () => ({ results: [catalogGame] }) }),
       steam: makeFakeSteam({
@@ -287,7 +288,7 @@ describe('游戏空间 API', () => {
       review_percent: null, review_total: null,
     });
     const steamGame = game(435150, { title: '神界：原罪2 - 终极版', original_title: 'Divinity: Original Sin 2' });
-    const app = createApp({
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent,
       db,
       igdb: makeFakeIgdb({ search: async () => ({ results: [catalogGame] }) }),
       steam: makeFakeSteam({ gameDetail: async () => steamGame }),
@@ -315,7 +316,7 @@ describe('游戏空间 API', () => {
       title: 'Reanimal: Chapter 1', original_title: null,
     });
     let detailCalls = 0;
-    const app = createApp({
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent,
       db,
       igdb: makeFakeIgdb({
         search: async (query: string) => ({ results: query === 'REANIMAL' ? [catalogGame, dlc] : [] }),
@@ -351,7 +352,7 @@ describe('游戏空间 API', () => {
     let steamStarted = false;
     let wikidataStarted = false;
     let routeSearches = 0;
-    const app = createApp({
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent,
       db,
       igdb: makeFakeIgdb({
         search: async (query: string, options?: any) => {
@@ -400,7 +401,7 @@ describe('游戏空间 API', () => {
       parent_igdb_id: 7346, parent_title: base.title,
       title: 'The Legend of Zelda: Breath of the Wild - The Master Trials', original_title: null,
     });
-    const app = createApp({
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent,
       db,
       igdb: makeFakeIgdb({
         search: async (query: string) => ({
@@ -430,7 +431,7 @@ describe('游戏空间 API', () => {
   it('Steam 中文别名找到了但 IGDB 无同 AppID 时不产生候选', async () => {
     const db = makeTestDb();
     const steamOnly = game(999999, { title: '只在 Steam 有的中文名', original_title: 'Steam Only' });
-    const app = createApp({
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent,
       db,
       igdb: makeFakeIgdb({ search: async () => ({ results: [] }) }),
       steam: makeFakeSteam({ search: async () => ({ results: [steamOnly] }) }),
@@ -444,7 +445,7 @@ describe('游戏空间 API', () => {
   it('IGDB 已配置但名称搜索失败时不偷偷回退 Steam', async () => {
     const db = makeTestDb();
     let steamSearchCalls = 0;
-    const app = createApp({
+    const app = createApp({ recommendationAgent: fixtureRecommendationAgent,
       db,
       igdb: makeFakeIgdb({ search: async () => { throw new Error('igdb_down'); } }),
       steam: makeFakeSteam({ search: async () => { steamSearchCalls++; return { results: [] }; } }),

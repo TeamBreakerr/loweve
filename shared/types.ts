@@ -117,7 +117,17 @@ export interface TrashItem {
   work: Work;
 }
 
+export interface RecommendationEvidence {
+  source: string;
+  source_url: string;
+  source_score: number | null;
+  source_votes: number | null;
+  source_rank: number | null;
+  fetched_at: number;
+}
+
 export interface Reco {
+  evidence?: RecommendationEvidence | null;
   id: number;
   reason: string;
   work_id: number | null;
@@ -240,6 +250,7 @@ export interface GamePlanItem {
 }
 
 export interface GameReco extends GameWork {
+  evidence?: RecommendationEvidence | null;
   reason: string;
   confidence_note?: string | null;
   work_id: number;

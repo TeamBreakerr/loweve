@@ -17,6 +17,8 @@ export const useRecos = defineStore('recos', () => {
   const loading = ref(false);
   const generating = ref(false);
   const error = ref<string | null>(null);
+  const errorMessage = ref<string | null>(null);
+  const discovery = ref<{ note: string } | null>(null);
 
   function apply(data: any) {
     items.value = data.items || [];
@@ -24,6 +26,8 @@ export const useRecos = defineStore('recos', () => {
     recType.value = data.rec_type || 'standing';
     userPrompt.value = data.user_prompt ?? null;
     error.value = data.error || null;
+    errorMessage.value = data.message || null;
+    discovery.value = data.discovery || null;
     generating.value = Boolean(data.generating);
     if (data.stale && data.generating) schedulePoll(); // 后端正在后台重生成，静默轮询换新
     else stopPoll();
@@ -61,14 +65,14 @@ export const useRecos = defineStore('recos', () => {
   async function refresh() {
     loading.value = true;
     try { apply(await api('/api/recos/refresh', { method: 'POST' })); }
-    catch (e) { error.value = e.body?.error || e.message; }
+    catch (e) { error.value = e.body?.error || e.message; errorMessage.value = e.body?.message || null; }
     finally { loading.value = false; }
   }
 
   async function custom(prompt: any) {
     loading.value = true;
     try { apply(await api('/api/recos/custom', { method: 'POST', body: JSON.stringify({ prompt }) })); }
-    catch (e) { error.value = e.body?.error || e.message; }
+    catch (e) { error.value = e.body?.error || e.message; errorMessage.value = e.body?.message || null; }
     finally { loading.value = false; }
   }
 
@@ -80,8 +84,8 @@ export const useRecos = defineStore('recos', () => {
       await api(`/api/recos/${rec.id}/feedback`, { method: 'POST', body: JSON.stringify({ action, priority }) });
       if (action === 'want') await usePlan().load();              // 进了「想看就一起看」
       else if (action === 'already_seen') await useMarks().load(); // 进了「我已观看」
-    } catch (e) { error.value = e.body?.error || e.message; }
+    } catch (e) { error.value = e.body?.error || e.message; errorMessage.value = e.body?.message || null; }
   }
 
-  return { items, batchId, recType, userPrompt, loading, generating, error, load, refresh, custom, feedback };
+  return { items, batchId, recType, userPrompt, loading, generating, error, errorMessage, discovery, load, refresh, custom, feedback };
 });

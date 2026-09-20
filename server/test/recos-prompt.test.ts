@@ -37,7 +37,8 @@ describe('recos/prompt buildMessages', () => {
     assert.match(u, /海街日记/);
     assert.match(u, /某烂片/);          // 避雷池
     assert.match(u, /JSON/i);           // 输出格式要求
-    assert.match(u, /推荐 15 部/);       // 首轮留足硬过滤缓冲，最终仍只展示 9 条
+    assert.match(u, /先使用工具检索真实候选/);
+    assert.match(u, /默认推荐9部/);
     assert.match(u, /Alice评8/);        // 一起看过用名字标注双方评分，而非 A评/B评
     assert.doesNotMatch(u, /（A）|（B）|A评|B评/);  // 不再用 A/B 标签
   });

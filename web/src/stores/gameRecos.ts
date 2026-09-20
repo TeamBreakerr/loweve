@@ -13,6 +13,8 @@ export const useGameRecos = defineStore('game-recos', () => {
   const loading = ref(false);
   const generating = ref(false);
   const error = ref<string | null>(null);
+  const errorMessage = ref<string | null>(null);
+  const discovery = ref<{ note: string } | null>(null);
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
   let polls = 0;
 
@@ -25,6 +27,8 @@ export const useGameRecos = defineStore('game-recos', () => {
     userPrompt.value = data.user_prompt ?? null;
     generating.value = Boolean(data.generating);
     error.value = data.error || null;
+    errorMessage.value = data.message || null;
+    discovery.value = data.discovery || null;
     if (data.stale && data.generating) schedulePoll(); else stopPoll();
   }
   function schedulePoll() {
@@ -38,7 +42,7 @@ export const useGameRecos = defineStore('game-recos', () => {
   async function call(url: string, opts: RequestInit = {}) {
     loading.value = true;
     try { apply(await api(url, opts)); }
-    catch (e) { error.value = e.body?.error || e.message; }
+    catch (e) { error.value = e.body?.error || e.message; errorMessage.value = e.body?.message || null; }
     finally { loading.value = false; }
   }
   const load = () => call('/api/games/recos');
@@ -52,7 +56,7 @@ export const useGameRecos = defineStore('game-recos', () => {
       await api(`/api/games/recos/${rec.id}/feedback`, { method: 'POST', body: JSON.stringify({ action, priority }) });
       if (action === 'want') await useGamePlan().load();
       if (action === 'already_seen') await useGameMarks().load();
-    } catch (e) { error.value = e.body?.error || e.message; }
+    } catch (e) { error.value = e.body?.error || e.message; errorMessage.value = e.body?.message || null; }
   }
-  return { items, userPrompt, loading, generating, error, load, refresh, custom, feedback };
+  return { items, userPrompt, loading, generating, error, errorMessage, discovery, load, refresh, custom, feedback };
 });

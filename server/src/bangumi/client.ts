@@ -17,9 +17,16 @@ export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fet
   // 静态值或 resolve()（运行时从 DB 读）
   const getCfg = resolve || (() => ({ userAgent }));
 
+  // docker --env-file 与 Compose 对外围引号的处理不同；仅移除配置包裹符，不伪装客户端身份。
+  function configuredUserAgent() {
+    const value = String(getCfg().userAgent || '').trim();
+    return ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))
+      ? value.slice(1, -1).trim() : value;
+  }
+
   async function request(path: string, { method = 'GET', body }: { method?: string; body?: any } = {}) {
     const headers = {
-      'User-Agent': getCfg().userAgent,
+      'User-Agent': configuredUserAgent(),
       'Content-Type': 'application/json',
       Accept: 'application/json',
     };
@@ -50,7 +57,7 @@ export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fet
     let res: any;
     try {
       res = await fetch(`${SITE}${path}`, {
-        headers: { 'User-Agent': getCfg().userAgent, Accept: 'text/html' },
+        headers: { 'User-Agent': configuredUserAgent(), Accept: 'text/html' },
         signal: ctrl.signal,
       });
     } catch (e) {
@@ -132,11 +139,25 @@ export function createBangumiClient({ userAgent, resolve, fetch = globalThis.fet
       score: s.rating?.score ?? null,
       votes: s.rating?.total ?? null,
       poster_url: s.images?.large || null,
+      platform: s.platform || null,
+      summary: s.summary || null,
     };
   }
 
   return {
     isConfigured() { return Boolean(getCfg().userAgent); },
+
+    async discoverAnime({ sort = 'rank', filter = {}, offset = 0 }: {
+      sort?: 'rank' | 'score'; filter?: Record<string, unknown>; offset?: number;
+    } = {}) {
+      const data = await request(`/v0/search/subjects?limit=20&offset=${offset}`, {
+        method: 'POST', body: { keyword: '', sort, filter: { ...filter, type: [2], nsfw: false } },
+      });
+      return { total: data.total, items: (data.data || []).map((s: any) => ({
+        ...mapItem(s), platform: s.platform, rank: s.rating?.rank ?? null,
+        summary: s.summary || '', url: `${SITE}/subject/${s.id}`,
+      })) };
+    },
 
     async searchAnime(keyword: any) {
       const data = await request('/v0/search/subjects?limit=10', {

@@ -450,5 +450,40 @@ export function createSteamClient({ fetch = globalThis.fetch, now = () => Date.n
     finally { candidateInflight.delete(cacheKey); }
   }
 
-  return { isConfigured: () => true, search, searchCandidates, gameDetail, hotReviews };
+  let tagCache: { at: number; items: Array<{ tagid: number; name: string }> } | null = null;
+  async function tags() {
+    if (tagCache && now() - tagCache.at < 24 * 60 * 60 * 1000) return tagCache.items;
+    const data = await getJson(new URL(`${STORE}/tagdata/populartags/schinese`));
+    if (!Array.isArray(data)) throw new SteamError('steam_bad_response');
+    const items = data.filter(t => Number.isInteger(t?.tagid) && typeof t?.name === 'string');
+    tagCache = { at: now(), items };
+    return items;
+  }
+
+  // Steam 商店网页使用的公开接口（非稳定 Web API），失效时明确报错，不补造候选。
+  async function discover({ tagNames = [], offset = 0 }: { tagNames?: string[]; offset?: number } = {}) {
+    const available = await tags();
+    const ids = tagNames.map(name => {
+      const tag = available.find(t => t.name === name);
+      if (!tag) throw new SteamError(`steam_unknown_tag:${name}`);
+      return tag.tagid;
+    });
+    const url = new URL(`${STORE}/search/results/`);
+    for (const [key, value] of Object.entries({ start: String(Math.max(0, Math.trunc(offset))), count: '20',
+      sort_by: 'Reviews_DESC', category1: '998', infinite: '1', l: 'schinese', cc: 'CN', tags: ids.join(',') })) url.searchParams.set(key, value);
+    const data = await getJson(url);
+    if (data.success !== 1 || typeof data.results_html !== 'string') throw new SteamError('steam_bad_response');
+    const appids = [...new Set(Array.from(data.results_html.matchAll(/data-ds-appid="(\d+)"/g), (m: any) => Number(m[1])))].slice(0, 20);
+    if (!appids.length && Number(data.total_count) > offset) throw new SteamError('steam_search_format_changed');
+    const results: any[] = [];
+    // 只补查当前页，并发4；gameDetail本身有缓存和在飞去重。
+    for (let i = 0; i < appids.length; i += 4) {
+      const group = await Promise.allSettled(appids.slice(i, i + 4).map(id => gameDetail(id)));
+      for (const result of group) if (result.status === 'fulfilled') results.push(result.value);
+    }
+    if (appids.length && !results.length) throw new SteamError('steam_details_unavailable');
+    return { total: Number(data.total_count) || 0, results };
+  }
+
+  return { isConfigured: () => true, search, searchCandidates, gameDetail, hotReviews, tags, discover };
 }
