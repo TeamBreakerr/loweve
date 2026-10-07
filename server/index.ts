@@ -34,7 +34,7 @@ async function main() {
   const bangumi = createBangumiClient({ resolve: () => ({ userAgent: cfg().bangumiUserAgent }) });
   const douban = createDoubanClient();   // 纯 HTTP（豆瓣 subject_suggest + rexxar），不再依赖 browser-svc
   setDoubanQueueDelay(1000);             // 队列任务间隔 1s，避免批量补抓时被豆瓣限流
-  const llm = createLlmClient({ timeoutMs: config.llmTimeoutMs, resolve: () => { const e = cfg(); return { baseUrl: e.llmBaseUrl, apiKey: e.llmApiKey, model: e.llmModel }; } });
+  const llm = createLlmClient({ timeoutMs: config.llmTimeoutMs, resolve: () => { const e = cfg(); return { baseUrl: e.llmBaseUrl, apiKey: e.llmApiKey, model: e.llmModel, reasoningEffort: e.llmReasoningEffort }; } });
   const steam = createSteamClient();
   const igdb = createIgdbClient({ resolve: () => { const e = cfg(); return { clientId: e.igdbClientId, clientSecret: e.igdbClientSecret }; } });
   const wikidata = createWikidataClient();

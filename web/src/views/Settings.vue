@@ -47,8 +47,10 @@ function pickIdentity(id: any) { identity.switchMe(id); }
 
 // —— 服务配置（LLM / TMDB / Bangumi 凭证）：存服务器、覆盖 env、改完即时生效 ——
 const svc = ref<Partial<ApiSettings>>({});   // GET /api/settings（密钥脱敏）
+// OpenAI 兼容的 reasoning_effort 取值；网关（如 magpie）会换成模型支持的最近一档
+const REASONING_LEVELS = ['low', 'medium', 'high', 'xhigh'];
 const form = ref({
-  llm_base_url: '', llm_api_key: '', llm_model: '', tmdb_token: '', tmdb_key: '', bangumi_ua: '',
+  llm_base_url: '', llm_api_key: '', llm_model: '', llm_reasoning_effort: '', tmdb_token: '', tmdb_key: '', bangumi_ua: '',
   igdb_client_id: '', igdb_client_secret: '', asr_base_url: '',
 });
 const svcSaving = ref(false), svcSaved = ref(false), svcError = ref(false);
@@ -78,6 +80,7 @@ async function loadServices() {
     svc.value = await api('/api/settings');
     form.value.llm_base_url = svc.value.llm_base_url || '';
     form.value.llm_model = svc.value.llm_model || '';
+    form.value.llm_reasoning_effort = svc.value.llm_reasoning_effort || '';
     form.value.bangumi_ua = svc.value.bangumi_ua || '';
     form.value.igdb_client_id = typeof svc.value.igdb_client_id === 'string' ? svc.value.igdb_client_id : '';
     form.value.asr_base_url = typeof svc.value.asr_base_url === 'string' ? svc.value.asr_base_url : '';
@@ -117,6 +120,7 @@ async function saveServices() {
     // 非密钥：变了才发（清空=回退 env）；密钥：填了才发（留空=不改）
     if (form.value.llm_base_url !== (svc.value.llm_base_url || '')) patch.llm_base_url = form.value.llm_base_url.trim();
     if (form.value.llm_model !== (svc.value.llm_model || '')) patch.llm_model = form.value.llm_model.trim();
+    if (form.value.llm_reasoning_effort !== (svc.value.llm_reasoning_effort || '')) patch.llm_reasoning_effort = form.value.llm_reasoning_effort;
     if (form.value.bangumi_ua !== (svc.value.bangumi_ua || '')) patch.bangumi_ua = form.value.bangumi_ua.trim();
     if (form.value.igdb_client_id !== (svc.value.igdb_client_id || '')) patch.igdb_client_id = form.value.igdb_client_id.trim();
     if (form.value.igdb_client_secret) patch.igdb_client_secret = form.value.igdb_client_secret.trim();
@@ -246,6 +250,10 @@ async function saveServices() {
               {{ modelsLoading ? '获取中…' : '获取模型' }}
             </button>
           </div>
+          <select class="input" v-model="form.llm_reasoning_effort" aria-label="推理深度">
+            <option value="">推理深度：模型默认</option>
+            <option v-for="level in REASONING_LEVELS" :key="level" :value="level">推理深度：{{ level }}</option>
+          </select>
           <p v-if="modelUnavailable" class="model-note model-note--error">当前模型不在端点返回列表中，请重新选择。</p>
           <p v-else-if="modelsError" class="model-note model-note--error">{{ modelsError }}</p>
           <p v-else-if="availableModels.length" class="model-note">已从当前端点获取 {{ availableModels.length }} 个模型。</p>

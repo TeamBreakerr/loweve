@@ -9,6 +9,7 @@ export const SETTING_FIELDS = [
   { key: 'llm_base_url', env: 'llmBaseUrl', secret: false },
   { key: 'llm_api_key',  env: 'llmApiKey',  secret: true },
   { key: 'llm_model',    env: 'llmModel',   secret: false },
+  { key: 'llm_reasoning_effort', env: 'llmReasoningEffort', secret: false },
   { key: 'tmdb_token',   env: 'tmdbToken',  secret: true },
   { key: 'tmdb_key',     env: 'tmdbKey',    secret: true },
   { key: 'bangumi_ua',   env: 'bangumiUserAgent', secret: false },

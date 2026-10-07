@@ -185,6 +185,7 @@ export interface User {
 export interface ApiSettings {
   llm_base_url: string;
   llm_model: string;
+  llm_reasoning_effort?: string;
   bangumi_ua: string;
   llm_api_key_set: boolean;
   tmdb_token_set: boolean;

@@ -26,6 +26,20 @@ describe('llm/client', () => {
     assert.deepEqual(body.messages, [{ role: 'user', content: 'hi' }]);
   });
 
+  it('配置了推理深度才带 reasoning_effort', async () => {
+    const bodies: any[] = [];
+    const fakeFetch = async (_url: any, opts: any) => {
+      bodies.push(JSON.parse(opts.body));
+      return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'ok' } }] }) };
+    };
+    await createLlmClient({ baseUrl: 'http://p/v1', apiKey: 'K', model: 'm', reasoningEffort: 'medium', fetch: fakeFetch }).chat([]);
+    await createLlmClient({ baseUrl: 'http://p/v1', apiKey: 'K', model: 'm', fetch: fakeFetch }).chat([]);
+    await createLlmClient({ resolve: () => ({ baseUrl: 'http://p/v1', apiKey: 'K', model: 'm', reasoningEffort: ' high ' }), fetch: fakeFetch }).chat([]);
+    assert.equal(bodies[0].reasoning_effort, 'medium');
+    assert.equal(Object.hasOwn(bodies[1], 'reasoning_effort'), false);
+    assert.equal(bodies[2].reasoning_effort, 'high');
+  });
+
   it('chat 使用 SSE 流式请求，只拼接最终 content 并忽略 reasoning_content', async () => {
     let captured: any;
     const encoder = new TextEncoder();

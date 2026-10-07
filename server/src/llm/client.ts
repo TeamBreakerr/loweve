@@ -44,9 +44,9 @@ export function parseJsonObject(text: any) {
   return obj;
 }
 
-export function createLlmClient({ baseUrl, apiKey, model, resolve, fetch = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }: { baseUrl?: string; apiKey?: string; model?: string; resolve?: () => any; fetch?: any; timeoutMs?: number } = {}) {
+export function createLlmClient({ baseUrl, apiKey, model, reasoningEffort, resolve, fetch = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }: { baseUrl?: string; apiKey?: string; model?: string; reasoningEffort?: string; resolve?: () => any; fetch?: any; timeoutMs?: number } = {}) {
   // 静态值或 resolve()（运行时从 DB 读，设置页改完即时生效）
-  const getCfg = resolve || (() => ({ baseUrl, apiKey, model }));
+  const getCfg = resolve || (() => ({ baseUrl, apiKey, model, reasoningEffort }));
   const endpointReady = (c: any) => Boolean(c.baseUrl && c.apiKey);
   const ready = (c: any) => Boolean(c.baseUrl && c.apiKey && c.model);
 
@@ -95,7 +95,9 @@ export function createLlmClient({ baseUrl, apiKey, model, resolve, fetch = globa
     if (!ready(cfg)) throw new LlmError('llm_unconfigured');
     // 流式消费让代理尽早交付响应头，并避免把大量 reasoning_content 缓存在内存里。
     // 最终仍只返回完整 content，保持上层 JSON 校验接口不变。
-    const body = JSON.stringify({ model: cfg.model, messages, stream: true });
+    // 推理深度只在配置了才传：不认识这个字段的端点不受影响
+    const effort = String(cfg.reasoningEffort || '').trim();
+    const body = JSON.stringify({ model: cfg.model, messages, stream: true, ...(effort ? { reasoning_effort: effort } : {}) });
     const attempts = [0, 1];
     let lastErr: any;
     const requestTimeoutMs = Math.max(1, Math.min(timeoutMs, options.timeoutMs ?? timeoutMs));
