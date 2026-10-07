@@ -35,16 +35,30 @@ function cardGroupIdx(card: HTMLElement) {
   if (!sec) return -1;
   return getGroups().findIndex(g => g.y === +sec.dataset.year! && g.m === +sec.dataset.month!);
 }
+// 光束线落在哪张卡片里就是哪张（落在卡片间隙则取最近的边）。原先按"卡片中心离光束线最近"
+// 选：一张超长短评的卡片读到后半段时，下一张卡片的中心反而更近，光束明明还照着长卡片，
+// 吸附却把列表拽到下一张去。
 function nearestCard(): HTMLElement | null {
   const t = tlEl.value; if (!t) return null;
-  const line = lineWithinTl();
+  const line = lineWithinTl() + t.scrollTop;
   let best: HTMLElement | null = null, bd = Infinity;
-  for (const c of cards) { const ctr = c.offsetTop + c.offsetHeight / 2 - t.scrollTop; const d = Math.abs(ctr - line); if (d < bd) { bd = d; best = c; } }
+  for (const c of cards) {
+    const top = c.offsetTop, bottom = top + c.offsetHeight;
+    const d = line < top ? top - line : line > bottom ? line - bottom : 0;
+    if (d < bd) { bd = d; best = c; }
+  }
   return best;
 }
 // 卡片对准光束线的目标 scrollTop。卡片很高（长短评）时"居中"会把标题顶出列表顶部，
 // 这时改为让卡片顶边贴着列表顶——光束线仍落在卡片内部，标题也看得见。
-function snapTargetFor(card: HTMLElement) {
+// 卡片比列表可视区还高时（传入当前 scrollTop 作 from）：只要卡片还铺满可视区就原地不动，
+// 否则超出可视区的那截短评永远读不到——往下滚/拖滚动条，一停就被拽回卡片顶；
+// 滚出卡片上沿/下沿时才把对应边贴回列表顶/底。跳月（不传 from）仍对齐卡片顶。
+function snapTargetFor(card: HTMLElement, from?: number) {
+  const t = tlEl.value!;
+  if (from !== undefined && card.offsetHeight + 16 > t.clientHeight) {
+    return clamp(from, card.offsetTop - 8, card.offsetTop + card.offsetHeight + 8 - t.clientHeight);
+  }
   return Math.min(card.offsetTop + card.offsetHeight / 2 - lineWithinTl(), card.offsetTop - 8);
 }
 function updateLit(rotateDrum: boolean) {
@@ -127,7 +141,7 @@ function snapToNearest() {
   const max = t.scrollHeight - t.clientHeight;
   if (t.scrollTop <= 1 || t.scrollTop >= max - 1) { updateLit(false); return; }
   const c = nearestCard();
-  if (c) programScrollTo(snapTargetFor(c));
+  if (c) programScrollTo(snapTargetFor(c, t.scrollTop));
 }
 function onUserScrollIntent() { if (programScroll) cancelProgramScroll(); }
 function selectIdx(i: number, doScroll: boolean) {
