@@ -119,6 +119,8 @@ export interface ReviewRecording {
   transcript: TranscriptTurn[] | null;
   speaker_map: SpeakerMap | null;   // 用户确认过的对应；null = 模型判断
   draft: ReviewDraft | null;
+  // 第一次采用这段草稿前两人的点评与纪要（点评室自动保存，留一份可恢复）
+  replaced: { a: { rating: number | null; comment: string | null }; b: { rating: number | null; comment: string | null }; joint_note: string | null } | null;
   applied_at: number | null;
   created_at: number;
   updated_at: number;

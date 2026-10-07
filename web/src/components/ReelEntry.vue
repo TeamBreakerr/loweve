@@ -78,7 +78,7 @@ function goReview(s: Session) { router.push({ name: 'together-review', params: {
 .wm__who { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--bg); border: 1px solid oklch(0 0 0 / 0.28); }
 .wm__rev[data-who="a"] .wm__who { background: var(--user-a); }
 .wm__rev[data-who="b"] .wm__who { background: var(--user-b); }
-.wm__txt { min-width: 0; }
+.wm__txt { min-width: 0; white-space: pre-line; overflow-wrap: anywhere; }   /* 点评里的换行原样显示 */
 .wm__tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
 .wm__cta { align-self: flex-start; font-size: var(--fs-sm); color: var(--rose); padding: 6px 12px; border-radius: var(--r-pill); border: 1px dashed var(--rose-line); background: var(--rose-tint); transition: background .2s, color .2s; }
 .wm__cta:hover { color: var(--rose-bright); border-style: solid; }

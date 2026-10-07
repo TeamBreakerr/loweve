@@ -189,7 +189,20 @@ export function reviewRecordingsRoutes() {
       if (Object.hasOwn(body, 'joint_note')) {
         db.prepare('UPDATE couple_sessions SET joint_note = ? WHERE id = ?').run(cleanText(body.joint_note), id);
       }
-      if (recordingId != null) updateRecording(db, recordingId, { applied_at: now });
+      if (recordingId != null) {
+        // 点评室是自动保存的：第一次采用这段草稿时把被替换掉的点评留一份，之后随时能恢复
+        const rec = getRecording(db, recordingId);
+        const before = {
+          a: { rating: session.rating_a ?? null, comment: session.review_a ?? null },
+          b: { rating: session.rating_b ?? null, comment: session.review_b ?? null },
+          joint_note: session.joint_note ?? null,
+        };
+        const hasContent = [before.a.rating, before.a.comment, before.b.rating, before.b.comment, before.joint_note].some(v => v != null && v !== '');
+        updateRecording(db, recordingId, {
+          applied_at: now,
+          ...(!rec.replaced_json && hasContent ? { replaced_json: JSON.stringify(before) } : {}),
+        });
+      }
     })();
     markRecosStale(db);
     res.json(getMovieSession(db, id));

@@ -79,6 +79,18 @@ export function migrateAddGameCompletedAt(db: any) {
 }
 
 /**
+ * review_recordings 补 replaced_json 列（点评室改为自动保存后，采用 AI 草稿前的点评要留一份可恢复）。
+ * 幂等：列已存在则跳过。
+ */
+export function migrateAddRecordingReplaced(db: any) {
+  const table = db.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'review_recordings'`).get();
+  if (!table) return false;
+  const has = db.prepare(`SELECT 1 FROM pragma_table_info('review_recordings') WHERE name = 'replaced_json'`).get();
+  if (!has) db.exec(`ALTER TABLE review_recordings ADD COLUMN replaced_json TEXT`);
+  return !has;
+}
+
+/**
  * 把最初仅支持 Steam 的 game_works 升级成 IGDB 主目录模型。
  * 旧 Steam 记录原样保留，并以 catalog_source=steam 迁入；父表 id 不变，子表引用不失效。
  */
@@ -279,6 +291,7 @@ export function migrate(db: any, { userA, userB }: any) {
   migrateAddGameContentType(db);
   migrateAddGameDiscountEndDate(db);
   migrateAddGameCompletedAt(db);
+  migrateAddRecordingReplaced(db);
   seedUsers(db, { userA, userB });
   migrateSessionExperiences(db);
   // 身份唯一索引：整部(NULL→-1)与各季各自唯一。放在此处（列已确保存在）而非 schema.sql，

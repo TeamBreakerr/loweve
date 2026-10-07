@@ -13,10 +13,17 @@ export type SpeakerMap = Record<string, UserSide | null>;
 export type SideDraft = { review: string; rating: number | null };
 export type ReviewDraft = { speaker_map: SpeakerMap; a: SideDraft; b: SideDraft; joint_note: string; generated_at: number };
 
+// 采用草稿前的样子：{a:{rating,comment}, b:{rating,comment}, joint_note}
+export type ReplacedReviews = {
+  a: { rating: number | null; comment: string | null };
+  b: { rating: number | null; comment: string | null };
+  joint_note: string | null;
+};
+
 export const ACTIVE_STATUSES: RecordingStatus[] = ['uploaded', 'transcribing', 'summarizing'];
 
 const COLS = `id, kind, work_id, file_name, mime, size_bytes, duration_ms, recorded_by, status, stage_message,
-  asr_job_id, transcript_json, speaker_map_json, draft_json, applied_at, error, created_at, updated_at`;
+  asr_job_id, transcript_json, speaker_map_json, draft_json, replaced_json, applied_at, error, created_at, updated_at`;
 
 export function getRecording(db: any, id: number) {
   return db.prepare(`SELECT ${COLS} FROM review_recordings WHERE id = ?`).get(id);
@@ -39,7 +46,7 @@ export function insertRecording(db: any, row: {
   return getRecording(db, Number(info.lastInsertRowid));
 }
 
-const UPDATABLE = new Set(['status', 'stage_message', 'asr_job_id', 'transcript_json', 'speaker_map_json', 'draft_json', 'applied_at', 'error']);
+const UPDATABLE = new Set(['status', 'stage_message', 'asr_job_id', 'transcript_json', 'speaker_map_json', 'draft_json', 'replaced_json', 'applied_at', 'error']);
 export function updateRecording(db: any, id: number, fields: Record<string, any>) {
   const keys = Object.keys(fields).filter(k => UPDATABLE.has(k));
   if (!keys.length) return;
@@ -69,6 +76,7 @@ export function publicRecording(row: any) {
     transcript: parseJson(row.transcript_json) as TranscriptTurn[] | null,
     speaker_map: parseJson(row.speaker_map_json) as SpeakerMap | null,
     draft: parseJson(row.draft_json) as ReviewDraft | null,
+    replaced: parseJson(row.replaced_json) as ReplacedReviews | null,
     applied_at: row.applied_at,
     created_at: row.created_at,
     updated_at: row.updated_at,

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 // 点评室：「一起看过」写点评的主入口。
-// 两人看完边聊边录 → 上传 → asr-app 转写并分出说话人 → LLM 整理成两人各自的点评 + 讨论纪要 → 填进下面两栏，
-// 两人看过、改好再一起保存。不录音也可以直接手写两栏。原始录音永久保留，可回放、下载、看转写。
+// 两人看完边聊边录 → 上传 → asr-app 转写并分出说话人 → LLM 整理成两人各自的点评 + 讨论纪要 → 填进下面两栏。
+// 这里既是 AI 写点评的地方，也是手改的地方：两栏、纪要、看完日期一改就自动保存（不录音也能直接写）。
+// 原始录音永久保留，可回放、下载、看转写；采用 AI 草稿前的点评服务端留一份，随时能恢复。
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
-import { api } from '../api/index';
+import { api, withViewing } from '../api/index';
 import { listRecordings, regenerateRecording, retryRecording, uploadRecording } from '../api/recordings';
 import { useSessions } from '../stores/sessions';
 import { useIdentity } from '../stores/identity';
@@ -38,50 +39,113 @@ const asrReady = ref(true);
 const llmReady = ref(true);
 const recordingSupported = isRecordingSupported();
 
-// ============================================================ 两人点评表单
-const saved = ref<JointForm>(formFromSession(null));
+// ============================================================ 两人点评表单（自动保存）
+const AUTOSAVE_MS = 1000;
+const saved = ref<JointForm>(formFromSession(null));   // 服务端现在的值（最近一次保存成功的）
 const form = ref<JointForm>(formFromSession(null));
 const savedDate = ref<number | null>(null);
 const watchedAt = ref<number | null>(null);
-const draftFrom = ref<number | null>(null);      // 表单里现在是哪段录音的 AI 草稿
-const saving = ref(false);
+const draftFrom = ref<number | null>(null);            // 表单里现在用的是哪段录音的 AI 草稿
+const beforeDraft = ref<JointForm | null>(null);       // 填草稿前的样子，「恢复填入前的」用
+const saveState = ref<'saved' | 'pending' | 'saving' | 'error'>('saved');
 const saveError = ref('');
-const savedFlash = ref(false);
+const lastSavedAt = ref<number | null>(null);
 const dirty = computed(() => !formsEqual(form.value, saved.value) || watchedAt.value !== savedDate.value);
+const clone = (f: JointForm): JointForm => JSON.parse(JSON.stringify(f));
 
+// 只在第一次拿到这条记录时从服务端填表单；之后以页面为准——保存回来的值（服务端去掉了首尾空白）
+// 要是再写回表单，会把正在打的换行、空格冲掉。
+let loadedFor: number | null = null;
 watch(session, (s) => {
-  if (!s) return;
-  const fresh = formFromSession(s);
-  if (formsEqual(form.value, saved.value)) form.value = fresh;   // 没在改就跟着服务端走
-  saved.value = fresh;
-  if (watchedAt.value === savedDate.value) watchedAt.value = s.watched_at ?? null;
-  savedDate.value = s.watched_at ?? null;
+  if (!s || loadedFor === s.id) return;
+  loadedFor = s.id;
+  form.value = formFromSession(s);
+  saved.value = formFromSession(s);
+  watchedAt.value = savedDate.value = s.watched_at ?? null;
 }, { immediate: true });
 
-function restoreSide(side: 'a' | 'b') { form.value = { ...form.value, [side]: { ...saved.value[side] } }; }
-function swap() { form.value = swapSides(form.value); }
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let running: Promise<boolean> | null = null;
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { saveTimer = null; flushSave(); }, AUTOSAVE_MS);
+}
+// 停手 1 秒自动存；同一时刻只有一个保存在跑，跑的途中又改了就等它完再存一次
+watch([form, watchedAt], () => {
+  if (dirty.value) { saveState.value = 'pending'; scheduleSave(); }
+  else if (saveState.value === 'pending') { saveState.value = 'saved'; if (saveTimer) clearTimeout(saveTimer); saveTimer = null; }
+}, { deep: true });
 
-async function save() {
-  if (!session.value || saving.value) return;
-  saving.value = true; saveError.value = '';
+function flushSave(): Promise<boolean> {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (!running) {
+    running = doSave().finally(() => {
+      running = null;
+      if (dirty.value && saveState.value !== 'error') scheduleSave();
+    });
+  }
+  return running;
+}
+
+async function doSave() {
+  if (!dirty.value || !session.value) {
+    if (saveState.value !== 'error') saveState.value = 'saved';
+    return true;
+  }
+  const snapshot = clone(form.value);
+  const date = watchedAt.value;
+  const recordingId = draftFrom.value;
+  saveState.value = 'saving'; saveError.value = '';
   try {
-    if (watchedAt.value !== savedDate.value) await sessions.update(sessionId.value, { watched_at: watchedAt.value });
-    await sessions.jointReview(sessionId.value, { ...form.value, recording_id: draftFrom.value ?? undefined });
-    form.value = formFromSession(session.value);
-    saved.value = formFromSession(session.value);
-    if (draftFrom.value != null) {
-      const r = recordings.value.find(x => x.id === draftFrom.value);
-      if (r) r.applied_at = Date.now();
+    if (date !== savedDate.value) {
+      await sessions.update(sessionId.value, { watched_at: date });
+      savedDate.value = date;
     }
-    draftFrom.value = null;
-    savedFlash.value = true;
-    setTimeout(() => { savedFlash.value = false; }, 2200);
+    await sessions.jointReview(sessionId.value, { ...snapshot, recording_id: recordingId ?? undefined });
+    saved.value = snapshot;
+    lastSavedAt.value = Date.now();
+    if (recordingId != null) onDraftApplied(recordingId);
+    saveState.value = dirty.value ? 'pending' : 'saved';
+    return true;
   } catch (e) {
-    saveError.value = e.body?.error === 'invalid_rating' ? '评分要在 1–10 之间' : (e.body?.error || e.message);
-  } finally {
-    saving.value = false;
+    saveState.value = 'error';
+    saveError.value = e.body?.error === 'invalid_rating' ? '评分要在 1–10 之间' : (e.body?.error || e.message || '网络问题');
+    return false;
   }
 }
+
+// 关页面 / 刷新时还有没存的：用 keepalive 请求把最后的改动送出去（页面卸载后请求也会发完）
+function saveOnExit() {
+  if (!dirty.value || !session.value) return;
+  const send = (url: string, body: any) => fetch(withViewing(url), {
+    method: 'PUT', keepalive: true, credentials: 'include',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  }).catch(() => {});
+  if (watchedAt.value !== savedDate.value) send(`/api/sessions/${sessionId.value}`, { watched_at: watchedAt.value });
+  send(`/api/sessions/${sessionId.value}/joint-review`, { ...form.value, recording_id: draftFrom.value ?? undefined });
+}
+// 手机切到别的 App：马上存，不等计时
+function onVisibility() { if (document.visibilityState === 'hidden' && dirty.value) flushSave(); }
+
+const saveLabel = computed(() => ({
+  saving: '保存中…',
+  pending: '有改动，马上自动保存…',
+  error: `没保存上：${saveError.value}`,
+  saved: lastSavedAt.value ? `已自动保存 · ${fmtTime(lastSavedAt.value)}` : '改动会自动保存',
+}[saveState.value]));
+function fmtTime(ms: number) {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function sideChanged(side: 'a' | 'b') {
+  const b = beforeDraft.value?.[side];
+  return !!b && (b.comment.trim() !== form.value[side].comment.trim() || b.rating !== form.value[side].rating);
+}
+function restoreSide(side: 'a' | 'b') {
+  if (beforeDraft.value) form.value = { ...form.value, [side]: { ...beforeDraft.value[side] } };
+}
+function swap() { form.value = swapSides(form.value); }
 
 // ============================================================ 录音存档与处理进度
 const recordings = ref<ReviewRecording[]>([]);
@@ -117,16 +181,36 @@ function dismissDraft(r: ReviewRecording) {
   try { localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissedIds(), r.id].slice(-50))); } catch { /* 只影响提示 */ }
   draftNotice.value = null;
 }
+// 填入草稿就会自动保存；填之前的样子留在页面上可以逐栏恢复，服务端也会留一份（见 restoreReplaced）
 function useDraft(r: ReviewRecording) {
   if (!r.draft) return;
-  form.value = mergeDraftIntoForm(saved.value, r.draft);
+  if (draftFrom.value == null) beforeDraft.value = clone(form.value);
+  form.value = mergeDraftIntoForm(form.value, r.draft);
   draftFrom.value = r.id;
   draftNotice.value = null;
 }
 function onDraftReady(r: ReviewRecording) {
   if (!r.draft) return;
-  if (formsEqual(form.value, saved.value)) useDraft(r);
+  if (!dirty.value) useDraft(r);
   else draftNotice.value = r;
+}
+function onDraftApplied(id: number) {
+  const r = recordings.value.find(x => x.id === id);
+  if (!r) return;
+  r.applied_at = Date.now();
+  if (!r.replaced) listRecordings(sessionId.value).then(list => { recordings.value = list; }).catch(() => {});   // 拿回服务端留的「采用前」副本
+}
+// 恢复成第一次采用这段草稿之前的点评（服务端留的副本，换设备、刷新后也在）
+async function restoreReplaced(r: ReviewRecording) {
+  if (!r.replaced) return;
+  if (!await confirm({ title: '恢复成采用这段之前的点评？', message: '两栏和讨论纪要会换回采用 AI 草稿前的样子，并自动保存。', confirmLabel: '恢复' })) return;
+  form.value = {
+    a: { rating: r.replaced.a.rating, comment: r.replaced.a.comment || '' },
+    b: { rating: r.replaced.b.rating, comment: r.replaced.b.comment || '' },
+    joint_note: r.replaced.joint_note || '',
+  };
+  draftFrom.value = null;
+  beforeDraft.value = null;
 }
 
 // ============================================================ 录音
@@ -279,14 +363,16 @@ function fmtDateTime(ms: number) {
   return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 function statusLabel(r: ReviewRecording) {
-  return { uploaded: '排队中', transcribing: '转写中', summarizing: '生成中', ready: r.applied_at ? '已采用' : '草稿待确认', error: '失败' }[r.status];
+  return { uploaded: '排队中', transcribing: '转写中', summarizing: '生成中', ready: r.applied_at ? '已采用' : '草稿未采用', error: '失败' }[r.status];
 }
 
 // ============================================================ 删除整条共看记录
 async function removeSession() {
   if (!await confirm({ title: '移入回收站？', message: '之后可在「设置 → 回收站」恢复；讨论录音会保留。', confirmLabel: '移入回收站' })) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
   await sessions.remove(sessionId.value);
-  form.value = saved.value; watchedAt.value = savedDate.value;   // 不再拦「未保存」
+  form.value = saved.value; watchedAt.value = savedDate.value;   // 记录已删，不再自动保存
   router.push('/together');
 }
 
@@ -296,13 +382,18 @@ onBeforeRouteLeave(async () => {
       title: '还在录音', message: '离开会停止录音。已录的部分保存在这台设备上，回到这里可以继续上传。', confirmLabel: '停止并离开',
     });
   }
-  if (dirty.value && !saving.value) {
-    return confirm({ title: '点评还没保存', message: '离开后这次的修改会丢失。', confirmLabel: '不保存，离开', danger: true });
+  // 离开前把没存的改动存掉；存不上才问
+  let ok = true;
+  for (let i = 0; i < 3 && ok && (dirty.value || running); i++) ok = await flushSave();
+  if (!ok) {
+    return confirm({ title: '点评没保存上', message: `${saveError.value}。离开的话这次的修改会丢失。`, confirmLabel: '仍然离开', danger: true });
   }
   return true;
 });
 
 onMounted(async () => {
+  window.addEventListener('pagehide', saveOnExit);
+  document.addEventListener('visibilitychange', onVisibility);
   try {
     if (!session.value) await sessions.load();   // 直接打开链接 / 刚添加完跳过来，列表里可能还没有
     if (!session.value) return;
@@ -316,7 +407,12 @@ onMounted(async () => {
     loading.value = false;
   }
 });
-onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
+onBeforeUnmount(() => {
+  if (pollTimer) clearTimeout(pollTimer);
+  if (saveTimer) clearTimeout(saveTimer);
+  window.removeEventListener('pagehide', saveOnExit);
+  document.removeEventListener('visibilitychange', onVisibility);
+});
 </script>
 
 <template>
@@ -428,8 +524,9 @@ onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
       <section class="rr-reviews">
         <div class="section__head">
           <h2 class="section__title">两个人的点评</h2>
-          <span v-if="draftFrom != null" class="rr-ai-tag">AI 草稿 · 看看再保存</span>
+          <span v-if="draftFrom != null" class="rr-ai-tag">AI 草稿 · 已自动保存，直接改就行</span>
           <div class="section__actions">
+            <span class="rr-save-state" :class="`is-${saveState}`">{{ saveLabel }}</span>
             <button class="btn btn--ghost rr-swap" data-tip="说话人认反了？两栏对调" @click="swap">
               <svg class="btn__ic" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>对调
             </button>
@@ -438,7 +535,7 @@ onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
 
         <div v-if="draftNotice" class="rr-draft-notice">
           <span>{{ fmtDateTime(draftNotice.created_at) }} 那段录音的 AI 点评草稿已经生成好了。</span>
-          <button class="btn btn--rose" @click="useDraft(draftNotice)">填进来看看</button>
+          <button class="btn btn--rose" @click="useDraft(draftNotice)">填进来（会自动保存，可恢复）</button>
           <button class="btn btn--ghost" @click="dismissDraft(draftNotice)">先不用</button>
         </div>
 
@@ -447,8 +544,8 @@ onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
             <div class="rr-side__head">
               <span class="rr-side__avatar">{{ (side === 'a' ? nameA : nameB)[0] }}</span>
               <span class="rr-side__name">{{ side === 'a' ? nameA : nameB }}</span>
-              <button v-if="form[side].comment !== saved[side].comment || form[side].rating !== saved[side].rating"
-                      class="rr-link rr-side__restore" @click="restoreSide(side)">恢复原来的</button>
+              <button v-if="draftFrom != null && sideChanged(side)"
+                      class="rr-link rr-side__restore" @click="restoreSide(side)">恢复填入前的</button>
             </div>
             <ScorePicker v-model="form[side].rating" label="评分" />
             <textarea v-model="form[side].comment" v-auto-grow class="review-input rr-side__text"
@@ -462,10 +559,8 @@ onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
         </div>
 
         <div class="rr-save">
-          <button class="btn btn--primary rr-save__btn" :disabled="saving || !dirty" @click="save">{{ saving ? '保存中…' : '保存点评' }}</button>
-          <span v-if="saveError" class="rr-note rr-note--error">{{ saveError }}</span>
-          <span v-else-if="savedFlash" class="rr-save__ok">已保存</span>
-          <span v-else-if="dirty" class="rr-save__hint">有没保存的修改</span>
+          <span class="rr-save-state" :class="`is-${saveState}`">{{ saveLabel }}</span>
+          <button v-if="saveState === 'error'" class="rr-link" @click="flushSave">重试</button>
         </div>
       </section>
 
@@ -490,6 +585,7 @@ onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
           <div v-if="r.status === 'ready' && r.draft" class="rr-tape__actions">
             <button class="btn btn--ghost" @click="useDraft(r)">把这段的草稿填进上面</button>
             <button v-if="r.transcript?.length" class="btn btn--ghost" @click="mapEditing === r.id ? (mapEditing = null) : editMap(r)">谁是谁不对？</button>
+            <button v-if="r.replaced && r.applied_at" class="btn btn--ghost" @click="restoreReplaced(r)">恢复成采用这段之前的点评</button>
           </div>
 
           <div v-if="mapEditing === r.id" class="rr-map">
@@ -622,11 +718,10 @@ onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
 .rr-side__restore{ margin-left:auto; font-size:var(--fs-sm); }
 .rr-side__text{ min-height:120px; }
 .rr-joint{ margin-top:var(--s-4); }
-.rr-save{ display:flex; align-items:center; gap:var(--s-3); margin-top:var(--s-4); flex-wrap:wrap; }
-.rr-save__btn{ padding:11px 28px; }
-.rr-save__btn:disabled{ opacity:.5; cursor:default; }
-.rr-save__ok{ color:var(--rose); font-size:var(--fs-sm); }
-.rr-save__hint{ color:var(--text-faint); font-size:var(--fs-sm); }
+.rr-save{ display:flex; align-items:center; gap:var(--s-3); margin-top:var(--s-3); flex-wrap:wrap; font-size:var(--fs-sm); }
+.rr-save-state{ font-size:var(--fs-sm); color:var(--text-faint); }
+.rr-save-state.is-pending, .rr-save-state.is-saving{ color:var(--gold); }
+.rr-save-state.is-error{ color:var(--rose-bright); }
 
 /* 录音存档 */
 .rr-archive{ margin-bottom:var(--s-10); display:flex; flex-direction:column; gap:var(--s-3); }

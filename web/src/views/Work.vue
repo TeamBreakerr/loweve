@@ -329,7 +329,7 @@ function goBack() {
 .record[data-who="a"] .record__avatar{ background:var(--user-a); }
 .record[data-who="b"] .record__avatar{ background:var(--user-b); }
 .record__score{ margin-left:auto; margin-right:26px; font-family:var(--font-brand); font-style:italic; font-weight:600; font-size:var(--fs-2xl); color:var(--gold); line-height:1; }   /* 留出右上角编辑按钮的位置，避免重合 */
-.record__review{ color:var(--text-dim); line-height:1.7; font-size:var(--fs-body); }
+.record__review{ color:var(--text-dim); line-height:1.7; font-size:var(--fs-body); white-space:pre-line; overflow-wrap:anywhere; }
 @media (max-width:980px){
   .work-info__grid{ grid-template-columns:1fr 1fr; }
   .work-credits-card{ grid-column:1 / -1; }

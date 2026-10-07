@@ -321,6 +321,39 @@ describe('点评室路由与后台处理', () => {
     assert.ok(getRecording(db, body.id).applied_at);
   });
 
+  it('第一次采用草稿时留住被替换的点评，之后的自动保存不再覆盖；原来全空就不留', async () => {
+    const { app, recordings, sessionId } = setup();
+    const { body } = await upload(app, sessionId);
+    await recordings.run(body.id);
+    const save = (payload: any) => request(app).put(`/api/sessions/${sessionId}/joint-review`).set('Cookie', 'loweve_user_id=1').send(payload);
+    await save({ a: { rating: 8, comment: 'AI 草稿 A' }, b: { rating: 7, comment: 'AI 草稿 B' }, joint_note: '纪要', recording_id: body.id });
+    await save({ a: { rating: 8, comment: 'AI 草稿 A，改了一句' }, recording_id: body.id });   // 采用后接着手改（自动保存）
+    const rec = (await request(app).get(`/api/recordings/${body.id}`)).body;
+    assert.deepEqual(rec.replaced, {
+      a: { rating: 6, comment: '旧点评A' }, b: { rating: null, comment: null }, joint_note: null,
+    });
+
+    // 另一部原来没有任何点评：采用草稿不留空白副本
+    const now = Date.now();
+    const work2 = Number(db.prepare(`INSERT INTO works (tmdb_id, tmdb_type, title, rating_source, tmdb_raw, fetched_at, updated_at) VALUES (2, 'movie', '空', 'tmdb', '{}', ?, ?)`).run(now, now).lastInsertRowid);
+    const s2 = Number(db.prepare('INSERT INTO couple_sessions (work_id, created_at) VALUES (?, ?)').run(work2, now).lastInsertRowid);
+    const up2 = await upload(app, s2);
+    await recordings.run(up2.body.id);
+    await request(app).put(`/api/sessions/${s2}/joint-review`).set('Cookie', 'loweve_user_id=1').send({ a: { rating: 9, comment: 'x' }, recording_id: up2.body.id });
+    assert.equal((await request(app).get(`/api/recordings/${up2.body.id}`)).body.replaced, null);
+  });
+
+  it('老库补 replaced_json 列（幂等）', async () => {
+    const { migrateAddRecordingReplaced } = await import('../src/db/migrate.js');
+    const { openDb } = await import('../src/db/index.js');
+    const old = openDb(':memory:');
+    old.exec(`CREATE TABLE review_recordings (id INTEGER PRIMARY KEY, draft_json TEXT)`);
+    assert.equal(migrateAddRecordingReplaced(old), true);
+    assert.equal(migrateAddRecordingReplaced(old), false);
+    assert.ok(old.prepare(`SELECT 1 FROM pragma_table_info('review_recordings') WHERE name = 'replaced_json'`).get());
+    old.close();
+  });
+
   it('一起保存：只传一侧时另一侧不动；评分非法 400；未登录 401', async () => {
     const { app, sessionId } = setup();
     const res = await request(app).put(`/api/sessions/${sessionId}/joint-review`).set('Cookie', 'loweve_user_id=2').send({ b: { rating: null, comment: '还行' } });

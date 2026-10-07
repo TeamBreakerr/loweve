@@ -332,6 +332,7 @@ CREATE TABLE IF NOT EXISTS review_recordings (
   transcript_json TEXT,                     -- [{speaker, start, text}]
   speaker_map_json TEXT,                    -- 用户确认过的「说话人标签 → 1|2|null」；空 = 让模型判断
   draft_json TEXT,                          -- {speaker_map, a:{review,rating}, b:{review,rating}, joint_note}
+  replaced_json TEXT,                       -- 第一次采用这段草稿前两人的点评与纪要（点评室自动保存，留一份可恢复）
   applied_at INTEGER,
   error TEXT,
   created_at INTEGER NOT NULL,
