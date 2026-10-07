@@ -139,6 +139,12 @@
   position:sticky; bottom:0; background:var(--surface); z-index:1;   /* 始终吸底，保存按钮无需滚动 */
 }
 .modal__foot .btn{ padding:11px 20px; }
+/* 自动保存状态（useAutosave）：点评室与编辑记录弹窗共用，替代「保存」按钮 */
+.autosave-state{ font-size:var(--fs-sm); color:var(--text-faint); }
+.autosave-state.is-pending, .autosave-state.is-saving{ color:var(--gold); }
+.autosave-state.is-error{ color:var(--rose-bright); }
+.modal__foot .autosave-state{ flex:1; min-width:0; align-self:center; }
+.autosave-retry{ color:var(--rose); text-decoration:underline; text-underline-offset:3px; font-size:var(--fs-sm); align-self:center; }
 .btn--primary{
   background:var(--rose); color:oklch(0.16 0.02 30); border:1px solid var(--rose); font-weight:600;
 }

@@ -1,9 +1,13 @@
 <script setup lang="ts">
+// 编辑游戏记录（个人记录 / 共同游玩 / 共同计划）。改动自动保存（useAutosave），没有「保存」按钮；
+// 关窗前把没存的存掉，有存过才通知父页面刷新。
 import { computed, ref, watch } from 'vue';
 import { useGameMarks } from '../../stores/gameMarks';
 import { useGameSessions } from '../../stores/gameSessions';
 import { useGamePlan } from '../../stores/gamePlan';
 import { confirm } from '../../composables/useConfirm';
+import { keepaliveJson, useAutosave } from '../../composables/useAutosave';
+import { withViewing } from '../../api/index';
 import GamePoster from './GamePoster.vue';
 import GameContentBadge from './GameContentBadge.vue';
 import ScorePicker from '../ScorePicker.vue';
@@ -24,7 +28,7 @@ const text = ref('');
 const playedAt = ref<number | null>(null);
 const completedAt = ref<number | null>(null);
 const priority = ref(0);
-const saving = ref(false);
+const deleting = ref(false);
 const error = ref('');
 const work = computed(() => props.record?.work || null);
 const title = computed(() => ({ mark: '编辑游戏记录', session: '编辑共同游玩记录', plan: '编辑共同计划' }[props.type]));
@@ -42,36 +46,51 @@ function fill() {
     priority.value = row.priority || 0;
     text.value = row.note || '';
   }
+  autosave.reset();
 }
 watch(() => props.modelValue, open => { if (open) fill(); });
 watch(() => props.record, () => { if (props.modelValue) fill(); });
 
-async function save() {
-  saving.value = true; error.value = '';
-  try {
-    if (props.type === 'mark') await marks.update(props.record.id, { rating: rating.value, comment: text.value || null });
-    if (props.type === 'session') {
-      await sessions.update(props.record.id, { played_at: playedAt.value, completed_at: completedAt.value });
-    }
-    if (props.type === 'plan') {
-      await plan.update(props.record.id, { priority: priority.value, note: text.value || null });
-    }
-    emit('changed'); close();
-  } catch (e) { error.value = e.body?.error || e.message; }
-  finally { saving.value = false; }
-}
+const ENDPOINT: Record<string, string> = { mark: 'marks', session: 'sessions', plan: 'plan' };
+const autosave = useAutosave<Record<string, unknown>>({
+  snapshot: () => props.type === 'mark' ? { rating: rating.value, comment: text.value || null }
+    : props.type === 'session' ? { played_at: playedAt.value, completed_at: completedAt.value }
+      : { priority: priority.value, note: text.value || null },
+  save: patch => props.type === 'mark' ? marks.update(props.record.id, patch)
+    : props.type === 'session' ? sessions.update(props.record.id, patch)
+      : plan.update(props.record.id, patch),
+  beacon: patch => keepaliveJson(withViewing(`/api/games/${ENDPOINT[props.type]}/${props.record.id}`), 'PUT', patch),
+});
+const { state: saveState, label: saveLabel } = autosave;
+watch([rating, text, playedAt, completedAt, priority], () => { if (props.modelValue && props.record) autosave.touch(); });
+
 async function remove() {
   if (!await confirm({ title: '移入游戏回收站？', message: '之后可在「设置 → 游戏回收站」恢复。', confirmLabel: '移入回收站' })) return;
-  saving.value = true;
+  autosave.cancel();   // 记录要删了，没存的改动不必再存
+  deleting.value = true;
   try {
     if (props.type === 'mark') await marks.remove(props.record.id);
     if (props.type === 'session') await sessions.remove(props.record.id);
     if (props.type === 'plan') await plan.remove(props.record.id);
-    emit('changed'); close();
+    emit('changed'); emit('update:modelValue', false);
   } catch (e) { error.value = e.body?.error || e.message; }
-  finally { saving.value = false; }
+  finally { deleting.value = false; }
 }
-function close() { emit('update:modelValue', false); }
+// 关窗（✕ / 点遮罩 / 完成）：先把没存的存掉，存不上再问；这次存过才让父页面刷新
+let closing = false;
+async function close() {
+  if (closing) return;
+  closing = true;
+  try {
+    if (!await autosave.settle() && !await confirm({
+      title: '没保存上', message: `${autosave.error.value}。关掉的话这次的修改会丢失。`, confirmLabel: '仍然关闭', danger: true,
+    })) return;
+    if (autosave.saveCount.value) emit('changed');
+    emit('update:modelValue', false);
+  } finally {
+    closing = false;
+  }
+}
 </script>
 
 <template>
@@ -94,7 +113,7 @@ function close() { emit('update:modelValue', false); }
         </template>
         <p v-if="error" class="game-edit__error">{{ error }}</p>
       </div>
-      <div class="modal__foot"><button class="btn btn--primary game-edit__save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button><button class="btn btn--ghost game-edit__delete" :disabled="saving" @click="remove">移入回收站</button></div>
+      <div class="modal__foot"><span class="autosave-state" :class="`is-${saveState}`">{{ saveLabel }}</span><button v-if="saveState === 'error'" class="autosave-retry" @click="autosave.flush()">重试</button><button class="btn btn--ghost game-edit__delete" :disabled="deleting" @click="remove">移入回收站</button><button class="btn btn--primary" @click="close">完成</button></div>
     </div>
   </div>
 </template>
@@ -107,5 +126,5 @@ function close() { emit('update:modelValue', false); }
 .game-summary>div{ display:flex; flex-direction:column; }.game-summary small{ color:var(--text-faint); }
 .game-edit__hint{ color:var(--game-accent); font-size:var(--fs-sm); }
 .edit-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s-2); }
-.game-edit__save{ flex:1; }.game-edit__delete,.game-edit__error{ color:var(--rose-bright); }.game-edit__delete{ border-color:var(--rose-line); }
+.game-edit__delete,.game-edit__error{ color:var(--rose-bright); }.game-edit__delete{ border-color:var(--rose-line); }
 </style>

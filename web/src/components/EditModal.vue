@@ -1,10 +1,13 @@
 <script setup lang="ts">
 // 编辑/删除已添加的记录。type: mark(个人看过) | plan(想看就一起看)
-// 评分用 ScorePicker；后端 PUT/DELETE 已就绪。一起看过（共看）的点评与日期在点评室 TogetherReview 里编辑。
+// 改动自动保存（useAutosave），没有「保存」按钮；关窗前把没存的存掉，有存过才通知父页面刷新。
+// 一起看过（共看）的点评与日期在点评室 TogetherReview 里编辑。
 import { ref, watch, computed } from 'vue';
 import { useMarks } from '../stores/marks';
 import { usePlan } from '../stores/plan';
 import { confirm } from '../composables/useConfirm';
+import { keepaliveJson, useAutosave } from '../composables/useAutosave';
+import { withViewing } from '../api/index';
 import Poster from './Poster.vue';
 import ScorePicker from './ScorePicker.vue';
 import { vAutoGrow } from '../directives/autoGrow';
@@ -23,7 +26,7 @@ const rating = ref<number | null>(null);
 const text = ref('');         // mark.comment / plan.note
 const status = ref('');       // mark: watched|wish ; plan: pending|watching|done|dropped
 const priority = ref(0);
-const saving = ref(false);
+const deleting = ref(false);
 const errorMsg = ref('');
 
 const work = computed(() => props.record?.work || null);
@@ -41,39 +44,52 @@ function fillFrom(r: any) {
     status.value = r.status;
   }
   errorMsg.value = '';
+  autosave.reset();
 }
 watch(() => props.modelValue, (open) => { if (open) fillFrom(props.record); });
 watch(() => props.record, (r) => { if (props.modelValue) fillFrom(r); });
 
-const PLAN_STATUS = [['pending','待看'],['watching','在看'],['done','看完'],['dropped','弃了']];
+const endpoint = () => props.type === 'mark' ? `/api/marks/${props.record.id}` : `/api/plan/${props.record.id}`;
+const autosave = useAutosave({
+  snapshot: () => props.type === 'mark'
+    ? { rating: rating.value, comment: text.value || null, status: status.value }
+    : { note: text.value || null, priority: priority.value, status: status.value },
+  save: patch => props.type === 'mark' ? marks.update(props.record.id, patch) : plan.update(props.record.id, patch),
+  beacon: patch => keepaliveJson(withViewing(endpoint()), 'PUT', patch),
+});
+const { state: saveState, label: saveLabel } = autosave;
+watch([rating, text, status, priority], () => { if (props.modelValue && props.record) autosave.touch(); });
 
-async function save() {
-  saving.value = true; errorMsg.value = '';
-  try {
-    if (props.type === 'mark') {
-      await marks.update(props.record.id, { rating: rating.value, comment: text.value || null, status: status.value });
-    } else if (props.type === 'plan') {
-      await plan.update(props.record.id, { note: text.value || null, priority: priority.value, status: status.value });
-    }
-    emit('changed');
-    close();
-  } catch (e) { errorMsg.value = e.body?.error || e.message; }
-  finally { saving.value = false; }
-}
+const PLAN_STATUS = [['pending','待看'],['watching','在看'],['done','看完'],['dropped','弃了']];
 
 async function del() {
   if (!await confirm({ title: '移入回收站？', message: '之后可在「设置 → 回收站」恢复。', confirmLabel: '移入回收站' })) return;
-  saving.value = true; errorMsg.value = '';
+  autosave.cancel();   // 记录要删了，没存的改动不必再存
+  deleting.value = true; errorMsg.value = '';
   try {
     if (props.type === 'mark') await marks.remove(props.record.id);
     else if (props.type === 'plan') await plan.remove(props.record.id);
     emit('changed');
-    close();
+    emit('update:modelValue', false);
   } catch (e) { errorMsg.value = e.body?.error || e.message; }
-  finally { saving.value = false; }
+  finally { deleting.value = false; }
 }
 
-function close() { emit('update:modelValue', false); }
+// 关窗（✕ / 点遮罩 / 完成）：先把没存的存掉，存不上再问；这次存过才让父页面刷新
+let closing = false;
+async function close() {
+  if (closing) return;
+  closing = true;
+  try {
+    if (!await autosave.settle() && !await confirm({
+      title: '没保存上', message: `${autosave.error.value}。关掉的话这次的修改会丢失。`, confirmLabel: '仍然关闭', danger: true,
+    })) return;
+    if (autosave.saveCount.value) emit('changed');
+    emit('update:modelValue', false);
+  } finally {
+    closing = false;
+  }
+}
 </script>
 
 <template>
@@ -129,8 +145,10 @@ function close() { emit('update:modelValue', false); }
         <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
       </div>
       <div class="modal__foot">
-        <button class="btn btn--primary submit-btn" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
-        <button class="btn btn--ghost delete-btn" :disabled="saving" @click="del">移入回收站</button>
+        <span class="autosave-state" :class="`is-${saveState}`">{{ saveLabel }}</span>
+        <button v-if="saveState === 'error'" class="autosave-retry" @click="autosave.flush()">重试</button>
+        <button class="btn btn--ghost delete-btn" :disabled="deleting" @click="del">移入回收站</button>
+        <button class="btn btn--primary" @click="close">完成</button>
       </div>
     </div>
   </div>
@@ -153,8 +171,8 @@ function close() { emit('update:modelValue', false); }
    相同的内联 grid-template-columns:repeat(4,1fr)（状态/优先级两个按钮组同值合并）；
    .target-list 与 @media 内的覆写都在本文件同一 scoped 块里，特异性同为 (0,2,0)（类+
    scoped 属性选择器）打平，故把本规则放在 @media 块之后，让它在任何视口下都稳赢——
-   与原内联「无视断点、恒定 4 列」的效果一致。.error-msg/.submit-btn 与 AddModal.vue
-   同值的 .save-error/.submit-btn 纯属巧合重复，两文件各自 scoped 隔离，不构成跨文件
+   与原内联「无视断点、恒定 4 列」的效果一致。.error-msg 与 AddModal.vue
+   同值的 .save-error 纯属巧合重复，两文件各自 scoped 隔离，不构成跨文件
    共享基类，未合并。.delete-btn 覆盖的 .btn{color:var(--text-dim)}/.btn--ghost{
    border-color:var(--line)} 均来自 primitives.css（未 scoped，(0,1,0)），本类经 Vue
    scoped 编译后为 (0,2,0)，稳赢；.btn:hover 同样 (0,2,0) 打平，但 primitives.css 在
@@ -165,6 +183,5 @@ function close() { emit('update:modelValue', false); }
 .work-summary__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-md); }
 .target-list--4col{ grid-template-columns:repeat(4,1fr); }
 .error-msg{ color:var(--rose-bright); font-size:var(--fs-sm); }
-.submit-btn{ flex:1; }
 .delete-btn{ color:var(--rose-bright); border-color:var(--rose-line); }
 </style>
