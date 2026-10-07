@@ -16,17 +16,18 @@ import type { Session } from '../types';
 const router = useRouter();
 const identity = useIdentity();
 defineProps<{ s: Session }>();
-const emit = defineEmits(['edit']);
 
 const fmtDate = (n: any) => fmtWatched(n, ' 看完');
 function tags(s: Session) { try { return (JSON.parse(s.work?.genres || '[]') as string[]).slice(0, 3); } catch { return []; } }
 function goWork(s: Session) { if (s.work_id) router.push(`/work/${s.work_id}`); }
+// 点评室是一起看过的点评主入口（录讨论自动生成 / 两人一起改 / 改看完日期都在那里）
+function goReview(s: Session) { router.push({ name: 'together-review', params: { id: s.id } }); }
 </script>
 
 <template>
   <article class="watched-card">
-    <button class="card-edit" data-tip="编辑" data-tip-pos="below" @click.stop="emit('edit', s)">
-      <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+    <button class="card-edit" data-tip="一起点评" data-tip-pos="below" @click.stop="goReview(s)">
+      <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
     </button>
     <Poster :color="'#2a2a30'" :url="s.work?.primary_poster_url" :kind="s.work?.is_anime ? '番剧' : ''" class="watched-card__poster" @click="goWork(s)" />
     <div class="watched-card__body">
@@ -44,7 +45,7 @@ function goWork(s: Session) { if (s.work_id) router.push(`/work/${s.work_id}`); 
       <p v-if="s.review_a" class="wm__rev" :data-who="identity.whoKey(1)"><span class="wm__who">{{ identity.userById(1)?.display_name?.[0] || 'A' }}</span><span class="wm__txt">{{ s.review_a }}</span></p>
       <p v-if="s.review_b" class="wm__rev" :data-who="identity.whoKey(2)"><span class="wm__who">{{ identity.userById(2)?.display_name?.[0] || 'B' }}</span><span class="wm__txt">{{ s.review_b }}</span></p>
       <div v-if="tags(s).length" class="wm__tags"><span v-for="t in tags(s)" :key="t" class="tag">{{ t }}</span></div>
-      <p v-if="!s.review_a && !s.review_b && !tags(s).length" class="wm__empty">这部还没写短评</p>
+      <button v-if="!s.review_a && !s.review_b" class="wm__cta" @click="goReview(s)">还没点评 · 一起录一段讨论 →</button>
     </div>
   </article>
 </template>
@@ -79,7 +80,8 @@ function goWork(s: Session) { if (s.work_id) router.push(`/work/${s.work_id}`); 
 .wm__rev[data-who="b"] .wm__who { background: var(--user-b); }
 .wm__txt { min-width: 0; }
 .wm__tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
-.wm__empty { font-size: var(--fs-sm); color: var(--text-faint); }
+.wm__cta { align-self: flex-start; font-size: var(--fs-sm); color: var(--rose); padding: 6px 12px; border-radius: var(--r-pill); border: 1px dashed var(--rose-line); background: var(--rose-tint); transition: background .2s, color .2s; }
+.wm__cta:hover { color: var(--rose-bright); border-style: solid; }
 
 @media (max-width: 880px) {
   /* 窄屏短评列堆叠到信息列下方——原 TogetherReel 880px 段内唯一命中 article 内部节点的规则。*/

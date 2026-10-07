@@ -29,6 +29,7 @@ describe('db migration', () => {
       'game_works',
       'plan_items',
       'recommendations',
+      'review_recordings',
       'trash_items',
       'user_marks',
       'users',

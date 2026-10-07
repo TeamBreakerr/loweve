@@ -28,6 +28,22 @@ export function parseJsonArray(text: any) {
   return arr;
 }
 
+// 同上，取首个 { … 末个 } 解析，必须是普通对象（非数组）
+export function parseJsonObject(text: any) {
+  if (typeof text !== 'string') throw new LlmError('llm_parse');
+  let t = text.trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  const start = t.indexOf('{');
+  const end = t.lastIndexOf('}');
+  if (start === -1 || end === -1 || end < start) throw new LlmError('llm_parse');
+  let obj: any;
+  try { obj = JSON.parse(t.slice(start, end + 1)); }
+  catch { throw new LlmError('llm_parse'); }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new LlmError('llm_parse');
+  return obj;
+}
+
 export function createLlmClient({ baseUrl, apiKey, model, resolve, fetch = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }: { baseUrl?: string; apiKey?: string; model?: string; resolve?: () => any; fetch?: any; timeoutMs?: number } = {}) {
   // 静态值或 resolve()（运行时从 DB 读，设置页改完即时生效）
   const getCfg = resolve || (() => ({ baseUrl, apiKey, model }));

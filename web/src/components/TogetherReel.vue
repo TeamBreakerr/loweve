@@ -10,7 +10,6 @@ import { useReelDrum, STEP, RAD } from '../composables/useReelDrum';
 import type { Session } from '../types';
 
 const props = withDefaults(defineProps<{ sessions?: Session[] }>(), { sessions: () => [] });
-const emit = defineEmits(['edit']);
 
 // 年 → 月分组（新→旧）
 const years = computed(() => buildYears(props.sessions));
@@ -70,7 +69,7 @@ watch(() => props.sessions, () => init(), { deep: false });
         <section v-for="mo in y.months" :key="mo.gid" class="mg" :id="mo.gid" :data-year="y.year" :data-month="mo.m">
           <div class="mg__head"><span class="mark"></span>{{ mo.mLabel }}</div>
           <div class="mg__cards">
-            <ReelEntry v-for="s in mo.sessions" :key="s.id" :s="s" @edit="emit('edit', $event)" />
+            <ReelEntry v-for="s in mo.sessions" :key="s.id" :s="s" />
           </div>
         </section>
       </template>

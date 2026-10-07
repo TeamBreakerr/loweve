@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from './views/Home.vue';
 import Me from './views/Me.vue';
 import Together from './views/Together.vue';
+import TogetherReview from './views/TogetherReview.vue';
 import Plan from './views/Plan.vue';
 import Work from './views/Work.vue';
 import Settings from './views/Settings.vue';
@@ -20,6 +21,7 @@ export const router = createRouter({
     { path: '/', name: 'home', component: Home, meta: { space: 'media', page: 'home' } },
     { path: '/me', name: 'me', component: Me, meta: { space: 'media', page: 'me' } },
     { path: '/together', name: 'together', component: Together, meta: { space: 'media', page: 'together' } },
+    { path: '/together/:id/review', name: 'together-review', component: TogetherReview, meta: { space: 'media', page: 'together' } },
     { path: '/plan', name: 'plan', component: Plan, meta: { space: 'media', page: 'plan' } },
     { path: '/work/:id', name: 'work', component: Work, meta: { space: 'media', page: 'work' } },
     { path: '/games', name: 'games-home', component: GamesHome, meta: { space: 'games', page: 'home' } },

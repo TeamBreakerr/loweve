@@ -15,7 +15,6 @@ const props = withDefaults(defineProps<{ sessions?: Session[]; limit?: number }>
   sessions: () => [],
   limit: 0,   // 0 = 全部
 });
-const emit = defineEmits(['edit']);
 
 const groups = computed(() => {
   const list = props.limit ? props.sessions.slice(0, props.limit) : props.sessions;
@@ -44,8 +43,8 @@ const fmtMonthDay = (n: any) => fmtWatchedShort(n);
           <Poster :color="'#2a2a30'" :url="s.work?.primary_poster_url" :kind="s.work?.is_anime ? '番剧' : ''"
                   class="hcard__poster" @click="s.work_id && router.push(`/work/${s.work_id}`)" />
           <div class="hcard__corner">
-            <button class="hcard__edit" data-tip="编辑" data-tip-pos="below" @click="emit('edit', s)">
-              <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <button class="hcard__edit" data-tip="一起点评" data-tip-pos="below" @click="router.push({ name: 'together-review', params: { id: s.id } })">
+              <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
             </button>
           </div>
         </div>
@@ -87,7 +86,8 @@ const fmtMonthDay = (n: any) => fmtWatchedShort(n);
    改版」段搬入（T10 批 6，纯剪切，未改声明）。三者只在本组件出现，.hcard 基类及其余共用
    子类（__body/__pw/__row/__title）留在 styles/primitives.css（Home.vue「想看就一起看」
    横向小卡与本组件共用）。*/
-.hcard__corner{ position:absolute; top:8px; right:8px; display:flex; gap:5px; }
+/* z-index：.poster img 自带 z-index:1，不抬一层的话角标（日期 + 点评按钮）整个被海报盖住、点不到 */
+.hcard__corner{ position:absolute; top:8px; right:8px; z-index:2; display:flex; gap:5px; }
 .hcard__edit{ width:30px; height:30px; border-radius:50%; display:grid; place-items:center; background:oklch(0.16 0.02 30 / 0.8); border:1px solid oklch(1 0 0 / 0.2); color:oklch(0.95 0 0 / 0.92); }
 .hcard__edit svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; }
 .hcard__edit:hover{ background:var(--rose); color:oklch(0.16 0.02 30); border-color:var(--rose); }

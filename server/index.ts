@@ -15,6 +15,8 @@ import { createSteamClient } from './src/steam/client.js';
 import { createIgdbClient } from './src/igdb/client.js';
 import { createWikidataClient } from './src/wikidata/client.js';
 import { sweepStuckBangumi } from './src/routes/works.js';
+import { createAsrClient } from './src/asr/client.js';
+import { createReviewRecordingProcessor } from './src/reviewRecordings/service.js';
 
 async function main() {
   // 必须在任何 fetch 之前装代理（外网请求经 HTTPS_PROXY 走代理，内网 cli-proxy-api 经 NO_PROXY 直连）
@@ -36,14 +38,18 @@ async function main() {
   const steam = createSteamClient();
   const igdb = createIgdbClient({ resolve: () => { const e = cfg(); return { clientId: e.igdbClientId, clientSecret: e.igdbClientSecret }; } });
   const wikidata = createWikidataClient();
+  const asr = createAsrClient({ resolve: () => ({ baseUrl: cfg().asrBaseUrl }) });
+  const recordings = createReviewRecordingProcessor({ db, asr, llm, recordingDir: paths.recordingDir });
   if (!tmdb.isConfigured()) {
     console.warn('[warn] TMDB key 未配置（TMDB_API_TOKEN / TMDB_API_KEY 均缺失），/api/search 将返回 503');
   }
 
-  const app = createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidata });
+  const app = createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidata, recordings });
 
   app.listen(config.port, () => {
-    console.log(`loweve listening on :${config.port}, db=${paths.dbFile}, tmdb=${tmdb.isConfigured() ? 'ok' : 'unconfigured'}, igdb=${igdb.isConfigured() ? 'ok' : 'unconfigured'}, steam=ok, bangumi=ok, douban=http, llm=${llm.isConfigured() ? 'ok' : 'off'}`);
+    console.log(`loweve listening on :${config.port}, db=${paths.dbFile}, tmdb=${tmdb.isConfigured() ? 'ok' : 'unconfigured'}, igdb=${igdb.isConfigured() ? 'ok' : 'unconfigured'}, steam=ok, bangumi=ok, douban=http, llm=${llm.isConfigured() ? 'ok' : 'off'}, asr=${asr.isConfigured() ? 'ok' : 'off'}`);
+    const resumed = recordings.resumeAll();   // 部署/重启前没处理完的讨论录音接着转写、生成
+    if (resumed.length) console.log(`[recordings] 续跑 ${resumed.length} 段讨论录音`);
     const ids = sweepStuckDouban(db, douban);   // 后台补抓卡在 tmdb 的电影
     if (ids.length) console.log(`[douban] 自愈补抓 ${ids.length} 部卡在 tmdb 的电影`);
     const bangumiSweep = sweepStuckBangumi(db, bangumi); // 后台补抓卡在 tmdb 的动画

@@ -1,38 +1,33 @@
 <script setup lang="ts">
-// 编辑/删除已添加的记录。type: mark(个人看过) | session(共看) | plan(想看就一起看)
-// 评分用 ScorePicker；session 只编辑当前 viewer 那侧；后端 PUT/DELETE 已就绪。
+// 编辑/删除已添加的记录。type: mark(个人看过) | plan(想看就一起看)
+// 评分用 ScorePicker；后端 PUT/DELETE 已就绪。一起看过（共看）的点评与日期在点评室 TogetherReview 里编辑。
 import { ref, watch, computed } from 'vue';
 import { useMarks } from '../stores/marks';
-import { useSessions } from '../stores/sessions';
 import { usePlan } from '../stores/plan';
 import { confirm } from '../composables/useConfirm';
 import Poster from './Poster.vue';
 import ScorePicker from './ScorePicker.vue';
-import DatePicker from './DatePicker.vue';
-import { encodeWatched } from '../utils/watchedDate';
 import { vAutoGrow } from '../directives/autoGrow';
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
-  type: { type: String, default: 'mark' },   // mark | session | plan
+  type: { type: String, default: 'mark' },   // mark | plan
   record: { type: Object, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'changed']);
 
 const marks = useMarks();
-const sessions = useSessions();
 const plan = usePlan();
 
 const rating = ref<number | null>(null);
 const text = ref('');         // mark.comment / plan.note
-const watchedAt = ref<number | null>(null);
 const status = ref('');       // mark: watched|wish ; plan: pending|watching|done|dropped
 const priority = ref(0);
 const saving = ref(false);
 const errorMsg = ref('');
 
 const work = computed(() => props.record?.work || null);
-const titleLabel = computed(() => ({ mark: '编辑记录', session: '编辑共看记录', plan: '编辑计划' }[props.type]));
+const titleLabel = computed(() => ({ mark: '编辑记录', plan: '编辑计划' }[props.type]));
 
 function fillFrom(r: any) {
   if (!r) return;
@@ -40,10 +35,6 @@ function fillFrom(r: any) {
     rating.value = r.rating ?? null;
     text.value = r.comment || '';
     status.value = r.status;
-  } else if (props.type === 'session') {
-    // 空则默认今天（回填在输入框里，可见可清空）
-    const t = new Date();
-    watchedAt.value = r.watched_at ?? encodeWatched(t.getFullYear(), t.getMonth() + 1, t.getDate());
   } else if (props.type === 'plan') {
     text.value = r.note || '';
     priority.value = r.priority || 0;
@@ -61,8 +52,6 @@ async function save() {
   try {
     if (props.type === 'mark') {
       await marks.update(props.record.id, { rating: rating.value, comment: text.value || null, status: status.value });
-    } else if (props.type === 'session') {
-      await sessions.update(props.record.id, { watched_at: watchedAt.value });
     } else if (props.type === 'plan') {
       await plan.update(props.record.id, { note: text.value || null, priority: priority.value, status: status.value });
     }
@@ -77,7 +66,6 @@ async function del() {
   saving.value = true; errorMsg.value = '';
   try {
     if (props.type === 'mark') await marks.remove(props.record.id);
-    else if (props.type === 'session') await sessions.remove(props.record.id);
     else if (props.type === 'plan') await plan.remove(props.record.id);
     emit('changed');
     close();
@@ -115,14 +103,6 @@ function close() { emit('update:modelValue', false); }
           <div class="field">
             <span class="field__label">短评</span>
             <textarea v-auto-grow class="review-input" v-model="text" placeholder="写一句感想…"></textarea>
-          </div>
-        </template>
-
-        <!-- session -->
-        <template v-else-if="type === 'session'">
-          <div class="field">
-            <span class="field__label">看完日期（可空，只记到年或月也行）</span>
-            <DatePicker v-model="watchedAt" />
           </div>
         </template>
 

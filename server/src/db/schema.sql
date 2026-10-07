@@ -312,3 +312,30 @@ CREATE TABLE IF NOT EXISTS app_state (
   value TEXT,
   updated_at INTEGER NOT NULL
 );
+
+-- ============ 一起看过 · 录音点评 ============
+-- 两人看完后的讨论录音：原始音频永久保留在 data/recordings/，转写与 AI 点评草稿存这里。
+-- 按 (kind, work_id) 关联而不是 session id：共看记录进回收站再恢复可能换 id，录音不能因此丢；
+-- 共看记录删除时录音也不删。kind 预留给游戏（game_works.id），所以 work_id 不设外键。
+CREATE TABLE IF NOT EXISTS review_recordings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL DEFAULT 'movie' CHECK(kind IN ('movie', 'game')),
+  work_id INTEGER NOT NULL,
+  file_name TEXT NOT NULL,                  -- data/recordings/ 下的文件名
+  mime TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  duration_ms INTEGER,
+  recorded_by INTEGER REFERENCES users(id),
+  status TEXT NOT NULL CHECK(status IN ('uploaded', 'transcribing', 'summarizing', 'ready', 'error')),
+  stage_message TEXT,
+  asr_job_id TEXT,
+  transcript_json TEXT,                     -- [{speaker, start, text}]
+  speaker_map_json TEXT,                    -- 用户确认过的「说话人标签 → 1|2|null」；空 = 让模型判断
+  draft_json TEXT,                          -- {speaker_map, a:{review,rating}, b:{review,rating}, joint_note}
+  applied_at INTEGER,
+  error TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_review_recordings_work ON review_recordings(kind, work_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_review_recordings_status ON review_recordings(status);

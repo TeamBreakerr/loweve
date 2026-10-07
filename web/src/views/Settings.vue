@@ -49,7 +49,7 @@ function pickIdentity(id: any) { identity.switchMe(id); }
 const svc = ref<Partial<ApiSettings>>({});   // GET /api/settings（密钥脱敏）
 const form = ref({
   llm_base_url: '', llm_api_key: '', llm_model: '', tmdb_token: '', tmdb_key: '', bangumi_ua: '',
-  igdb_client_id: '', igdb_client_secret: '',
+  igdb_client_id: '', igdb_client_secret: '', asr_base_url: '',
 });
 const svcSaving = ref(false), svcSaved = ref(false), svcError = ref(false);
 const modelOptions = ref<string[]>([]);
@@ -80,6 +80,7 @@ async function loadServices() {
     form.value.llm_model = svc.value.llm_model || '';
     form.value.bangumi_ua = svc.value.bangumi_ua || '';
     form.value.igdb_client_id = typeof svc.value.igdb_client_id === 'string' ? svc.value.igdb_client_id : '';
+    form.value.asr_base_url = typeof svc.value.asr_base_url === 'string' ? svc.value.asr_base_url : '';
     return true;
   } catch { /* 忽略 */ }
   return false;
@@ -119,6 +120,7 @@ async function saveServices() {
     if (form.value.bangumi_ua !== (svc.value.bangumi_ua || '')) patch.bangumi_ua = form.value.bangumi_ua.trim();
     if (form.value.igdb_client_id !== (svc.value.igdb_client_id || '')) patch.igdb_client_id = form.value.igdb_client_id.trim();
     if (form.value.igdb_client_secret) patch.igdb_client_secret = form.value.igdb_client_secret.trim();
+    if (form.value.asr_base_url !== (svc.value.asr_base_url || '')) patch.asr_base_url = form.value.asr_base_url.trim();
     if (form.value.llm_api_key) patch.llm_api_key = form.value.llm_api_key.trim();
     if (form.value.tmdb_token) patch.tmdb_token = form.value.tmdb_token.trim();
     if (form.value.tmdb_key) patch.tmdb_key = form.value.tmdb_key.trim();
@@ -248,6 +250,16 @@ async function saveServices() {
           <p v-else-if="modelsError" class="model-note model-note--error">{{ modelsError }}</p>
           <p v-else-if="availableModels.length" class="model-note">已从当前端点获取 {{ availableModels.length }} 个模型。</p>
           <p v-else class="model-note">模型列表使用已保存的 Base URL 和 API Key 获取。</p>
+        </div>
+
+        <div class="cfg-group">
+          <div class="cfg-group__title">
+            语音转写（一起看过 · 点评室）
+            <span v-if="svc.asr_ready" class="badge-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>已就绪</span>
+            <span v-else class="badge-off">未配置</span>
+          </div>
+          <input class="input" type="text" autocomplete="off" v-model="form.asr_base_url" placeholder="asr-app 服务地址，如 http://asr-app:8000" />
+          <p class="model-note">讨论录音交给 asr-app 转写（Doubao，带说话人分离），再用上面的 LLM 整理成两人的点评。未配置时录音照样保存，只是不自动生成。</p>
         </div>
 
         <div class="cfg-group">

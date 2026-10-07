@@ -20,10 +20,13 @@ export const config = {
   llmModel: process.env.LLM_MODEL || '',
   // LLM 单次请求超时（ms）。推理模型（如 deepseek）思考久，默认给 150s；改 .env 后重启即生效。
   llmTimeoutMs: parseInt(process.env.LLM_TIMEOUT_MS || '150000', 10),
+  // 语音转写服务（同网的 asr-app，如 http://asr-app:8000）；空 = 录音点评只存录音、不转写。
+  asrBaseUrl: process.env.ASR_BASE_URL || '',
 };
 
 export const paths = {
   dbFile: path.join(config.dataDir, 'loweve.db'),
   posterDir: path.join(config.dataDir, 'posters'),
+  recordingDir: path.join(config.dataDir, 'recordings'),   // 一起看过讨论录音原件，永久保留
   webDist: path.resolve(__dirname, '../../web/dist'),
 };

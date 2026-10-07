@@ -93,6 +93,38 @@ export interface Session {
   work: Work;
 }
 
+// 一起看过 · 点评室：讨论录音（原件永久保留）+ 转写 + AI 点评草稿
+export type RecordingStatus = 'uploaded' | 'transcribing' | 'summarizing' | 'ready' | 'error';
+export interface TranscriptTurn { speaker: string; start: number; text: string }
+export type SpeakerMap = Record<string, 1 | 2 | null>;
+export interface ReviewSideDraft { review: string; rating: number | null }
+export interface ReviewDraft {
+  speaker_map: SpeakerMap;
+  a: ReviewSideDraft;            // 用户 1
+  b: ReviewSideDraft;            // 用户 2
+  joint_note: string;
+  generated_at: number;
+}
+export interface ReviewRecording {
+  id: number;
+  kind: 'movie' | 'game';
+  work_id: number;
+  mime: string;
+  size_bytes: number;
+  duration_ms: number | null;
+  recorded_by: number | null;
+  status: RecordingStatus;
+  stage_message: string | null;
+  error: string | null;
+  transcript: TranscriptTurn[] | null;
+  speaker_map: SpeakerMap | null;   // 用户确认过的对应；null = 模型判断
+  draft: ReviewDraft | null;
+  applied_at: number | null;
+  created_at: number;
+  updated_at: number;
+  audio_url: string;
+}
+
 export interface PlanItem {
   id: number;
   work_id: number;
@@ -161,6 +193,7 @@ export interface ApiSettings {
   tmdb_ready: boolean;
   igdb_ready: boolean;
   steam_ready: boolean;
+  asr_ready?: boolean;
   [k: string]: string | boolean | undefined;
 }
 

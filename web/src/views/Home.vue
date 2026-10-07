@@ -11,17 +11,11 @@ import RecommendationSource from '../components/RecommendationSource.vue';
 import FeedbackBtns from '../components/FeedbackBtns.vue';
 import Priority from '../components/Priority.vue';
 import AddModal from '../components/AddModal.vue';
-import EditModal from '../components/EditModal.vue';
 import WatchedTimeline from '../components/WatchedTimeline.vue';
 import HorizontalRail from '../components/HorizontalRail.vue';
 import { ratingHref } from '../api/index';
 
 const router = useRouter();
-
-const editOpen = ref(false);
-const editType = ref('session');
-const editRecord = ref<any>(null);
-function openEdit(type: any, record: any) { editType.value = type; editRecord.value = record; editOpen.value = true; }
 
 const identity = useIdentity();
 
@@ -192,7 +186,7 @@ const planModalOpen = ref(false);
         </div>
       </div>
 
-      <WatchedTimeline :sessions="sessions.list" @edit="s => openEdit('session', s)" />
+      <WatchedTimeline :sessions="sessions.list" />
     </section>
 
     <!-- ③ 想看就一起看 -->
@@ -259,7 +253,6 @@ const planModalOpen = ref(false);
 
     <AddModal v-model="watchedModalOpen" initial-target="couple_watched" @added="sessions.load" />
     <AddModal v-model="planModalOpen" initial-target="couple_plan" @added="plan.load" />
-    <EditModal v-model="editOpen" :type="editType" :record="editRecord" @changed="editType === 'plan' ? plan.load() : sessions.load()" />
   </main>
 </template>
 

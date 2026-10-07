@@ -2,15 +2,10 @@
 import { onMounted, ref } from 'vue';
 import { useSessions } from '../stores/sessions';
 import AddModal from '../components/AddModal.vue';
-import EditModal from '../components/EditModal.vue';
 import TogetherReel from '../components/TogetherReel.vue';
 
 const sessions = useSessions();
 const modalOpen = ref(false);
-
-const editOpen = ref(false);
-const editRecord = ref<any>(null);
-function openEdit(s: any) { editRecord.value = s; editOpen.value = true; }
 
 onMounted(() => sessions.load());
 </script>
@@ -23,7 +18,7 @@ onMounted(() => sessions.load());
     <div class="page-hero">
       <span class="page-hero__kicker">Watched Together</span>
       <h1 class="page-hero__title">一起看过</h1>
-      <p class="page-hero__lead">我们一起看完的每一部，连同各自的评分和那天的日期。转动左边那卷胶片，一格格连续翻看过去的每个月。</p>
+      <p class="page-hero__lead">我们一起看完的每一部，连同各自的评分和那天的日期。转动左边那卷胶片，一格格连续翻看过去的每个月；点卡片上的话筒进点评室，边聊边录，自动写好两个人的点评。</p>
     </div>
 
     <div class="section__head section__head--together-actions">
@@ -40,10 +35,9 @@ onMounted(() => sessions.load());
       还没有一起看过的记录。
     </p>
 
-    <TogetherReel v-else :sessions="sessions.list" @edit="openEdit" />
+    <TogetherReel v-else :sessions="sessions.list" />
 
     <AddModal v-model="modalOpen" initial-target="couple_watched" @added="sessions.load" />
-    <EditModal v-model="editOpen" type="session" :record="editRecord" @changed="sessions.load" />
   </main>
 </template>
 

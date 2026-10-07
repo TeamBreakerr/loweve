@@ -11,6 +11,7 @@ import EditModal from '../components/EditModal.vue';
 import AddModal from '../components/AddModal.vue';
 import Priority from '../components/Priority.vue';
 import HotReviews from '../components/HotReviews.vue';
+import { fmtWatched } from '../utils/watchedDate';
 
 const route = useRoute();
 const router = useRouter();
@@ -64,6 +65,8 @@ async function removePlan() {
   await loadWork();
 }
 
+// 一起看过的这条记录：点评室入口（两人点评、讨论录音、纪要都在那里）
+const together = computed(() => work.value?.sessions?.[0] || null);
 const tags = computed(() => {
   if (!work.value) return [];
   try { return JSON.parse(work.value.genres || '[]'); } catch { return []; }
@@ -227,6 +230,20 @@ function goBack() {
         </div>
       </section>
 
+      <section v-if="together" class="section">
+        <div class="section__head"><h2 class="section__title">一起看过</h2></div>
+        <div class="together-bar">
+          <div class="together-bar__text">
+            <span class="together-bar__date">{{ together.watched_at ? fmtWatched(together.watched_at, ' 一起看完') : '一起看过' }}</span>
+            <p v-if="together.joint_note" class="together-bar__note">{{ together.joint_note }}</p>
+            <p v-else class="together-bar__hint">还没有讨论纪要。进点评室边聊边录，会自动整理出两个人的点评和纪要。</p>
+          </div>
+          <router-link class="btn btn--rose together-bar__go" :to="{ name: 'together-review', params: { id: together.id } }">
+            <svg class="btn__ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>一起点评
+          </router-link>
+        </div>
+      </section>
+
       <section v-if="work.all_marks.length" class="section">
         <div class="section__head"><h2 class="section__title">各自的记录</h2></div>
         <div class="record-grid">
@@ -351,6 +368,13 @@ function goBack() {
 .state-note{ text-align:center; padding:var(--s-8); }
 .state-note--faint{ color:var(--text-faint); }
 .state-note--error{ color:var(--rose-bright); }
+.together-bar{ display:flex; align-items:center; gap:var(--s-5); background:var(--surface); border:1px solid var(--line-soft); border-left:3px solid var(--rose); border-radius:var(--r-lg); padding:var(--s-4) var(--s-5); }
+.together-bar__text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+.together-bar__date{ font-size:var(--fs-sm); color:var(--text-faint); }
+.together-bar__note{ color:var(--text-dim); line-height:1.7; white-space:pre-line; }
+.together-bar__hint{ color:var(--text-faint); font-size:var(--fs-sm); line-height:1.6; }
+.together-bar__go{ flex-shrink:0; }
+@media (max-width:680px){ .together-bar{ flex-direction:column; align-items:stretch; } .together-bar__go{ justify-content:center; } }
 .plan-active-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-4); background:var(--surface); border-radius:var(--r-lg); padding:var(--s-4) var(--s-5); }
 .plan-active-bar__label{ font-size:var(--fs-sm); color:var(--text-dim); }
 .plan-active-bar__actions{ display:flex; gap:var(--s-2); margin-left:auto; }

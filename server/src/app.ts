@@ -21,8 +21,9 @@ import { settingsRoutes } from './routes/settings.js';
 import { trashRoutes } from './routes/trash.js';
 import { chartsRoutes } from './charts/routes.js';
 import { gameRoutes } from './games/routes.js';
+import { reviewRecordingsRoutes } from './routes/reviewRecordings.js';
 
-export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidata, recommendationAgent }: { db: any; tmdb?: any; bangumi?: any; douban?: any; llm?: any; steam?: any; igdb?: any; wikidata?: any; recommendationAgent?: any }) {
+export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidata, recommendationAgent, recordings, recordingDir }: { db: any; tmdb?: any; bangumi?: any; douban?: any; llm?: any; steam?: any; igdb?: any; wikidata?: any; recommendationAgent?: any; recordings?: any; recordingDir?: string }) {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
@@ -38,6 +39,8 @@ export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidat
   app.locals.igdb = igdb;
   app.locals.wikidata = wikidata;
   app.locals.recommendationAgent = recommendationAgent;
+  app.locals.recordings = recordings;     // 讨论录音后台处理器（转写 + 生成点评）
+  app.locals.recordingDir = recordingDir; // 测试用临时目录；缺省走 paths.recordingDir
 
   // API 路由
   app.use('/api/health', healthRoutes());
@@ -50,6 +53,7 @@ export function createApp({ db, tmdb, bangumi, douban, llm, steam, igdb, wikidat
   app.use('/api/works', worksRoutes());            // ← 新增
   app.use('/api/marks', marksRoutes());           // ← 新增
   app.use('/api/sessions', sessionsRoutes());      // ← 新增
+  app.use('/api', reviewRecordingsRoutes());       // 点评室：/sessions/:id/recordings、/sessions/:id/joint-review、/recordings/:rid/…
   app.use('/api/plan', planRoutes());              // ← 新增
   app.use('/api/recos', recosRoutes());            // ← 新增
   app.use('/api/settings', settingsRoutes());      // 运行时服务配置（LLM/TMDB/Bangumi 凭证）

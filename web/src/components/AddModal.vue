@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { api, tmdbPoster, imgProxy } from '../api/index';
 import { useIdentity } from '../stores/identity';
 import ScorePicker from './ScorePicker.vue';
@@ -13,6 +14,7 @@ const props = defineProps({
   fromPlan: { type: Object, default: null },             // 可选：{id, work} 触发闭环模式
 });
 const emit = defineEmits(['update:modelValue', 'added']);
+const router = useRouter();
 
 const identity = useIdentity();
 
@@ -333,8 +335,6 @@ async function save() {
         body: JSON.stringify({
           ...(props.fromPlan ? {} : workRef),
           watched_at: watchedAt.value,
-          rating: cleanRating(rating.value),
-          review: comment.value || null,
         }),
       });
     } else if (target.value === 'couple_plan') {
@@ -351,7 +351,10 @@ async function save() {
     emit('added', { target: target.value, result });
     // 从榜单挑的：不关窗，回到榜单原来的位置继续往下补（列表用 v-show 保留滚动位置）
     if (selected.value._chart) { stayOnChart(selected.value.title); return; }
+    // 一起看过：两人的评分和点评都在点评室里写（可以边聊边录自动生成），加完直接过去
+    const reviewSessionId = target.value === 'couple_watched' ? result?.id : null;
     close();
+    if (reviewSessionId) router.push({ name: 'together-review', params: { id: reviewSessionId } });
   } catch (e) {
     saveError.value = e.body?.error || e.message;
     if (ERROR_LABELS[saveError.value]) duplicateError.value = saveError.value;
@@ -493,11 +496,10 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
               <span class="field__label"><span class="step">{{ fromPlan ? 1 : 3 }}</span>看完日期（留空默认今天，也可只记到年或月）</span>
               <DatePicker v-model="watchedAt" />
             </div>
-            <div class="field">
-              <span class="field__label"><span class="step">{{ fromPlan ? 2 : 4 }}</span>{{ identity.viewingName }} 这侧（可选）</span>
-              <ScorePicker v-model="rating" :label="`${identity.viewingName} 的评分`" />
-              <textarea class="review-input review-input--gap" v-model="comment" :placeholder="`${identity.viewingName} 的短评…`"></textarea>
-            </div>
+            <p class="couple-review-hint">
+              <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+              两个人的评分和点评，添加后在点评室里一起写——可以边聊边录，自动整理成各自的点评。
+            </p>
           </div>
 
           <!-- 想看就一起看（只需选优先级，备注/状态都不再维护）-->
@@ -574,6 +576,8 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
 .result__original-title{ color:var(--text-faint); font-weight:400; margin-left:6px; }
 .result__via{ color:var(--rose); font-weight:500; }
 .review-input--gap{ margin-top:var(--s-3); }
+.couple-review-hint{ display:flex; align-items:flex-start; gap:var(--s-2); margin-top:var(--s-2); padding:var(--s-3) var(--s-4); border-radius:var(--r-md); background:var(--rose-tint); border:1px solid var(--rose-line); color:var(--text-dim); font-size:var(--fs-sm); line-height:1.6; }
+.couple-review-hint svg{ width:16px; height:16px; flex-shrink:0; margin-top:3px; stroke:var(--rose); fill:none; stroke-width:1.8; }
 .plan-prio-opt{ flex:0 0 auto; padding:6px 12px; }
 .save-error{ color:var(--rose-bright); font-size:var(--fs-sm); }
 .duplicate-note{ padding:9px 12px; border-radius:var(--r-md); font-size:var(--fs-sm); }

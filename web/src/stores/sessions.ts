@@ -28,10 +28,18 @@ export const useSessions = defineStore('sessions', () => {
     return updated;
   }
 
+  // 点评室：两人点评 + 讨论纪要一次保存（录音生成的草稿确认后也走这里）
+  async function jointReview(id: number, payload: any) {
+    const updated = await api(`/api/sessions/${id}/joint-review`, { method: 'PUT', body: JSON.stringify(payload) });
+    const idx = list.value.findIndex(s => s.id === id);
+    if (idx >= 0) list.value[idx] = { ...list.value[idx], ...updated };
+    return updated;
+  }
+
   async function remove(id: any) {
     await api(`/api/sessions/${id}`, { method: 'DELETE' });
     list.value = list.value.filter(s => s.id !== id);
   }
 
-  return { list, loading, load, add, update, remove };
+  return { list, loading, load, add, update, jointReview, remove };
 });
