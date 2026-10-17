@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import RecommendationSource from '../../components/RecommendationSource.vue';
+import RecommendationReason from '../../components/RecommendationReason.vue';
+import { recommendationTooltip, recommendationReason } from '../../utils/recommendationDisplay';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGameRecos } from '../../stores/gameRecos';
@@ -75,18 +76,17 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
       </p>
       <p v-if="recos.error && !recos.items.length && !recos.loading" class="game-empty">{{ recos.errorMessage || (recos.error === 'llm_unconfigured' ? 'AI 推荐尚未启用，可先手动添加游戏。' : '游戏推荐暂时不可用，请稍后重试。') }}</p>
 
-      <p v-if="recos.discovery?.note" class="game-empty">{{ recos.discovery.note }}</p>
       <template v-if="recos.items.length">
         <div class="game-rank-top">
-          <article v-if="hero" class="game-rank game-rank--hero">
+          <article :title="recommendationTooltip(hero)" v-if="hero" class="game-rank game-rank--hero">
             <span class="game-rank__num">01</span><GamePoster :url="hero.poster_url" :fallback="hero.header_url" :state="hero.release_state" @click="work(hero.work_id)" />
-            <div class="game-rank__body"><span class="game-rank__label">TOP MATCH</span><h3 @click="work(hero.work_id)">{{ hero.title }}</h3><GameContentBadge :work="hero"/><p v-if="hero.original_title" class="game-rank__original">{{ hero.original_title }}</p><div class="game-reco-facts"><span v-for="fact in facts(hero)" :key="fact">{{ fact }}</span></div><div class="game-rank__meta"><GameRating :work="hero"/><GamePrice :work="hero"/><span v-if="hero.supports_together" class="game-chip">双人可玩</span></div><div class="game-rank__reason"><span>WHY THIS GAME</span><p>{{ hero.reason }}</p><RecommendationSource :evidence="hero.evidence" /><small v-if="hero.confidence_note">{{ hero.confidence_note }}</small></div><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(hero,'want')" @no="feedback(hero,'no')" @seen="feedback(hero,'seen')"/></div></div>
+            <div class="game-rank__body"><span class="game-rank__label">TOP MATCH</span><h3 @click="work(hero.work_id)">{{ hero.title }}</h3><GameContentBadge :work="hero"/><p v-if="hero.original_title" class="game-rank__original">{{ hero.original_title }}</p><div class="game-reco-facts"><span v-for="fact in facts(hero)" :key="fact">{{ fact }}</span></div><div class="game-rank__meta"><GameRating :work="hero"/><GamePrice :work="hero"/><span v-if="hero.supports_together" class="game-chip">双人可玩</span></div><div class="game-rank__reason"><span>WHY THIS GAME</span><RecommendationReason :text="recommendationReason(hero)" :work-title="hero.title" /><small v-if="hero.confidence_note">{{ hero.confidence_note }}</small></div><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(hero,'want')" @no="feedback(hero,'no')" @seen="feedback(hero,'seen')"/></div></div>
           </article>
           <div class="game-rank-mids">
-            <article v-for="(item,index) in mids" :key="item.id" class="game-rank game-rank--mid"><span class="game-rank__num">0{{ index + 2 }}</span><GamePoster :url="item.poster_url" :fallback="item.header_url" :state="item.release_state" @click="work(item.work_id)"/><div class="game-rank__body"><h3 @click="work(item.work_id)">{{ item.title }}</h3><GameContentBadge :work="item"/><div class="game-reco-facts"><span v-for="fact in facts(item)" :key="fact">{{ fact }}</span></div><div class="game-rank__meta"><GameRating :work="item" compact/><GamePrice :work="item"/></div><p class="game-rank__reason-small">{{ item.reason }}</p><RecommendationSource :evidence="item.evidence" /><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(item,'want')" @no="feedback(item,'no')" @seen="feedback(item,'seen')"/></div></div></article>
+            <article :title="recommendationTooltip(item)" v-for="(item,index) in mids" :key="item.id" class="game-rank game-rank--mid"><span class="game-rank__num">0{{ index + 2 }}</span><GamePoster :url="item.poster_url" :fallback="item.header_url" :state="item.release_state" @click="work(item.work_id)"/><div class="game-rank__body"><h3 @click="work(item.work_id)">{{ item.title }}</h3><GameContentBadge :work="item"/><div class="game-reco-facts"><span v-for="fact in facts(item)" :key="fact">{{ fact }}</span></div><div class="game-rank__meta"><GameRating :work="item" compact/><GamePrice :work="item"/></div><RecommendationReason class="game-rank__reason-small" :text="recommendationReason(item)" :work-title="item.title" /><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(item,'want')" @no="feedback(item,'no')" @seen="feedback(item,'seen')"/></div></div></article>
           </div>
         </div>
-        <div class="game-rank-rail"><div v-for="(row,rowIndex) in miniRows" :key="rowIndex" class="game-rank-rail__row"><article v-for="(item,index) in row" :key="item.id" class="game-mini"><div class="game-mini__poster"><span>{{ String(miniRank(rowIndex,index)).padStart(2,'0') }}</span><GamePoster :url="item.poster_url" :fallback="item.header_url" :state="item.release_state" @click="work(item.work_id)"/><div v-if="item.reason" class="game-mini__reason"><span class="game-mini__reason-hd"><svg viewBox="0 0 24 24"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>为什么推给你们</span><p>{{ item.reason }}</p><RecommendationSource :evidence="item.evidence" /></div></div><div class="game-mini__body"><h4 @click="work(item.work_id)">{{ item.title }}</h4><GameContentBadge :work="item" compact/><div class="game-reco-facts"><span v-for="fact in facts(item)" :key="fact">{{ fact }}</span></div><div class="game-mini__meta"><GameRating :work="item" compact/><GamePrice :work="item"/></div><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(item,'want')" @no="feedback(item,'no')" @seen="feedback(item,'seen')"/></div></div></article></div></div>
+        <div class="game-rank-rail"><div v-for="(row,rowIndex) in miniRows" :key="rowIndex" class="game-rank-rail__row"><article :title="recommendationTooltip(item)" v-for="(item,index) in row" :key="item.id" class="game-mini"><div class="game-mini__poster"><span>{{ String(miniRank(rowIndex,index)).padStart(2,'0') }}</span><GamePoster :url="item.poster_url" :fallback="item.header_url" :state="item.release_state" @click="work(item.work_id)"/><div v-if="item.reason" class="game-mini__reason"><span class="game-mini__reason-hd"><svg viewBox="0 0 24 24"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>为什么推给你们</span><p>{{ recommendationReason(item) }}</p></div></div><div class="game-mini__body"><h4 @click="work(item.work_id)">{{ item.title }}</h4><GameContentBadge :work="item" compact/><div class="game-reco-facts"><span v-for="fact in facts(item)" :key="fact">{{ fact }}</span></div><div class="game-mini__meta"><GameRating :work="item" compact/><GamePrice :work="item"/></div><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(item,'want')" @no="feedback(item,'no')" @seen="feedback(item,'seen')"/></div></div></article></div></div>
       </template>
     </section>
 
@@ -281,6 +281,7 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
 }
 
 .game-rank__body {
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -344,12 +345,17 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
 }
 
 .game-rank__reason {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   width: 100%;
   margin-top: 5px;
   padding: var(--s-4);
   border-left: 2px solid var(--game-accent);
   background: linear-gradient(90deg, var(--game-tint), transparent);
 }
+
+.game-rank__reason > span, .game-rank__reason > small { flex-shrink: 0; }
 
 .game-rank__reason span {
   color: var(--game-accent);
@@ -402,13 +408,11 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
 }
 
 .game-rank__reason-small {
-  display: -webkit-box;
-  overflow: hidden;
+  min-height: 0;
   color: var(--text-dim);
   font-size: 12px;
   line-height: 1.45;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+
 }
 
 .game-rank--mid .game-rank__actions {
@@ -553,8 +557,7 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
   padding-right: 0;
   font-size: 16px;
   line-height: 1.3;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+
   cursor: pointer;
 }
 
@@ -731,15 +734,12 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
   }
 
   .game-rank__reason {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
     padding: var(--s-3);
   }
 
-  .game-rank__reason p {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
 
   .game-rank__reason small {
     display: none;

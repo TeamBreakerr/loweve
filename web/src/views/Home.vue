@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RecommendationReason from '../components/RecommendationReason.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRecos } from '../stores/recos';
@@ -7,7 +8,7 @@ import { usePlan } from '../stores/plan';
 import { useIdentity } from '../stores/identity';
 import Poster from '../components/Poster.vue';
 import Rating from '../components/Rating.vue';
-import RecommendationSource from '../components/RecommendationSource.vue';
+import { recommendationTooltip, recommendationReason } from '../utils/recommendationDisplay';
 import FeedbackBtns from '../components/FeedbackBtns.vue';
 import Priority from '../components/Priority.vue';
 import AddModal from '../components/AddModal.vue';
@@ -110,12 +111,11 @@ const planModalOpen = ref(false);
       <p v-if="!recos.items.length && !recos.loading && !recos.generating" class="reco-empty-note">
         {{ recos.errorMessage || (recos.error === 'llm_unconfigured' ? '推荐未启用' : '推荐暂时不可用，点右上角换一批重试') }}
       </p>
-      <p v-if="recos.discovery?.note" class="reco-empty-note">{{ recos.discovery.note }}</p>
       <template v-if="recos.items.length">
 
       <!-- 1 号大卡 + 2/3 号中卡 -->
       <div class="reco-top">
-        <article v-if="hero" class="rk rk-hero">
+        <article :title="recommendationTooltip(hero)" v-if="hero" class="rk rk-hero">
           <span class="rk-num">1</span>
           <Poster :color="'#2a2a30'" :url="hero.poster_url" :kind="hero.is_anime ? '番剧' : ''" @click="openWork(hero)" />
           <div class="rk-hero__body">
@@ -129,19 +129,19 @@ const planModalOpen = ref(false);
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>
                 为什么推给你们
               </span>
-              <div>{{ hero.reason }}</div><RecommendationSource :evidence="hero.evidence" />
+              <RecommendationReason :text="recommendationReason(hero)" :work-title="hero.title" />
             </div>
             <div class="rk-actions"><FeedbackBtns @want="onFeedback(hero,'want')" @no="onFeedback(hero,'no')" @seen="onFeedback(hero,'seen')" /></div>
           </div>
         </article>
         <div class="rk-mids">
-          <article v-for="(d, i) in mids" :key="d.id" class="rk rk-mid">
+          <article :title="recommendationTooltip(d)" v-for="(d, i) in mids" :key="d.id" class="rk rk-mid">
             <span class="rk-num">{{ i + 2 }}</span>
             <Poster :color="'#2a2a30'" :url="d.poster_url" :kind="d.is_anime ? '番剧' : ''" @click="openWork(d)" />
             <div class="rk-mid__body">
               <h3 class="rk-mid__title" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h3>
               <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" class="rk-rating" />
-              <div class="rk-reason">{{ d.reason }}</div><RecommendationSource :evidence="d.evidence" />
+              <RecommendationReason class="rk-reason" :text="recommendationReason(d)" :work-title="d.title" />
               <div class="rk-actions"><FeedbackBtns @want="onFeedback(d,'want')" @no="onFeedback(d,'no')" @seen="onFeedback(d,'seen')" /></div>
             </div>
           </article>
@@ -150,7 +150,7 @@ const planModalOpen = ref(false);
 
       <!-- 4–10 名横向小卡 -->
       <div class="reco-rail">
-        <article v-for="(d, i) in minis" :key="d.id" class="rk-mini">
+        <article :title="recommendationTooltip(d)" v-for="(d, i) in minis" :key="d.id" class="rk-mini">
           <div class="rk-mini__pw">
             <span class="rk-num">{{ i + 4 }}</span>
             <Poster :color="'#2a2a30'" :url="d.poster_url" :kind="d.is_anime ? '番剧' : ''" @click="openWork(d)" />
@@ -159,10 +159,10 @@ const planModalOpen = ref(false);
                 <svg viewBox="0 0 24 24"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>
                 为什么推给你们
               </span>
-              <p>{{ d.reason }}</p>
+              <p>{{ recommendationReason(d) }}</p>
             </div>
           </div>
-          <div class="rk-mini__body"><RecommendationSource :evidence="d.evidence" />
+          <div class="rk-mini__body">
             <h4 class="rk-mini__title" @click="openWork(d)">{{ d.title }} <span class="year">{{ d.year }}</span></h4>
             <Rating :source="d.rating_source" :score="d.primary_rating ? d.primary_rating.toFixed(1) : '—'" :href="ratingHref(d)" class="rk-rating" />
             <div class="rk-mini__foot"><FeedbackBtns @want="onFeedback(d,'want')" @no="onFeedback(d,'no')" @seen="onFeedback(d,'seen')" /></div>
@@ -337,7 +337,8 @@ const planModalOpen = ref(false);
 .rk-hero__title .year{ color:var(--text-faint); font-weight:400; font-family:var(--font-sans); font-size:var(--fs-md); }
 .rk-meta{ display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
 .rk-reason{ font-size:var(--fs-body); line-height:1.6; color:var(--text-dim); }
-.rk-reason .label{ display:inline-flex; align-items:center; gap:6px; color:var(--rose); font-size:var(--fs-sm); margin-bottom:6px; }
+.rk-hero__body > .rk-reason{ display:flex; flex-direction:column; min-height:0; }
+.rk-reason .label{ flex-shrink:0; display:inline-flex; align-items:center; gap:6px; color:var(--rose); font-size:var(--fs-sm); margin-bottom:6px; }
 .rk-reason .label svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; }
 .rk-actions{ display:flex; gap:var(--s-2); margin-top:auto; justify-content:flex-end; flex:0 0 auto; }   /* 反馈按钮不参与收缩：卡片高度紧张时挤走的必须是评语，不能是按钮 */
 
@@ -353,8 +354,7 @@ const planModalOpen = ref(false);
    不需要钳制（见下方 max-width:860px）。*/
 .rk-mid .rk-reason{
   font-size:var(--fs-sm); line-height:1.5;
-  display:-webkit-box; overflow:hidden; min-height:0;
-  -webkit-box-orient:vertical; -webkit-line-clamp:3;
+  min-height:0;
 }
 .rk-mid .rk-actions{ gap:6px; }
 
@@ -401,7 +401,7 @@ const planModalOpen = ref(false);
   .reco-top{ grid-template-columns:1fr; min-height:0; }
   .rk-mid{ gap:var(--s-4); padding:var(--s-4); }
   .rk-mid__body{ padding:0; }
-  .rk-mid .rk-reason{ display:block; overflow:visible; -webkit-line-clamp:none; }
+  .rk-mid .rk-reason{ overflow:visible; }
 }
 @media (max-width:680px){
   .rk-hero{ flex-direction:column; gap:var(--s-4); }
