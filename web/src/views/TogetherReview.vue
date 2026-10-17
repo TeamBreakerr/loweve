@@ -19,6 +19,7 @@ import {
 } from '../utils/reviewRoom';
 import { vAutoGrow } from '../directives/autoGrow';
 import Poster from '../components/Poster.vue';
+import TapePlayer from '../components/TapePlayer.vue';
 import ScorePicker from '../components/ScorePicker.vue';
 import DatePicker from '../components/DatePicker.vue';
 import type { ReviewRecording, SpeakerMap } from '../types';
@@ -286,20 +287,6 @@ async function regenerate(r: ReviewRecording) {
   schedulePoll();
 }
 
-// MediaRecorder 录的 webm 不带总时长（Chrome 的老问题），播放器拿到 Infinity：显示 0:00、进度条拖不动。
-// 先跳到极远处逼浏览器读到文件尾算出真实时长，再跳回开头。
-function fixInfiniteDuration(e: Event) {
-  const a = e.target as HTMLAudioElement;
-  if (Number.isFinite(a.duration)) return;
-  const back = () => {
-    if (!Number.isFinite(a.duration)) return;
-    a.removeEventListener('durationchange', back);
-    a.currentTime = 0;
-  };
-  a.addEventListener('durationchange', back);
-  a.currentTime = 1e101;
-}
-
 function fmtDateTime(ms: number) {
   const d = new Date(ms);
   return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -504,12 +491,11 @@ onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
         <article v-for="r in recordings" :key="r.id" class="rr-tape" :class="`is-${r.status}`">
           <div class="rr-tape__meta">
             <strong>{{ fmtDateTime(r.created_at) }}</strong>
-            <span v-if="r.duration_ms">{{ fmtClock(r.duration_ms / 1000) }}</span>
             <span>{{ fmtBytes(r.size_bytes) }}</span>
             <span class="rr-chip" :class="`rr-chip--${r.status}`">{{ statusLabel(r) }}</span>
             <a class="rr-link rr-tape__dl" :href="`${r.audio_url}?download=1`">下载</a>
           </div>
-          <audio class="rr-tape__audio" :src="r.audio_url" controls preload="metadata" @loadedmetadata="fixInfiniteDuration"></audio>
+          <TapePlayer :src="r.audio_url" :duration-hint="r.duration_ms ? r.duration_ms / 1000 : undefined" />
           <p v-if="r.status === 'error'" class="rr-note rr-note--error">{{ r.stage_message }} <button class="rr-link" @click="retry(r)">重试</button></p>
           <p v-else-if="isProcessing(r.status)" class="rr-note">{{ r.stage_message || '处理中…' }}</p>
 
@@ -659,7 +645,6 @@ onBeforeUnmount(() => { if (pollTimer) clearTimeout(pollTimer); });
 .rr-tape__meta{ display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap; font-size:var(--fs-sm); color:var(--text-faint); }
 .rr-tape__meta strong{ color:var(--text); font-weight:600; }
 .rr-tape__dl{ margin-left:auto; font-size:var(--fs-sm); }
-.rr-tape__audio{ width:100%; height:40px; }
 .rr-tape__actions{ display:flex; gap:var(--s-2); flex-wrap:wrap; }
 .rr-chip{ font-size:var(--fs-cap); padding:2px 8px; border-radius:var(--r-pill); border:1px solid var(--line); }
 .rr-chip--ready{ color:var(--rose); border-color:var(--rose-line); background:var(--rose-tint); }
