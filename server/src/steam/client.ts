@@ -63,7 +63,7 @@ export function parseRecentReviewSummary(html: any) {
 
 function shanghaiDateParts(now: number) {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
   }).formatToParts(new Date(now));
   const value = (type: string) => Number(parts.find(part => part.type === type)?.value);
   return { year: value('year'), month: value('month'), day: value('day') };
