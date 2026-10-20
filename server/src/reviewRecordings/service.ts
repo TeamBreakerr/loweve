@@ -132,10 +132,10 @@ export function buildReviewMessages({ title, year, nameA, nameB, turns, speakerM
     '{"speaker_map": {"<说话人标签>": "A" | "B" | null}, "A": {"review": "…", "rating": 整数或null}, "B": {"review": "…", "rating": 整数或null}, "joint_note": "…"}',
     '',
     '要求：',
-    `- review：分别以 ${nameA}、${nameB} 自己的第一人称写，一段 3–6 句的总结式点评。保留他自己的观点、喜欢和不喜欢的地方、举的具体例子和说话的味道；不要把对方的观点算到他头上。他几乎没表态时就写短一点，如实反映。`,
+    `- review：分别以 ${nameA}、${nameB} 自己的第一人称写总结式点评，按聊到的话题分成 2–4 个自然段，每段 2–4 句、只讲一件事（比如总体感受和打分、喜欢和不喜欢的地方、对结尾或某段情节的看法），段与段之间空一行（JSON 字符串里写 \\n\\n）。保留他自己的观点、举的具体例子和说话的味道；不要把对方的观点算到他头上。他几乎没表态时就只写一段短的，如实反映。`,
     `- 转写里的人名、片名、角色名可能被识别成同音字（比如把「${nameA}」「${nameB}」听成别的字），写点评和纪要时改回正确写法，不要照抄错字。`,
     '- rating：只有他在讨论里明确说出给几分时才填，换算成 1–10 的整数（十分制直接用，五星制 ×2，百分制 ÷10，四舍五入）；没明确说就填 null，不要根据语气猜。',
-    `- joint_note：两人讨论的纪要，第三人称，用「${nameA}」「${nameB}」称呼，3–8 句，写聊了哪些点、分歧在哪、有什么共识。`,
+    `- joint_note：两人讨论的纪要，第三人称，用「${nameA}」「${nameB}」称呼，写聊了哪些点、分歧在哪、有什么共识；同样按话题分成 2–4 段、每段 2–4 句，段间空一行。`,
   ].join('\n');
   return [{ role: 'system', content: system }, { role: 'user', content: user }];
 }
@@ -146,8 +146,14 @@ function normRating(v: any): number | null {
   return Number.isFinite(n) && n >= 1 && n <= 10 ? n : null;
 }
 
+// 分段统一成段间一个空行（模型有时只给单换行、或多转义成字面的 \n）
+function paragraphs(v: any) {
+  if (typeof v !== 'string') return '';
+  return v.replace(/\\n/g, '\n').split(/\n+/).map(s => s.trim()).filter(Boolean).join('\n\n');
+}
+
 function side(v: any): SideDraft {
-  return { review: typeof v?.review === 'string' ? v.review.trim() : '', rating: normRating(v?.rating) };
+  return { review: paragraphs(v?.review), rating: normRating(v?.rating) };
 }
 
 // 模型没给出可用对应时的兜底：按发言量取前两位
@@ -173,7 +179,7 @@ export function normalizeDraft(raw: any, turns: TranscriptTurn[], fixedMap?: Spe
     speaker_map: speakerMap,
     a: side(raw?.A ?? raw?.a),
     b: side(raw?.B ?? raw?.b),
-    joint_note: typeof raw?.joint_note === 'string' ? raw.joint_note.trim() : '',
+    joint_note: paragraphs(raw?.joint_note),
     generated_at: now,
   };
 }

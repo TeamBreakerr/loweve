@@ -118,6 +118,15 @@ describe('点评草稿归一', () => {
     });
   });
 
+  it('点评和纪要的分段统一成段间一个空行；字面 \\n 也当换行', () => {
+    const d = normalizeDraft({
+      A: { review: ' 第一段。\n第二段。 \n\n\n 第三段。' }, B: { review: '一段。\\n\\n另一段。' }, joint_note: '聊了结尾。\n\n分歧在节奏。\n',
+    }, TURNS);
+    assert.equal(d.a.review, '第一段。\n\n第二段。\n\n第三段。');
+    assert.equal(d.b.review, '一段。\n\n另一段。');
+    assert.equal(d.joint_note, '聊了结尾。\n\n分歧在节奏。');
+  });
+
   it('模型没给对应时按发言量兜底；字符串评分也接受', () => {
     const d = normalizeDraft({ A: { review: 'x', rating: '9' } }, [
       { speaker: '1', start: 0, text: '短' }, { speaker: '2', start: 1, text: '这一位说得多得多得多' },
@@ -137,6 +146,7 @@ describe('点评草稿归一', () => {
     assert.match(user.content, /A = ff，B = xsq/);
     assert.match(user.content, /\[00:03\] 说话人1：我觉得结尾/);
     assert.match(user.content, /说话人1 = xsq（B）；说话人2 = ff（A）/);
+    assert.match(user.content, /review：.*分成 2–4 个自然段.*\\n\\n/);
   });
 
   it('parseJsonObject 剥代码块、拒绝数组', () => {
