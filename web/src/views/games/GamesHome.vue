@@ -86,7 +86,7 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
             <article :title="recommendationTooltip(item)" v-for="(item,index) in mids" :key="item.id" class="game-rank game-rank--mid"><span class="game-rank__num">0{{ index + 2 }}</span><GamePoster :url="item.poster_url" :fallback="item.header_url" :state="item.release_state" @click="work(item.work_id)"/><div class="game-rank__body"><h3 @click="work(item.work_id)">{{ item.title }}</h3><GameContentBadge :work="item"/><div class="game-reco-facts"><span v-for="fact in facts(item)" :key="fact">{{ fact }}</span></div><div class="game-rank__meta"><GameRating :work="item" compact/><GamePrice :work="item"/></div><RecommendationReason class="game-rank__reason-small" :text="recommendationReason(item)" :work-title="item.title" /><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(item,'want')" @no="feedback(item,'no')" @seen="feedback(item,'seen')"/></div></div></article>
           </div>
         </div>
-        <div class="game-rank-rail"><div v-for="(row,rowIndex) in miniRows" :key="rowIndex" class="game-rank-rail__row"><article :title="recommendationTooltip(item)" v-for="(item,index) in row" :key="item.id" class="game-mini"><div class="game-mini__poster"><span>{{ String(miniRank(rowIndex,index)).padStart(2,'0') }}</span><GamePoster :url="item.poster_url" :fallback="item.header_url" :state="item.release_state" @click="work(item.work_id)"/><div v-if="item.reason" class="game-mini__reason"><span class="game-mini__reason-hd"><svg viewBox="0 0 24 24"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>为什么推给你们</span><p>{{ recommendationReason(item) }}</p></div></div><div class="game-mini__body"><h4 @click="work(item.work_id)">{{ item.title }}</h4><GameContentBadge :work="item" compact/><div class="game-reco-facts"><span v-for="fact in facts(item)" :key="fact">{{ fact }}</span></div><div class="game-mini__meta"><GameRating :work="item" compact/><GamePrice :work="item"/></div><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(item,'want')" @no="feedback(item,'no')" @seen="feedback(item,'seen')"/></div></div></article></div></div>
+        <div class="game-rank-rail"><div v-for="(row,rowIndex) in miniRows" :key="rowIndex" class="game-rank-rail__row"><article :title="recommendationTooltip(item)" v-for="(item,index) in row" :key="item.id" class="game-mini"><div class="game-mini__poster"><span>{{ String(miniRank(rowIndex,index)).padStart(2,'0') }}</span><GamePoster :url="item.poster_url" :fallback="item.header_url" :state="item.release_state" @click="work(item.work_id)"/><div v-if="item.reason" class="game-mini__reason" @click="work(item.work_id)"><span class="game-mini__reason-hd"><svg viewBox="0 0 24 24"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>为什么推给你们</span><p>{{ recommendationReason(item) }}</p></div></div><div class="game-mini__body"><h4 @click="work(item.work_id)">{{ item.title }}</h4><GameContentBadge :work="item" compact/><div class="game-reco-facts"><span v-for="fact in facts(item)" :key="fact">{{ fact }}</span></div><div class="game-mini__meta"><GameRating :work="item" compact/><GamePrice :work="item"/></div><div class="game-rank__actions"><FeedbackBtns want-label="想和你一起玩" seen-label="玩过" @want="feedback(item,'want')" @no="feedback(item,'no')" @seen="feedback(item,'seen')"/></div></div></article></div></div>
       </template>
     </section>
 
@@ -482,9 +482,10 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
   text-shadow: 0 2px 10px var(--bg);
 }
 
-/* 与影视推荐一致：第 4 名以后把推荐理由收进封面悬浮层。 */
+/* 与影视推荐一致：第 4 名以后把推荐理由收进封面悬浮层；悬浮时接管指针可滚动，点浮层同点封面。 */
 .game-mini__reason {
   position: absolute;
+  cursor: pointer;
   inset: 0;
   z-index: 3;
   display: flex;
@@ -504,6 +505,7 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
   opacity: 1;
   transform: translateY(0);
   transition-delay: .4s;
+  pointer-events: auto;
 }
 
 .game-mini__reason-hd {
@@ -533,6 +535,9 @@ function miniRank(rowIndex: number, index: number) { return miniRows.value.slice
   font-size: 13px;
   line-height: 1.52;
   scrollbar-width: none;
+  padding-bottom: 16px;
+  -webkit-mask: linear-gradient(180deg, #000 calc(100% - 24px), transparent);
+  mask: linear-gradient(180deg, #000 calc(100% - 24px), transparent);
 }
 
 .game-mini__reason p::-webkit-scrollbar {

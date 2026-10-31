@@ -154,7 +154,7 @@ const planModalOpen = ref(false);
           <div class="rk-mini__pw">
             <span class="rk-num">{{ i + 4 }}</span>
             <Poster :color="'#2a2a30'" :url="d.poster_url" :kind="d.is_anime ? '番剧' : ''" @click="openWork(d)" />
-            <div v-if="d.reason" class="rk-mini__reason">
+            <div v-if="d.reason" class="rk-mini__reason" @click="openWork(d)">
               <span class="rk-mini__reason-hd">
                 <svg viewBox="0 0 24 24"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/></svg>
                 为什么推给你们
@@ -365,8 +365,10 @@ const planModalOpen = ref(false);
 .rk-mini{ background:var(--surface); border-radius:var(--r-md); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
 .rk-mini:hover{ transform:translateY(-4px); }
 .rk-mini__pw{ position:relative; }
-/* 小卡推荐评语：悬浮 ~0.4s 后磨砂玻璃浮层上滑淡入，移开即收 */
+/* 小卡推荐评语：悬浮 ~0.4s 后磨砂玻璃浮层上滑淡入，移开即收。悬浮时浮层接管指针，
+   评语超长可直接滚轮/触摸滚动（不显示滚动条，底部渐隐提示还有），点浮层同点海报。*/
 .rk-mini__reason{
+  cursor:pointer;
   position:absolute; inset:0; z-index:2; padding:13px 13px 14px;
   display:flex; flex-direction:column; gap:8px;
   background:linear-gradient(180deg, oklch(0.15 0.025 25 / 0.74), oklch(0.10 0.02 28 / 0.97) 58%);
@@ -374,7 +376,7 @@ const planModalOpen = ref(false);
   opacity:0; pointer-events:none; transform:translateY(8px);
   transition:opacity .28s ease, transform .28s ease;
 }
-.rk-mini:hover .rk-mini__reason{ opacity:1; transform:translateY(0); transition-delay:.4s; }
+.rk-mini:hover .rk-mini__reason{ opacity:1; transform:translateY(0); transition-delay:.4s; pointer-events:auto; }
 .rk-mini__reason-hd{
   display:inline-flex; align-items:center; gap:5px; flex:0 0 auto;
   color:var(--rose); font-size:12px; font-weight:700; letter-spacing:.02em;
@@ -382,8 +384,11 @@ const planModalOpen = ref(false);
 .rk-mini__reason-hd svg{ width:13px; height:13px; fill:var(--rose); stroke:none; }
 .rk-mini__reason p{
   margin:0; color:oklch(0.93 0.012 60); font-size:var(--fs-sm); line-height:1.6;
-  overflow-y:auto; flex:1 1 auto;
+  overflow-y:auto; flex:1 1 auto; padding-bottom:16px; scrollbar-width:none;
+  -webkit-mask:linear-gradient(180deg, #000 calc(100% - 24px), transparent);
+  mask:linear-gradient(180deg, #000 calc(100% - 24px), transparent);
 }
+.rk-mini__reason p::-webkit-scrollbar{ display:none; }
 .rk-mini .rk-num{ top:5px; left:9px; font-size:30px; color:oklch(0.98 0.06 25); }
 .rk-mini__body{ flex:1; padding:var(--s-3); display:flex; flex-direction:column; gap:8px; }
 .rk-mini__title{ font-family:var(--font-serif); font-weight:600; font-size:var(--fs-sm); line-height:1.25; }
@@ -399,7 +404,8 @@ const planModalOpen = ref(false);
 }
 @media (max-width:860px){
   .reco-top{ grid-template-columns:1fr; min-height:0; }
-  .rk-mid{ gap:var(--s-4); padding:var(--s-4); }
+  /* 单列时 .rk-mids 高度由内容定，flex:1 会把两张中卡强行等高、截掉较长那张的评语 */
+  .rk-mid{ flex:none; gap:var(--s-4); padding:var(--s-4); }
   .rk-mid__body{ padding:0; }
   .rk-mid .rk-reason{ overflow:visible; }
 }
