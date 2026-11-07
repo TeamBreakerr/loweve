@@ -71,8 +71,10 @@
   --game-line:      oklch(0.80 0.145 205 / 0.34);
 }
 
+/* html 也挂 .game-mode（App.vue 同步）：页面主滚动条只读 <html> 上的 token */
+html.game-mode,
 body.game-mode{
-  --bg:            oklch(0.145 0.022 255);
+  --bg:           oklch(0.145 0.022 255);
   --bg-grad-top:   oklch(0.205 0.040 245);
   --surface:       oklch(0.205 0.028 252);
   --surface-2:     oklch(0.245 0.035 250);

@@ -592,7 +592,7 @@ function ifSelected(c: any) { return selected.value && selected.value.tmdb_id ==
 .chart-bar{ display:flex; align-items:center; justify-content:space-between; gap:var(--s-3); font-size:var(--fs-sm); color:var(--text-faint); }
 .chart-bar__toggle{ display:inline-flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-dim); }
 .chart-bar__toggle input{ accent-color:var(--rose); }
-.chart-list{ display:flex; flex-direction:column; gap:6px; max-height:52vh; overflow:auto; padding-right:2px; scrollbar-width:thin; scrollbar-color:var(--surface-3) transparent; }
+.chart-list{ display:flex; flex-direction:column; gap:6px; max-height:52vh; overflow:auto; padding-right:2px; }
 .chart-item{ cursor:pointer; }
 .chart-item.is-recorded{ opacity:.55; }
 .chart-item.is-recorded:hover{ opacity:.85; }

@@ -166,13 +166,10 @@ watch(() => props.sessions, () => init(), { deep: false });
 .mutebtn.is-muted { color: var(--text-faint); }
 .mutebtn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.7; }
 
-.tl2 { position: relative; z-index: 1; max-height: calc(100vh - 150px); overflow-y: auto; padding: 0 var(--s-2) 46vh 26px; scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+.tl2 { position: relative; z-index: 1; max-height: calc(100vh - 150px); overflow-y: auto; padding: 0 var(--s-2) 46vh 26px; }
 /* 时间脊线：月份节点挂在一条细竖线上，呼应左侧胶片 */
 /* 底部留白由 useReelDrum.applyPads 按光束线位置动态写入（--tl2-pad-bottom），46vh 只是 JS 未跑前的兜底 */
 .tl2::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: var(--tl2-pad-bottom, 46vh); width: 2px; background: linear-gradient(var(--line), var(--line) 88%, transparent); z-index: 0; }
-.tl2::-webkit-scrollbar { width: 8px; }
-.tl2::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--r-pill); }
-.tl2::-webkit-scrollbar-track { background: transparent; }
 .tl2__year { font-family: var(--font-brand); font-style: italic; font-size: var(--fs-2xl); color: var(--rose); margin: var(--s-6) 0 var(--s-2); }
 .tl2__year:first-child { margin-top: 0; }
 .mg { scroll-margin-top: 8px; }

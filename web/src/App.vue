@@ -22,6 +22,8 @@ watchEffect(() => {
   body.dataset.viewing = identity.viewingKey || '';
   body.classList.toggle('viewing-partner', identity.isViewingPartner);
   body.classList.toggle('game-mode', space.isGames);
+  // 页面主滚动条的颜色取自 <html>，这里同步一份，游戏空间的滚动条才会跟着变冷色
+  document.documentElement.classList.toggle('game-mode', space.isGames);
 });
 </script>
 

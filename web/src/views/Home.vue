@@ -360,8 +360,6 @@ const planModalOpen = ref(false);
 
 /* —— 推荐尾部 4–10：横向小卡轨道 —— */
 .reco-rail{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:var(--s-3); padding-bottom:var(--s-4); }
-.reco-rail::-webkit-scrollbar{ height:8px; }
-.reco-rail::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
 .rk-mini{ background:var(--surface); border-radius:var(--r-md); overflow:hidden; display:flex; flex-direction:column; transition:transform .25s var(--ease); }
 .rk-mini:hover{ transform:translateY(-4px); }
 .rk-mini__pw{ position:relative; }

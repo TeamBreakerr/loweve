@@ -23,3 +23,17 @@ button{ font-family:inherit; cursor:pointer; color:inherit; background:none; bor
 input{ font-family:inherit; }
 a{ color:inherit; text-decoration:none; }
 ::selection{ background:var(--rose-line); }
+
+/* ============================================================ 滚动条
+   全站统一：细条、主题色 thumb、透明轨道，页面主滚动条和所有内部滚动容器都走这一套。
+   - scrollbar-color 会继承，写在 html 上即覆盖全部容器；颜色取 html 上的 token，
+     游戏空间由 App.vue 给 <html> 同步 .game-mode 切到冷色。
+   - ::-webkit-scrollbar 是 Safari 的兜底（Chrome 121+ 有了标准属性会忽略它）。
+   - 组件里写 scrollbar-width:none 隐藏的（横向轨道、悬浮评语）选择器更具体，照常生效。 */
+html{ scrollbar-color:var(--surface-3) transparent; }
+*{ scrollbar-width:thin; }
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:var(--surface-3); border-radius:var(--r-pill); }
+::-webkit-scrollbar-thumb:hover{ background:var(--line); }
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner{ background:transparent; }
